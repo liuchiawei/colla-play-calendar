@@ -7,7 +7,7 @@ import { STORE_CONFIG } from "@/lib/config";
 export default function Hero() {
   return (
     <BackgroundGradientAnimation>
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 space-y-4">
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 space-y-4">
         <motion.h1
           initial={{ opacity: 0, y: 20, filter: "blur(10px)" }}
           animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}

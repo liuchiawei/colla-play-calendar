@@ -28,14 +28,16 @@ export default function Navbar() {
 
         {/* ナビゲーション */}
         <nav className="flex items-center gap-2">
+          <Link href="/calendar">
           <Button
             variant="ghost"
             size="sm"
             className="hidden sm:flex items-center gap-2"
           >
             <Calendar className="w-4 h-4" />
-            週間行事曆
+            活動行事曆
           </Button>
+          </Link>
           <Link href="/dashboard">
             <Button variant="outline" size="sm" className="gap-2">
               <Settings className="w-4 h-4" />
