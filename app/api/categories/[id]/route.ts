@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import type { ApiResponse, CategoryInput } from "@/lib/types";
-import type { Category } from "@/lib/generated/prisma";
+import type { Category } from "@/lib/generated/prisma/models";
 
 type RouteContext = {
   params: Promise<{ id: string }>;

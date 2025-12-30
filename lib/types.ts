@@ -1,7 +1,7 @@
 // CollaPlay 活動行事曆 TypeScript 型別定義
 // イベントとカテゴリの型定義
 
-import type { Event, Category } from "@/lib/generated/prisma";
+import type { Event, Category } from "@/lib/generated/prisma/models";
 
 // カテゴリ型（Prismaから生成）
 export type { Category };
