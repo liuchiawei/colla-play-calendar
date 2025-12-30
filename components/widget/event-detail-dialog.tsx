@@ -46,9 +46,9 @@ export function EventDetailDialog({
       <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden bg-card border-border/50">
         {/* ヘッダー画像またはカラーバナー */}
         <div className="relative h-32 overflow-hidden">
-          {event.imageUrl ? (
+          {event.imageBlobUrl || event.imageUrl ? (
             <img
-              src={event.imageUrl}
+              src={event.imageBlobUrl || event.imageUrl || ""}
               alt={event.title}
               className="w-full h-full object-cover"
             />

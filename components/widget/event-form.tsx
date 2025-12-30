@@ -5,7 +5,7 @@
 
 import * as React from "react";
 import { motion } from "motion/react";
-import { Calendar, Clock, MapPin, User, Link2, Ticket, Image, FileText, Tag } from "lucide-react";
+import { Calendar, Clock, MapPin, User, Link2, Ticket, Image, FileText, Tag, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,10 +55,17 @@ export function EventForm({
     location: "",
     organizer: "",
     imageUrl: "",
+    imageBlobUrl: null,
+    imageBlobPathname: null,
     registrationUrl: "",
     price: "",
     categoryId: "",
   });
+
+  // 檔案上傳相關狀態
+  const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
+  const [isUploading, setIsUploading] = React.useState(false);
 
   // イベントデータでフォームを初期化
   React.useEffect(() => {
@@ -71,10 +78,20 @@ export function EventForm({
         location: event.location || "",
         organizer: event.organizer || "",
         imageUrl: event.imageUrl || "",
+        imageBlobUrl: event.imageBlobUrl || null,
+        imageBlobPathname: event.imageBlobPathname || null,
         registrationUrl: event.registrationUrl || "",
         price: event.price || "",
         categoryId: event.categoryId || "",
       });
+      // 設定預覽（優先使用 blob URL）
+      if (event.imageBlobUrl) {
+        setPreviewUrl(event.imageBlobUrl);
+      } else if (event.imageUrl) {
+        setPreviewUrl(event.imageUrl);
+      } else {
+        setPreviewUrl(null);
+      }
     } else {
       // 新規作成時は現在時刻をデフォルトに
       const now = new Date();
@@ -87,17 +104,114 @@ export function EventForm({
         location: "",
         organizer: "",
         imageUrl: "",
+        imageBlobUrl: null,
+        imageBlobPathname: null,
         registrationUrl: "",
         price: "",
         categoryId: "",
       });
+      setPreviewUrl(null);
     }
+    setSelectedFile(null);
   }, [event, open]);
+
+  // 清理預覽 URL
+  React.useEffect(() => {
+    return () => {
+      if (previewUrl && previewUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
+
+  // 檔案選擇處理
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // 驗證檔案類型
+    if (!file.type.startsWith("image/")) {
+      alert("請選擇圖片檔案");
+      return;
+    }
+
+    // 驗證檔案大小（5MB）
+    if (file.size > 5 * 1024 * 1024) {
+      alert("檔案大小不能超過 5MB");
+      return;
+    }
+
+    setSelectedFile(file);
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
+  };
+
+  // 移除選中的檔案
+  const handleRemoveFile = () => {
+    if (previewUrl && previewUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    // 清除 blob 欄位
+    setFormData((prev) => ({
+      ...prev,
+      imageBlobUrl: null,
+      imageBlobPathname: null,
+    }));
+  };
+
+  // 移除已上傳的圖片（編輯模式）
+  const handleRemoveUploadedImage = () => {
+    setFormData((prev) => ({
+      ...prev,
+      imageBlobUrl: null,
+      imageBlobPathname: null,
+    }));
+    setPreviewUrl(null);
+  };
 
   // フォーム送信
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onSubmit(formData);
+
+    let finalFormData = { ...formData };
+
+    // 如果有選中檔案，先上傳
+    if (selectedFile) {
+      setIsUploading(true);
+      try {
+        const uploadFormData = new FormData();
+        uploadFormData.append("file", selectedFile);
+
+        const uploadResponse = await fetch("/api/uploads/event-image", {
+          method: "POST",
+          body: uploadFormData,
+        });
+
+        if (!uploadResponse.ok) {
+          const error = await uploadResponse.json();
+          alert(error.error || "圖片上傳失敗");
+          setIsUploading(false);
+          return;
+        }
+
+        const uploadResult = await uploadResponse.json();
+        if (uploadResult.success && uploadResult.data) {
+          finalFormData.imageBlobUrl = uploadResult.data.url;
+          finalFormData.imageBlobPathname = uploadResult.data.pathname;
+        }
+      } catch (error) {
+        console.error("Upload error:", error);
+        alert("圖片上傳失敗");
+        setIsUploading(false);
+        return;
+      } finally {
+        setIsUploading(false);
+      }
+    }
+
+    await onSubmit(finalFormData);
   };
 
   // 入力変更ハンドラ
@@ -252,19 +366,76 @@ export function EventForm({
             </div>
           </div>
 
-          {/* 画像URL */}
+          {/* 圖片上傳 */}
           <div className="space-y-2">
-            <Label htmlFor="imageUrl" className="flex items-center gap-2">
+            <Label className="flex items-center gap-2">
               <Image className="h-4 w-4 text-muted-foreground" />
-              活動圖片網址
+              活動圖片
             </Label>
-            <Input
-              id="imageUrl"
-              type="url"
-              value={formData.imageUrl || ""}
-              onChange={(e) => handleChange("imageUrl", e.target.value)}
-              placeholder="https://..."
-            />
+            <div className="space-y-3">
+              {/* 檔案選擇 */}
+              <div className="flex items-center gap-2">
+                <Input
+                  id="file-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                <Label
+                  htmlFor="file-upload"
+                  className="flex-1 cursor-pointer"
+                >
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full justify-center gap-2"
+                    asChild
+                  >
+                    <span>
+                      <Upload className="h-4 w-4" />
+                      上傳圖片
+                    </span>
+                  </Button>
+                </Label>
+                {(selectedFile || formData.imageBlobUrl) && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={selectedFile ? handleRemoveFile : handleRemoveUploadedImage}
+                    className="shrink-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+
+              {/* 預覽 */}
+              {previewUrl && (
+                <div className="relative w-full h-48 rounded-lg overflow-hidden border border-border">
+                  <img
+                    src={previewUrl}
+                    alt="預覽"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+
+              {/* 圖片網址輸入（備用） */}
+              <div className="space-y-2">
+                <Label htmlFor="imageUrl" className="text-sm text-muted-foreground">
+                  或輸入圖片網址
+                </Label>
+                <Input
+                  id="imageUrl"
+                  type="url"
+                  value={formData.imageUrl || ""}
+                  onChange={(e) => handleChange("imageUrl", e.target.value)}
+                  placeholder="https://..."
+                />
+              </div>
+            </div>
           </div>
 
           {/* 説明 */}
@@ -290,8 +461,12 @@ export function EventForm({
             >
               取消
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? "處理中..." : isEditing ? "儲存變更" : "新增活動"}
+            <Button type="submit" disabled={isLoading || isUploading}>
+              {isLoading || isUploading
+                ? "處理中..."
+                : isEditing
+                ? "儲存變更"
+                : "新增活動"}
             </Button>
           </DialogFooter>
         </form>
