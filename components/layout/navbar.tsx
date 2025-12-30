@@ -77,7 +77,7 @@ export default function Navbar() {
             <Button
               variant="ghost"
               size="sm"
-              className="flex items-center gap-2 hover:text-primary"
+              className="flex items-center gap-2 hover:bg-primary/10 hover:text-primary"
             >
               <Calendar className="size-4" />
               <span className="hidden md:inline">活動行事曆</span>
@@ -87,13 +87,13 @@ export default function Navbar() {
             <Button
               variant="ghost"
               size="sm"
-              className="flex items-center gap-2 hover:text-primary"
+              className="flex items-center gap-2 hover:bg-primary/10 hover:text-primary"
             >
               <Settings className="size-4" />
               <span className="hidden md:inline">後台管理</span>
             </Button>
           </Link>
-          <ThemeToggle className="hover:text-primary" />
+          <ThemeToggle className="hover:text-primary hover:bg-primary/10" />
         </nav>
       </div>
     </motion.header>

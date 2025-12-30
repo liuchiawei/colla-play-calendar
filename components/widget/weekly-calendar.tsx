@@ -165,6 +165,12 @@ export function WeeklyCalendar({
     return isSameDay(date, baseDay);
   };
 
+  // 曜日ヘッダークリック時：選択中の日付（currentDay相当）をリセット
+  const resetCurrentDay = React.useCallback((day: Date) => {
+    setDirection(0);
+    setCurrentDate(day);
+  }, []);
+
   // 日期を「幾月幾日」形式でフォーマット
   const formatDateButton = (date: Date) => {
     if (isToday(date)) {
@@ -179,7 +185,7 @@ export function WeeklyCalendar({
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col items-center justify-between p-4 border-b border-border/50 bg-card/50 backdrop-blur-sm"
+        className="flex flex-col items-center justify-between gap-2 p-4 border-b border-border/50 bg-card/50 backdrop-blur-sm"
       >
         <motion.h2
           key={formatMonthYear(currentDate)}
@@ -196,7 +202,7 @@ export function WeeklyCalendar({
                 variant="outline"
                 size="icon"
                 onClick={goToPrevious}
-                className="size-8 rounded-full hover:bg-primary/10 transition-colors"
+                className="size-8 rounded-full hover:bg-primary/10 hover:text-primary transition-colors"
               >
                 <ChevronLeft className="size-4" />
               </Button>
@@ -208,9 +214,9 @@ export function WeeklyCalendar({
               <Button
                 variant="ghost"
                 size="sm"
-                className="ml-2 hover:bg-primary/10"
+                className="ml-2 hover:bg-primary/10 hover:text-primary"
               >
-                <CalendarDays className="h-4 w-4 mr-1" />
+                <CalendarDays className="size-4 mr-1" />
                 {formatDateButton(currentDate)}
               </Button>
             </PopoverTrigger>
@@ -234,7 +240,7 @@ export function WeeklyCalendar({
                 variant="outline"
                 size="icon"
                 onClick={goToNext}
-                className="size-8 rounded-full hover:bg-primary/10 transition-colors"
+                className="size-8 rounded-full hover:bg-primary/10 hover:text-primary transition-colors"
               >
                 <ChevronRight className="size-4" />
               </Button>
@@ -258,14 +264,18 @@ export function WeeklyCalendar({
             {/* 時間列のスペーサー */}
             <AnimatePresence mode="popLayout">
               {displayDays.map((day, index) => (
-                <motion.div
+                <motion.button
                   key={day.toISOString()}
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 10 }}
                   transition={{ delay: index * 0.03 }}
+                  type="button"
+                  onClick={() => resetCurrentDay(day)}
+                  aria-pressed={isCurrentDay(day)}
+                  aria-label={`選擇日期 ${formatDayHeader(day)}`}
                   className={cn(
-                    "p-2 text-center border-r border-border/30 last:border-r-0",
+                    "p-2 text-center border-r border-border/30 last:border-r-0 cursor-pointer select-none hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-inset",
                     isToday(day) && "bg-primary/10",
                     isCurrentDay(day) && "ring-2 ring-primary/50 ring-inset"
                   )}
@@ -280,7 +290,7 @@ export function WeeklyCalendar({
                   >
                     {formatDayHeader(day)}
                   </div>
-                </motion.div>
+                </motion.button>
               ))}
             </AnimatePresence>
           </div>
