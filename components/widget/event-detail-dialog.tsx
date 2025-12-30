@@ -103,12 +103,10 @@ export function EventDetailDialog({
             {/* 日時情報 */}
             <div className="flex items-start gap-3">
               <div
-                className="p-2 rounded-lg"
-                style={{ backgroundColor: `${categoryColor}20` }}
+                className="p-2 rounded-full bg-primary/10 text-primary"
               >
                 <Calendar
-                  className="h-4 w-4"
-                  style={{ color: categoryColor }}
+                  className="size-4"
                 />
               </div>
               <div>
@@ -126,12 +124,10 @@ export function EventDetailDialog({
             {event.location && (
               <div className="flex items-start gap-3">
                 <div
-                  className="p-2 rounded-lg"
-                  style={{ backgroundColor: `${categoryColor}20` }}
+                  className="p-2 rounded-full bg-primary/10 text-primary"
                 >
                   <MapPin
-                    className="h-4 w-4"
-                    style={{ color: categoryColor }}
+                    className="size-4"
                   />
                 </div>
                 <div className="text-sm text-foreground">{event.location}</div>
@@ -142,10 +138,9 @@ export function EventDetailDialog({
             {event.organizer && (
               <div className="flex items-start gap-3">
                 <div
-                  className="p-2 rounded-lg"
-                  style={{ backgroundColor: `${categoryColor}20` }}
+                  className="p-2 rounded-full bg-primary/10 text-primary"
                 >
-                  <User className="h-4 w-4" style={{ color: categoryColor }} />
+                  <User className="size-4" />
                 </div>
                 <div className="text-sm text-foreground">{event.organizer}</div>
               </div>
@@ -155,13 +150,9 @@ export function EventDetailDialog({
             {event.price && (
               <div className="flex items-start gap-3">
                 <div
-                  className="p-2 rounded-lg"
-                  style={{ backgroundColor: `${categoryColor}20` }}
+                  className="p-2 rounded-full bg-primary/10 text-primary"
                 >
-                  <Ticket
-                    className="h-4 w-4"
-                    style={{ color: categoryColor }}
-                  />
+                  <Ticket className="size-4" />
                 </div>
                 <div className="text-sm text-foreground">{event.price}</div>
               </div>
@@ -193,10 +184,10 @@ export function EventDetailDialog({
               >
                 <Button
                   className="w-full"
-                  style={{ backgroundColor: categoryColor }}
+                  variant="default"
                   onClick={() => window.open(event.registrationUrl!, "_blank")}
                 >
-                  <ExternalLink className="h-4 w-4 mr-2" />
+                  <ExternalLink className="size-4 mr-2" />
                   立即報名
                 </Button>
               </motion.div>

@@ -77,19 +77,23 @@ export default function Navbar() {
             <Button
               variant="ghost"
               size="sm"
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 hover:text-primary"
             >
-              <Calendar className="w-4 h-4" />
+              <Calendar className="size-4" />
               <span className="hidden md:inline">活動行事曆</span>
             </Button>
           </Link>
           <Link href="/dashboard">
-            <Button variant="outline" size="sm" className="gap-2">
-              <Settings className="w-4 h-4" />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="flex items-center gap-2 hover:text-primary"
+            >
+              <Settings className="size-4" />
               <span className="hidden md:inline">後台管理</span>
             </Button>
           </Link>
-          <ThemeToggle />
+          <ThemeToggle className="hover:text-primary" />
         </nav>
       </div>
     </motion.header>

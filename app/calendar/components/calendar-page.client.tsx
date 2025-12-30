@@ -35,7 +35,7 @@ export default function CalendarPageClient() {
         <WeeklyCalendar
           className="h-full scrollbar-thin"
           onEventSelect={handleEventSelect}
-          enableInternalDialog={false}
+          enableInternalDialog={true}
         />
       </div>
 

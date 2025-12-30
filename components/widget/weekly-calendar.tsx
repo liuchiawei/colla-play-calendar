@@ -33,7 +33,6 @@ import {
   generateTimeSlots,
   isEventOnDay,
   calculateEventPosition,
-  HOURS_IN_VIEW,
 } from "@/lib/date-utils";
 import { startOfDay, addDays, isSameDay, endOfDay } from "date-fns";
 import type { EventWithCategory } from "@/lib/types";

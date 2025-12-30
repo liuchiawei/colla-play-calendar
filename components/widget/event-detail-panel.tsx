@@ -68,7 +68,7 @@ export function EventDetailPanel({
                   className="shrink-0"
                   title="在新視窗中查看詳細資訊"
                 >
-                  <Maximize2 className="h-4 w-4" />
+                  <Maximize2 className="size-4" />
                 </Button>
               </div>
             </div>
@@ -90,21 +90,15 @@ export function EventDetailPanel({
 
                 {/* 日時情報 */}
                 <div className="flex items-start gap-3">
-                  <div
-                    className="p-2 rounded-lg shrink-0"
-                    style={{ backgroundColor: `${categoryColor}20` }}
-                  >
-                    <Calendar
-                      className="h-4 w-4"
-                      style={{ color: categoryColor }}
-                    />
+                  <div className="p-2 rounded-full bg-primary/10 text-primary shrink-0">
+                    <Calendar className="size-4" />
                   </div>
                   <div className="flex-1">
                     <div className="text-sm font-medium text-foreground">
                       {formatDate(event.startTime)}
                     </div>
                     <div className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                      <Clock className="h-3 w-3" />
+                      <Clock className="size-3" />
                       {formatTime(event.startTime)} -{" "}
                       {formatTime(event.endTime)}
                     </div>
@@ -114,14 +108,8 @@ export function EventDetailPanel({
                 {/* 場所 */}
                 {event.location && (
                   <div className="flex items-start gap-3">
-                    <div
-                      className="p-2 rounded-lg shrink-0"
-                      style={{ backgroundColor: `${categoryColor}20` }}
-                    >
-                      <MapPin
-                        className="h-4 w-4"
-                        style={{ color: categoryColor }}
-                      />
+                    <div className="p-2 rounded-full bg-primary/10 text-primary shrink-0">
+                      <MapPin className="size-4" />
                     </div>
                     <div className="text-sm text-foreground flex-1">
                       {event.location}
@@ -132,14 +120,8 @@ export function EventDetailPanel({
                 {/* 主催者 */}
                 {event.organizer && (
                   <div className="flex items-start gap-3">
-                    <div
-                      className="p-2 rounded-lg shrink-0"
-                      style={{ backgroundColor: `${categoryColor}20` }}
-                    >
-                      <User
-                        className="h-4 w-4"
-                        style={{ color: categoryColor }}
-                      />
+                    <div className="p-2 rounded-full bg-primary/10 text-primary shrink-0">
+                      <User className="size-4" />
                     </div>
                     <div className="text-sm text-foreground flex-1">
                       {event.organizer}
@@ -150,14 +132,8 @@ export function EventDetailPanel({
                 {/* 料金 */}
                 {event.price && (
                   <div className="flex items-start gap-3">
-                    <div
-                      className="p-2 rounded-lg shrink-0"
-                      style={{ backgroundColor: `${categoryColor}20` }}
-                    >
-                      <Ticket
-                        className="h-4 w-4"
-                        style={{ color: categoryColor }}
-                      />
+                    <div className="p-2 rounded-full bg-primary/10 text-primary shrink-0">
+                      <Ticket className="size-4" />
                     </div>
                     <div className="text-sm text-foreground flex-1">
                       {event.price}
@@ -171,7 +147,7 @@ export function EventDetailPanel({
                     <Separator className="my-4" />
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                        <Tag className="h-4 w-4" />
+                        <Tag className="size-4" />
                         活動說明
                       </div>
                       <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
@@ -186,12 +162,12 @@ export function EventDetailPanel({
                   <div className="pt-2">
                     <Button
                       className="w-full"
-                      style={{ backgroundColor: categoryColor }}
+                      variant="default"
                       onClick={() =>
                         window.open(event.registrationUrl!, "_blank")
                       }
                     >
-                      <ExternalLink className="h-4 w-4 mr-2" />
+                      <ExternalLink className="size-4 mr-2" />
                       立即報名
                     </Button>
                   </div>
