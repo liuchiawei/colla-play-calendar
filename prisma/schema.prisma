@@ -1,0 +1,42 @@
+// Prisma schema for CollaPlay Weekly Calendar
+// CollaPlay（可能存在的遊樂園）活動行事曆資料庫模型
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// 活動類型/分類モデル
+model Category {
+  id        String   @id @default(cuid())
+  name      String   // カテゴリ名（例：工作坊、講座、展演）
+  color     String   // 表示用の色（HEX形式）
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  events    Event[]  // このカテゴリに属するイベント
+}
+
+// 活動/イベントモデル
+model Event {
+  id              String    @id @default(cuid())
+  title           String    // イベントタイトル
+  description     String?   // イベント説明（オプション）
+  startTime       DateTime  // 開始日時
+  endTime         DateTime  // 終了日時
+  location        String?   // 場所（オプション）
+  organizer       String?   // 主催者（オプション）
+  imageUrl        String?   // イベント画像URL（オプション）
+  registrationUrl String?   // 登録/申込URL（オプション）
+  price           String?   // 料金情報（オプション、文字列で柔軟に対応）
+  categoryId      String?   // カテゴリID（オプション）
+  category        Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([startTime]) // 日時検索の最適化
+  @@index([categoryId]) // カテゴリ検索の最適化
+}
