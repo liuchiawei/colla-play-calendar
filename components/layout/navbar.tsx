@@ -11,7 +11,7 @@ export default function Navbar() {
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
-      className="relative z-10 border-b border-border/40 bg-background/80 backdrop-blur-md"
+      className="fixed top-0 left-0 right-0 z-40 border-b border-border/50 bg-background/50 backdrop-blur-sm"
     >
       <div className="mx-auto px-4 py-4 flex items-center justify-between">
         {/* ロゴ */}
