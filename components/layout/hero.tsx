@@ -20,7 +20,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 20, filter: "blur(15px)" }}
           animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          className="text-xl text-center font-light text-muted/60 tracking-widest text-shadow-md"
+          className="text-xl text-center font-semilight text-muted/70 tracking-widest text-shadow-md"
         >
           {STORE_CONFIG.subtitle}
         </motion.h2>
