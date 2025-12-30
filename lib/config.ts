@@ -27,7 +27,8 @@ export const STORE_CONFIG = {
 
 // クイックリンク設定
 export const QUICK_LINKS = [
-  { label: "週間行事曆", href: "/" },
+  { label: "首頁", href: "/" },
+  { label: "活動行事曆", href: "/calendar" },
   { label: "後台管理", href: "/dashboard" },
 ] as const;
 

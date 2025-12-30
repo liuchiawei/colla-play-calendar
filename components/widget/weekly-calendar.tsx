@@ -42,9 +42,17 @@ import { useIsMobile } from "@/hooks/use-mobile";
 // コンポーネントのプロパティ型
 interface WeeklyCalendarProps {
   className?: string;
+  // イベント選択時のコールバック（外部で選択を処理する場合）
+  onEventSelect?: (event: EventWithCategory) => void;
+  // 内部ダイアログを有効にするか（デフォルト: true）
+  enableInternalDialog?: boolean;
 }
 
-export function WeeklyCalendar({ className }: WeeklyCalendarProps) {
+export function WeeklyCalendar({
+  className,
+  onEventSelect,
+  enableInternalDialog = true,
+}: WeeklyCalendarProps) {
   // モバイル判定
   const isMobile = useIsMobile();
   // 現在表示中の週の基準日
@@ -321,7 +329,14 @@ export function WeeklyCalendar({ className }: WeeklyCalendarProps) {
                             event={event}
                             position={position}
                             index={eventIndex + dayIndex}
-                            onClick={() => setSelectedEvent(event)}
+                            onClick={() => {
+                              // 外部コールバックを常に呼び出す
+                              onEventSelect?.(event);
+                              // 内部ダイアログが有効な場合のみ内部状態を更新
+                              if (enableInternalDialog) {
+                                setSelectedEvent(event);
+                              }
+                            }}
                           />
                         );
                       })
@@ -333,12 +348,14 @@ export function WeeklyCalendar({ className }: WeeklyCalendarProps) {
         </div>
       </div>
 
-      {/* イベント詳細ダイアログ */}
-      <EventDetailDialog
-        event={selectedEvent}
-        open={!!selectedEvent}
-        onOpenChange={(open) => !open && setSelectedEvent(null)}
-      />
+      {/* イベント詳細ダイアログ（内部ダイアログが有効な場合のみ表示） */}
+      {enableInternalDialog && (
+        <EventDetailDialog
+          event={selectedEvent}
+          open={!!selectedEvent}
+          onOpenChange={(open) => !open && setSelectedEvent(null)}
+        />
+      )}
     </div>
   );
 }
