@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { motion } from "motion/react";
 import Link from "next/link";
 import { Calendar, Settings, Sparkles } from "lucide-react";
+import { ThemeToggle } from "@/components/widget/theme-toggle";
 
 export default function Navbar() {
   const [isVisible, setIsVisible] = useState(() => {
@@ -61,11 +62,11 @@ export default function Navbar() {
     >
       <div className="mx-auto px-4 py-4 flex items-center justify-between">
         {/* ロゴ */}
-        <div className="flex items-center gap-3 select-none">
+        <div className="flex items-baseline gap-3 select-none">
           <Link href="/" className="text-xl font-bold tracking-wider">
             Colla Play
           </Link>
-          <h2 className="text-sm text-muted text-shadow/sm tracking-wider">
+          <h2 className="text-sm text-muted-foreground/70 text-shadow/sm tracking-wider">
             可能存在的遊樂園
           </h2>
         </div>
@@ -88,6 +89,7 @@ export default function Navbar() {
               <span className="hidden md:inline">後台管理</span>
             </Button>
           </Link>
+          <ThemeToggle />
         </nav>
       </div>
     </motion.header>

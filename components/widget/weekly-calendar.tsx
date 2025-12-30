@@ -197,9 +197,9 @@ export function WeeklyCalendar({
                 variant="outline"
                 size="icon"
                 onClick={goToPrevious}
-                className="h-8 w-8 hover:bg-primary/10 transition-colors"
+                className="size-8 rounded-full hover:bg-primary/10 transition-colors"
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="size-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>{isMobile ? "上一天" : "上一週"}</TooltipContent>
@@ -235,9 +235,9 @@ export function WeeklyCalendar({
                 variant="outline"
                 size="icon"
                 onClick={goToNext}
-                className="h-8 w-8 hover:bg-primary/10 transition-colors"
+                className="size-8 rounded-full hover:bg-primary/10 transition-colors"
               >
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="size-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>{isMobile ? "下一天" : "下一週"}</TooltipContent>
@@ -281,26 +281,6 @@ export function WeeklyCalendar({
                   >
                     {formatDayHeader(day)}
                   </div>
-                  {isToday(day) && (
-                    <motion.div
-                      layoutId="today-indicator"
-                      className="mx-auto mt-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center"
-                    >
-                      <span className="text-xs text-primary-foreground font-bold">
-                        {day.getDate()}
-                      </span>
-                    </motion.div>
-                  )}
-                  {!isToday(day) && isCurrentDay(day) && (
-                    <motion.div
-                      layoutId="current-day-indicator"
-                      className="mx-auto mt-1 w-6 h-6 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center"
-                    >
-                      <span className="text-xs text-primary font-bold">
-                        {day.getDate()}
-                      </span>
-                    </motion.div>
-                  )}
                 </motion.div>
               ))}
             </AnimatePresence>
