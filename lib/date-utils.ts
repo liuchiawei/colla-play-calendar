@@ -43,6 +43,16 @@ export function getPreviousWeek(date: Date): Date {
   return subWeeks(date, 1);
 }
 
+// 次の日に移動（モバイル用）
+export function getNextDay(date: Date): Date {
+  return addDays(date, 1);
+}
+
+// 前の日に移動（モバイル用）
+export function getPreviousDay(date: Date): Date {
+  return addDays(date, -1);
+}
+
 // 週の各日を取得（月〜日）
 export function getWeekDays(date: Date): Date[] {
   const start = startOfWeek(date, WEEK_OPTIONS);

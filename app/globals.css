@@ -61,46 +61,46 @@
   /* 背景：クリーム色調 */
   --background: oklch(0.98 0.01 85);
   --foreground: oklch(0.18 0.02 260);
-  
+
   /* カード：暖かい白 */
   --card: oklch(0.995 0.005 85);
   --card-foreground: oklch(0.18 0.02 260);
-  
+
   /* ポップオーバー */
   --popover: oklch(0.995 0.005 85);
   --popover-foreground: oklch(0.18 0.02 260);
-  
+
   /* プライマリ：珊瑚色 */
   --primary: oklch(0.65 0.2 25);
   --primary-foreground: oklch(0.99 0 0);
-  
+
   /* セカンダリ：淡い珊瑚 */
   --secondary: oklch(0.95 0.03 25);
   --secondary-foreground: oklch(0.35 0.1 25);
-  
+
   /* ミュート */
   --muted: oklch(0.95 0.01 85);
   --muted-foreground: oklch(0.5 0.02 260);
-  
+
   /* アクセント：ティール */
   --accent: oklch(0.92 0.04 180);
   --accent-foreground: oklch(0.25 0.08 180);
-  
+
   /* デストラクティブ */
   --destructive: oklch(0.55 0.22 25);
-  
+
   /* ボーダー・インプット */
   --border: oklch(0.9 0.02 85);
   --input: oklch(0.92 0.02 85);
   --ring: oklch(0.65 0.2 25);
-  
+
   /* チャートカラー */
   --chart-1: oklch(0.65 0.2 25);
   --chart-2: oklch(0.7 0.15 180);
   --chart-3: oklch(0.75 0.12 200);
   --chart-4: oklch(0.8 0.15 140);
   --chart-5: oklch(0.75 0.18 60);
-  
+
   /* サイドバー */
   --sidebar: oklch(0.97 0.01 85);
   --sidebar-foreground: oklch(0.18 0.02 260);
@@ -117,46 +117,46 @@
   /* 背景：深いブルーグレー */
   --background: oklch(0.14 0.02 260);
   --foreground: oklch(0.95 0.01 85);
-  
+
   /* カード：やや明るい背景 */
   --card: oklch(0.18 0.02 260);
   --card-foreground: oklch(0.95 0.01 85);
-  
+
   /* ポップオーバー */
   --popover: oklch(0.2 0.02 260);
   --popover-foreground: oklch(0.95 0.01 85);
-  
+
   /* プライマリ：明るい珊瑚 */
   --primary: oklch(0.72 0.18 25);
   --primary-foreground: oklch(0.15 0.02 260);
-  
+
   /* セカンダリ */
   --secondary: oklch(0.25 0.03 260);
   --secondary-foreground: oklch(0.9 0.01 85);
-  
+
   /* ミュート */
   --muted: oklch(0.22 0.02 260);
   --muted-foreground: oklch(0.65 0.02 85);
-  
+
   /* アクセント：ティール */
   --accent: oklch(0.28 0.04 180);
   --accent-foreground: oklch(0.85 0.08 180);
-  
+
   /* デストラクティブ */
   --destructive: oklch(0.65 0.2 20);
-  
+
   /* ボーダー・インプット */
   --border: oklch(0.28 0.02 260);
   --input: oklch(0.25 0.02 260);
   --ring: oklch(0.72 0.18 25);
-  
+
   /* チャートカラー */
   --chart-1: oklch(0.72 0.18 25);
   --chart-2: oklch(0.7 0.14 180);
   --chart-3: oklch(0.75 0.15 60);
   --chart-4: oklch(0.7 0.2 300);
   --chart-5: oklch(0.68 0.22 15);
-  
+
   /* サイドバー */
   --sidebar: oklch(0.16 0.02 260);
   --sidebar-foreground: oklch(0.95 0.01 85);
@@ -186,7 +186,7 @@
       linear-gradient(to bottom, var(--border) 1px, transparent 1px);
     background-size: 40px 40px;
   }
-  
+
   /* テキストグラデーション */
   .text-gradient {
     background: linear-gradient(135deg, var(--primary) 0%, oklch(0.7 0.15 180) 100%);
@@ -194,37 +194,37 @@
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
-  
+
   /* フローティングアニメーション */
   .animate-float {
     animation: float 6s ease-in-out infinite;
   }
-  
+
   @keyframes float {
     0%, 100% { transform: translateY(0px); }
     50% { transform: translateY(-10px); }
   }
-  
+
   /* スクロールバースタイル */
   .scrollbar-thin {
     scrollbar-width: thin;
     scrollbar-color: var(--border) transparent;
   }
-  
+
   .scrollbar-thin::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
-  
+
   .scrollbar-thin::-webkit-scrollbar-track {
     background: transparent;
   }
-  
+
   .scrollbar-thin::-webkit-scrollbar-thumb {
     background-color: var(--border);
     border-radius: 3px;
   }
-  
+
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
     background-color: var(--muted-foreground);
   }
