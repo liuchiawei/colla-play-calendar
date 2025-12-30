@@ -5,7 +5,13 @@
 export const STORE_CONFIG = {
   name: "CollaPlay",
   subtitle: "可能存在的遊樂園",
+  description: [
+    "Collaboration + Play = CollaPlay",
+    "一座專為大人打造的遊樂園",
+    "咖啡館｜工作空間｜多功能教室｜社群活動｜場地租借",
+  ],
   phone: "02 6627 0836",
+  email: "hello@collaplay.com",
   address: "108臺北市萬華區武昌街二段83之6號3樓",
 
   // 營業時間
@@ -19,6 +25,29 @@ export const STORE_CONFIG = {
   closedDays: [] as number[],
 } as const;
 
+// クイックリンク設定
+export const QUICK_LINKS = [
+  { label: "週間行事曆", href: "/" },
+  { label: "後台管理", href: "/dashboard" },
+] as const;
+
+// ソーシャルリンク設定
+// icon: lucide-react のアイコン名を指定
+export const SOCIAL_LINKS = [
+  {
+    icon: "Instagram" as const,
+    label: "Instagram",
+    href: "https://www.instagram.com/colla_play/",
+  },
+  {
+    icon: "Facebook" as const,
+    label: "Facebook",
+    href: "https://www.facebook.com/collaplay",
+  },
+] as const;
+
 // 型別定義
 export type StoreConfig = typeof STORE_CONFIG;
 export type BusinessHours = typeof STORE_CONFIG.businessHours;
+export type QuickLink = (typeof QUICK_LINKS)[number];
+export type SocialLink = (typeof SOCIAL_LINKS)[number];
