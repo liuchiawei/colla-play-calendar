@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import type { ApiResponse, CategoryInput } from "@/lib/types";
-import type { Category } from "@/lib/generated/prisma/models";
+import type { Category } from "@/lib/generated/prisma/client";
 
 // GET /api/categories - カテゴリ一覧を取得
 export async function GET() {
