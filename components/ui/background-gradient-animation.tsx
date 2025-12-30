@@ -33,53 +33,104 @@ export const BackgroundGradientAnimation = ({
   interactive?: boolean;
   containerClassName?: string;
 }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
   const interactiveRef = useRef<HTMLDivElement>(null);
 
-  const [curX, setCurX] = useState(0);
-  const [curY, setCurY] = useState(0);
-  const [tgX, setTgX] = useState(0);
-  const [tgY, setTgY] = useState(0);
+  // Use refs for animation values to avoid re-renders
+  const currentXRef = useRef(0);
+  const currentYRef = useRef(0);
+  const targetXRef = useRef(0);
+  const targetYRef = useRef(0);
+  const rafIdRef = useRef<number | null>(null);
+
+  // Set CSS variables on container (local scope) instead of document.body
   useEffect(() => {
-    document.body.style.setProperty(
+    if (!containerRef.current) return;
+
+    const container = containerRef.current;
+    container.style.setProperty(
       "--gradient-background-start",
       gradientBackgroundStart
     );
-    document.body.style.setProperty(
+    container.style.setProperty(
       "--gradient-background-end",
       gradientBackgroundEnd
     );
-    document.body.style.setProperty("--first-color", firstColor);
-    document.body.style.setProperty("--second-color", secondColor);
-    document.body.style.setProperty("--third-color", thirdColor);
-    document.body.style.setProperty("--fourth-color", fourthColor);
-    document.body.style.setProperty("--fifth-color", fifthColor);
-    document.body.style.setProperty("--pointer-color", pointerColor);
-    document.body.style.setProperty("--size", size);
-    document.body.style.setProperty("--blending-value", blendingValue);
-  }, []);
+    container.style.setProperty("--first-color", firstColor);
+    container.style.setProperty("--second-color", secondColor);
+    container.style.setProperty("--third-color", thirdColor);
+    container.style.setProperty("--fourth-color", fourthColor);
+    container.style.setProperty("--fifth-color", fifthColor);
+    container.style.setProperty("--pointer-color", pointerColor);
+    container.style.setProperty("--size", size);
+    container.style.setProperty("--blending-value", blendingValue);
+  }, [
+    gradientBackgroundStart,
+    gradientBackgroundEnd,
+    firstColor,
+    secondColor,
+    thirdColor,
+    fourthColor,
+    fifthColor,
+    pointerColor,
+    size,
+    blendingValue,
+  ]);
 
+  // RequestAnimationFrame loop for smooth animation
   useEffect(() => {
-    function move() {
-      if (!interactiveRef.current) {
-        return;
-      }
-      setCurX(curX + (tgX - curX) / 20);
-      setCurY(curY + (tgY - curY) / 20);
+    if (!interactive || !interactiveRef.current) return;
+
+    const animate = () => {
+      if (!interactiveRef.current) return;
+
+      // Easing interpolation (1/20 factor for smooth movement)
+      currentXRef.current += (targetXRef.current - currentXRef.current) / 20;
+      currentYRef.current += (targetYRef.current - currentYRef.current) / 20;
+
+      // Apply transform directly without triggering React re-render
       interactiveRef.current.style.transform = `translate(${Math.round(
-        curX
-      )}px, ${Math.round(curY)}px)`;
-    }
+        currentXRef.current
+      )}px, ${Math.round(currentYRef.current)}px)`;
 
-    move();
-  }, [tgX, tgY]);
+      rafIdRef.current = requestAnimationFrame(animate);
+    };
 
-  const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (interactiveRef.current) {
-      const rect = interactiveRef.current.getBoundingClientRect();
-      setTgX(event.clientX - rect.left);
-      setTgY(event.clientY - rect.top);
-    }
-  };
+    rafIdRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
+      }
+    };
+  }, [interactive]);
+
+  // Listen to window pointermove events (viewport coordinate system)
+  useEffect(() => {
+    if (!interactive) return;
+
+    const handlePointerMove = (event: PointerEvent) => {
+      if (!containerRef.current) return;
+
+      // Use container's bounding rect as fixed reference frame
+      // This avoids feedback loop from the moving interactiveRef element
+      const rect = containerRef.current.getBoundingClientRect();
+
+      // Calculate target position relative to container
+      // Note: interactiveRef uses -top-1/2 -left-1/2, so we need to adjust
+      targetXRef.current = event.clientX - rect.left;
+      targetYRef.current = event.clientY - rect.top;
+    };
+
+    window.addEventListener("pointermove", handlePointerMove, {
+      passive: true,
+    });
+
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+    };
+  }, [interactive]);
 
   const [isSafari, setIsSafari] = useState(false);
   useEffect(() => {
@@ -88,6 +139,7 @@ export const BackgroundGradientAnimation = ({
 
   return (
     <div
+      ref={containerRef}
       className={cn(
         "h-svh w-full relative overflow-hidden top-0 left-0 right-0 bg-[linear-gradient(40deg,var(--gradient-background-start),var(--gradient-background-end))]",
         containerClassName
@@ -167,11 +219,10 @@ export const BackgroundGradientAnimation = ({
         {interactive && (
           <div
             ref={interactiveRef}
-            onMouseMove={handleMouseMove}
             className={cn(
               `absolute [background:radial-gradient(circle_at_center,_rgba(var(--pointer-color),_0.8)_0,_rgba(var(--pointer-color),_0)_50%)_no-repeat]`,
               `[mix-blend-mode:var(--blending-value)] w-full h-full -top-1/2 -left-1/2`,
-              `opacity-70`
+              `opacity-70 pointer-events-none`
             )}
           ></div>
         )}
