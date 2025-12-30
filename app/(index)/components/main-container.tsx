@@ -46,7 +46,7 @@ export default function MainContainer() {
       </div>
 
       {/* メインコンテンツ */}
-      <main className="relative z-10 container mx-auto px-4 py-6">
+      <main className="relative z-10 container mx-auto px-4 py-12">
         {/* タイトルセクション */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
