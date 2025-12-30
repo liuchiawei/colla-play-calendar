@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Outfit } from "next/font/google";
 import "./globals.css";
+import { ThemeProvider } from "next-themes";
 import Navbar from "@/components/layout/navbar";
 import Footer from "@/components/layout/footer";
 
@@ -24,7 +25,7 @@ const outfit = Outfit({
 
 // メタデータ設定
 export const metadata: Metadata = {
-  title: "CollaPlay 可能存在的遊樂園 | 週間活動行事曆",
+  title: "CollaPlay | 可能存在的遊樂園",
   description:
     "CollaPlay 共同工作空間/展演空間/實體社群基地的週間活動行事曆。探索工作坊、講座、展演等精彩活動！",
   keywords: [
@@ -52,11 +53,13 @@ export default function RootLayout({
   return (
     <html lang="zh-TW" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} antialiased font-sans min-h-screen flex flex-col`}
+        className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} antialiased font-sans min-h-screen`}
       >
-        <Navbar />
-        <main className="flex-1">{children}</main>
-        <Footer />
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <Navbar />
+          {children}
+          <Footer />
+        </ThemeProvider>
       </body>
     </html>
   );

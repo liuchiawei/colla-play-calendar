@@ -7,7 +7,7 @@ import { STORE_CONFIG } from "@/lib/config";
 export default function Hero() {
   return (
     <BackgroundGradientAnimation>
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 space-y-4">
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 space-y-4 select-none">
         <motion.h1
           initial={{ opacity: 0, y: 20, filter: "blur(10px)" }}
           animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
@@ -20,7 +20,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 20, filter: "blur(15px)" }}
           animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          className="text-xl text-center font-light text-muted/60 tracking-widest text-shadow-md"
+          className="text-xl text-center font-semilight text-white/50 tracking-widest text-shadow-md"
         >
           {STORE_CONFIG.subtitle}
         </motion.h2>

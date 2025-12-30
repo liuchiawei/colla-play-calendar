@@ -28,9 +28,9 @@ export default function CalendarPage() {
       </div>
 
       {/* メインコンテンツ */}
-      <main className="relative z-10 container mx-auto px-4 py-8">
+      <main className="relative z-10 container mx-auto px-4 md:px-0 py-8">
         {/* タイトルセクション */}
-        <div className="text-center mb-6">
+        <div className="text-center my-12">
           <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-2 font-[var(--font-outfit)]">
             週間活動行事曆
           </h1>

@@ -33,8 +33,8 @@ import {
   generateTimeSlots,
   isEventOnDay,
   calculateEventPosition,
-  HOURS_IN_VIEW,
 } from "@/lib/date-utils";
+import { startOfDay, addDays, isSameDay, endOfDay } from "date-fns";
 import type { EventWithCategory } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -69,9 +69,38 @@ export function WeeklyCalendar({
   // カレンダーポップオーバーの開閉状態
   const [calendarOpen, setCalendarOpen] = React.useState(false);
 
-  // 週の日付範囲と日付リスト
-  const weekRange = getWeekRange(currentDate);
-  const weekDays = getWeekDays(currentDate);
+  // 基準日を取得（時間部分を無視）
+  const baseDay = startOfDay(currentDate);
+
+  // 表示する日付リストを計算（モバイル: 前日/当日/翌日、デスクトップ: 週全体）
+  // 日期水平排列：左側時間軸，右側日期列（水平排列）
+  const displayDays = React.useMemo(() => {
+    // isMobile 為 undefined 時（初始渲染），預設為桌面版（7天）
+    if (isMobile === true) {
+      // モバイル: currentDate を中心に前後1日（合計3日，水平排列）
+      return [addDays(baseDay, -1), baseDay, addDays(baseDay, 1)];
+    } else {
+      // デスクトップ: 週全体（7天，水平排列）
+      return getWeekDays(currentDate);
+    }
+  }, [isMobile, baseDay, currentDate]);
+
+  // イベント取得用の日付範囲を計算
+  const eventRange = React.useMemo(() => {
+    if (isMobile) {
+      // モバイル: 表示する3日間の範囲（前日の開始から翌日の終了まで）
+      const firstDay = displayDays[0];
+      const lastDay = displayDays[displayDays.length - 1];
+      return {
+        start: startOfDay(firstDay),
+        end: endOfDay(lastDay),
+      };
+    } else {
+      // デスクトップ: 週全体
+      return getWeekRange(currentDate);
+    }
+  }, [isMobile, displayDays, currentDate]);
+
   const timeSlots = generateTimeSlots();
 
   // イベントデータを取得
@@ -79,8 +108,8 @@ export function WeeklyCalendar({
     setIsLoading(true);
     try {
       const params = new URLSearchParams({
-        start: weekRange.start.toISOString(),
-        end: weekRange.end.toISOString(),
+        start: eventRange.start.toISOString(),
+        end: eventRange.end.toISOString(),
       });
       const response = await fetch(`/api/events?${params}`);
       const data = await response.json();
@@ -92,7 +121,7 @@ export function WeeklyCalendar({
     } finally {
       setIsLoading(false);
     }
-  }, [weekRange.start.toISOString(), weekRange.end.toISOString()]);
+  }, [eventRange.start.toISOString(), eventRange.end.toISOString()]);
 
   // 週が変更されたらイベントを再取得
   React.useEffect(() => {
@@ -131,19 +160,16 @@ export function WeeklyCalendar({
     );
   };
 
-  // モバイル表示用: 今日を中心に3日間を表示するための計算
-  const todayIndex = weekDays.findIndex((day) => isToday(day));
-  // 今日が週内にある場合は今日を中心に、なければ最初の3日を表示
-  const mobileStartIndex = React.useMemo(() => {
-    if (todayIndex === -1) return 0;
-    // 今日を中心に表示（範囲外にならないよう調整）
-    return Math.max(0, Math.min(todayIndex - 1, 4));
-  }, [todayIndex]);
-
-  // 指定されたインデックスがモバイルで表示されるか
-  const isVisibleOnMobile = (index: number) => {
-    return index >= mobileStartIndex && index < mobileStartIndex + 3;
+  // currentDate かどうかチェック（選択中の日付をハイライト）
+  const isCurrentDay = (date: Date) => {
+    return isSameDay(date, baseDay);
   };
+
+  // 曜日ヘッダークリック時：選択中の日付（currentDay相当）をリセット
+  const resetCurrentDay = React.useCallback((day: Date) => {
+    setDirection(0);
+    setCurrentDate(day);
+  }, []);
 
   // 日期を「幾月幾日」形式でフォーマット
   const formatDateButton = (date: Date) => {
@@ -159,7 +185,7 @@ export function WeeklyCalendar({
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col items-center justify-between p-4 border-b border-border/50 bg-card/50 backdrop-blur-sm"
+        className="flex flex-col items-center justify-between gap-2 p-4 border-b border-border/50 bg-card/50 backdrop-blur-sm"
       >
         <motion.h2
           key={formatMonthYear(currentDate)}
@@ -176,9 +202,9 @@ export function WeeklyCalendar({
                 variant="outline"
                 size="icon"
                 onClick={goToPrevious}
-                className="h-8 w-8 hover:bg-primary/10 transition-colors"
+                className="size-8 rounded-full hover:bg-primary/10 hover:text-primary transition-colors"
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="size-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>{isMobile ? "上一天" : "上一週"}</TooltipContent>
@@ -188,9 +214,9 @@ export function WeeklyCalendar({
               <Button
                 variant="ghost"
                 size="sm"
-                className="ml-2 hover:bg-primary/10"
+                className="ml-2 hover:bg-primary/10 hover:text-primary"
               >
-                <CalendarDays className="h-4 w-4 mr-1" />
+                <CalendarDays className="size-4 mr-1" />
                 {formatDateButton(currentDate)}
               </Button>
             </PopoverTrigger>
@@ -214,9 +240,9 @@ export function WeeklyCalendar({
                 variant="outline"
                 size="icon"
                 onClick={goToNext}
-                className="h-8 w-8 hover:bg-primary/10 transition-colors"
+                className="size-8 rounded-full hover:bg-primary/10 hover:text-primary transition-colors"
               >
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="size-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>{isMobile ? "下一天" : "下一週"}</TooltipContent>
@@ -226,50 +252,56 @@ export function WeeklyCalendar({
 
       {/* カレンダーグリッド */}
       <div className="flex-1 overflow-auto">
-        <div className="w-full md:min-w-[800px]">
+        <div className={cn("w-full", "md:min-w-[800px]")}>
           {/* 曜日ヘッダー */}
-          <div className="grid grid-cols-[50px_repeat(3,1fr)] md:grid-cols-[60px_repeat(7,1fr)] border-b border-border/50 sticky top-0 bg-background/95 backdrop-blur-sm z-10">
+          <div
+            className="grid border-b border-border/50 sticky top-0 bg-background/95 backdrop-blur-sm z-10"
+            style={{
+              gridTemplateColumns: `60px repeat(${displayDays.length}, 1fr)`,
+            }}
+          >
             <div className="p-2 border-r border-border/30" />{" "}
             {/* 時間列のスペーサー */}
             <AnimatePresence mode="popLayout">
-              {weekDays.map((day, index) => (
-                <motion.div
+              {displayDays.map((day, index) => (
+                <motion.button
                   key={day.toISOString()}
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 10 }}
                   transition={{ delay: index * 0.03 }}
+                  type="button"
+                  onClick={() => resetCurrentDay(day)}
+                  aria-pressed={isCurrentDay(day)}
+                  aria-label={`選擇日期 ${formatDayHeader(day)}`}
                   className={cn(
-                    "p-2 text-center border-r border-border/30 last:border-r-0",
+                    "p-2 text-center border-r border-border/30 last:border-r-0 cursor-pointer select-none hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-inset",
                     isToday(day) && "bg-primary/10",
-                    !isVisibleOnMobile(index) && "hidden md:block"
+                    isCurrentDay(day) && "ring-2 ring-primary/50 ring-inset"
                   )}
                 >
                   <div
                     className={cn(
                       "text-sm font-medium",
-                      isToday(day) ? "text-primary" : "text-muted-foreground"
+                      isToday(day) || isCurrentDay(day)
+                        ? "text-primary font-semibold"
+                        : "text-muted-foreground"
                     )}
                   >
                     {formatDayHeader(day)}
                   </div>
-                  {isToday(day) && (
-                    <motion.div
-                      layoutId="today-indicator"
-                      className="mx-auto mt-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center"
-                    >
-                      <span className="text-xs text-primary-foreground font-bold">
-                        {day.getDate()}
-                      </span>
-                    </motion.div>
-                  )}
-                </motion.div>
+                </motion.button>
               ))}
             </AnimatePresence>
           </div>
 
           {/* 時間グリッド */}
-          <div className="grid grid-cols-[50px_repeat(3,1fr)] md:grid-cols-[60px_repeat(7,1fr)]">
+          <div
+            className="grid"
+            style={{
+              gridTemplateColumns: `60px repeat(${displayDays.length}, 1fr)`,
+            }}
+          >
             {/* 時間ラベル列 */}
             <div className="border-r border-border/30">
               {timeSlots.map((slot, index) => (
@@ -288,13 +320,14 @@ export function WeeklyCalendar({
             </div>
 
             {/* 各曜日の列 */}
-            {weekDays.map((day, dayIndex) => (
+            {displayDays.map((day, dayIndex) => (
               <div
                 key={day.toISOString()}
                 className={cn(
                   "relative border-r border-border/30 last:border-r-0",
                   isToday(day) && "bg-primary/5",
-                  !isVisibleOnMobile(dayIndex) && "hidden md:block"
+                  isCurrentDay(day) &&
+                    "bg-primary/5 ring-2 ring-primary/30 ring-inset"
                 )}
               >
                 {/* 時間グリッドの背景線 */}

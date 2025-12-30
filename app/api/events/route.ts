@@ -11,17 +11,28 @@ export async function GET(request: NextRequest) {
     const start = searchParams.get("start");
     const end = searchParams.get("end");
 
-    // 日付範囲でフィルタリング
+    // 日付範囲でフィルタリング（重複イベントを含む）
+    // イベントが範囲と重複する条件: startTime <= end AND endTime >= start
     const where: {
-      startTime?: { gte?: Date; lte?: Date };
-      endTime?: { gte?: Date };
+      AND?: Array<{
+        startTime?: { lte?: Date };
+        endTime?: { gte?: Date };
+      }>;
     } = {};
 
-    if (start) {
-      where.startTime = { ...where.startTime, gte: new Date(start) };
-    }
-    if (end) {
-      where.startTime = { ...where.startTime, lte: new Date(end) };
+    if (start && end) {
+      const startDate = new Date(start);
+      const endDate = new Date(end);
+      where.AND = [
+        { startTime: { lte: endDate } }, // イベント開始 <= 範囲終了
+        { endTime: { gte: startDate } }, // イベント終了 >= 範囲開始
+      ];
+    } else if (start) {
+      // start のみ: イベント終了 >= 範囲開始
+      where.AND = [{ endTime: { gte: new Date(start) } }];
+    } else if (end) {
+      // end のみ: イベント開始 <= 範囲終了
+      where.AND = [{ startTime: { lte: new Date(end) } }];
     }
 
     const events = await prisma.event.findMany({
@@ -94,7 +105,7 @@ export async function POST(request: NextRequest) {
         registrationUrl: body.registrationUrl || null,
         price: body.price || null,
         categoryId: body.categoryId || null,
-      },
+      } as any,
       include: {
         category: true,
       },
@@ -118,4 +129,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

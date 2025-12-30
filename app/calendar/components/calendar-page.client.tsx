@@ -5,7 +5,7 @@
 
 import * as React from "react";
 import { WeeklyCalendar } from "@/components/widget/weekly-calendar";
-import { EventDetailPanel } from "./event-detail-panel";
+import { EventDetailPanel } from "@/components/widget/event-detail-panel";
 import { EventDetailDialog } from "@/components/widget/event-detail-dialog";
 import type { EventWithCategory } from "@/lib/types";
 
@@ -35,7 +35,7 @@ export default function CalendarPageClient() {
         <WeeklyCalendar
           className="h-full scrollbar-thin"
           onEventSelect={handleEventSelect}
-          enableInternalDialog={false}
+          enableInternalDialog={true}
         />
       </div>
 
