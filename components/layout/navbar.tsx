@@ -32,16 +32,16 @@ export default function Navbar() {
           <Button
             variant="ghost"
             size="sm"
-            className="hidden sm:flex items-center gap-2"
+            className="flex items-center gap-2"
           >
             <Calendar className="w-4 h-4" />
-            活動行事曆
+            <span className="hidden md:inline">活動行事曆</span>
           </Button>
           </Link>
           <Link href="/dashboard">
             <Button variant="outline" size="sm" className="gap-2">
               <Settings className="w-4 h-4" />
-              <span className="hidden sm:inline">後台管理</span>
+              <span className="hidden md:inline">後台管理</span>
             </Button>
           </Link>
         </nav>

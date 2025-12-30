@@ -227,7 +227,7 @@ export default function DashboardPage() {
       {/* メインコンテンツ */}
       <main className="container mx-auto px-4 py-6">
         <Tabs defaultValue="events" className="space-y-6">
-          <TabsList className="grid w-full max-w-[400px] grid-cols-2">
+          <TabsList className="w-full mx-auto">
             <TabsTrigger value="events" className="gap-2">
               <Calendar className="h-4 w-4" />
               活動管理
