@@ -27,6 +27,8 @@ export type EventInput = {
   location?: string | null;
   organizer?: string | null;
   imageUrl?: string | null;
+  imageBlobUrl?: string | null;
+  imageBlobPathname?: string | null;
   registrationUrl?: string | null;
   price?: string | null;
   categoryId?: string | null;

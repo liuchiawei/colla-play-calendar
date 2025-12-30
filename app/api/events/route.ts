@@ -89,6 +89,8 @@ export async function POST(request: NextRequest) {
         location: body.location || null,
         organizer: body.organizer || null,
         imageUrl: body.imageUrl || null,
+        imageBlobUrl: body.imageBlobUrl || null,
+        imageBlobPathname: body.imageBlobPathname || null,
         registrationUrl: body.registrationUrl || null,
         price: body.price || null,
         categoryId: body.categoryId || null,

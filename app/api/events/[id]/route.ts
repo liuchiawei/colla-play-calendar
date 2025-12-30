@@ -1,5 +1,6 @@
 // Events API Route - GET（単一取得）、PUT（更新）、DELETE（削除）
 import { NextRequest, NextResponse } from "next/server";
+import { del } from "@vercel/blob";
 import prisma from "@/lib/prisma";
 import type { ApiResponse, EventWithCategory, EventInput } from "@/lib/types";
 
@@ -91,6 +92,10 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       );
     }
 
+    // 舊 blob 的 pathname（如果存在且與新的不同，需要刪除）
+    const oldBlobPathname = existingEvent.imageBlobPathname;
+    const newBlobPathname = body.imageBlobPathname || null;
+
     const event = await prisma.event.update({
       where: { id },
       data: {
@@ -101,6 +106,8 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         location: body.location || null,
         organizer: body.organizer || null,
         imageUrl: body.imageUrl || null,
+        imageBlobUrl: body.imageBlobUrl || null,
+        imageBlobPathname: newBlobPathname,
         registrationUrl: body.registrationUrl || null,
         price: body.price || null,
         categoryId: body.categoryId || null,
@@ -109,6 +116,18 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         category: true,
       },
     });
+
+    // 如果舊 blob 存在且與新的不同，刪除舊 blob
+    if (oldBlobPathname && oldBlobPathname !== newBlobPathname) {
+      try {
+        await del(oldBlobPathname, {
+          token: process.env.BLOB_READ_WRITE_TOKEN,
+        });
+      } catch (error) {
+        // 記錄錯誤但不影響更新流程
+        console.error("Failed to delete old blob:", error);
+      }
+    }
 
     return NextResponse.json<ApiResponse<EventWithCategory>>({
       success: true,
@@ -146,9 +165,24 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
       );
     }
 
+    // 儲存舊 blob pathname 以便刪除
+    const oldBlobPathname = existingEvent.imageBlobPathname;
+
     await prisma.event.delete({
       where: { id },
     });
+
+    // 如果存在 blob，刪除它
+    if (oldBlobPathname) {
+      try {
+        await del(oldBlobPathname, {
+          token: process.env.BLOB_READ_WRITE_TOKEN,
+        });
+      } catch (error) {
+        // 記錄錯誤但不影響刪除流程
+        console.error("Failed to delete blob:", error);
+      }
+    }
 
     return NextResponse.json<ApiResponse<{ id: string }>>({
       success: true,

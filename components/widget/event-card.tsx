@@ -40,25 +40,30 @@ export function EventCard({ event, position, index, onClick }: EventCardProps) {
       className={cn(
         "absolute rounded-md cursor-pointer overflow-hidden",
         "border border-white/20 backdrop-blur-sm",
-        "transition-shadow duration-200"
+        "transition-shadow duration-200",
+        "after:content-[''] after:absolute after:inset-0 hover:after:bg-linear-to-b hover:after:from-black/70 hover:after:to-transparent after:-z-10 transition-colors duration-200"
       )}
       style={{
         top: `${position.top}%`,
         height: `${position.height}%`,
         left: `${position.left + 2}%`,
         width: `${position.width - 4}%`,
-        backgroundColor: `${categoryColor}e6`, // 90% opacity
         minHeight: "24px",
+        backgroundColor: `${categoryColor}e6`, // 90% opacity
+        backgroundImage: `url(${event.imageUrl})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
       }}
     >
       {/* カラーアクセントライン */}
-      <div
+      {/* <div
         className="absolute left-0 top-0 bottom-0 w-1"
         style={{ backgroundColor: categoryColor }}
-      />
+      /> */}
 
       {/* コンテンツ */}
-      <div className="pl-2.5 pr-1.5 py-1 h-full flex flex-col">
+      <div className="pl-2.5 pr-1.5 py-1 h-full flex flex-col z-10">
         {/* 時間表示 */}
         <div className="text-[10px] text-white/80 font-medium shrink-0">
           {formatTime(event.startTime)} - {formatTime(event.endTime)}

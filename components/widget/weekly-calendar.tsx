@@ -151,7 +151,7 @@ export function WeeklyCalendar({ className }: WeeklyCalendarProps) {
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col items-center justify-between px-4 py-3 border-b border-border/50 bg-card/50 backdrop-blur-sm"
+        className="flex flex-col items-center justify-between p-4 border-b border-border/50 bg-card/50 backdrop-blur-sm"
       >
         <motion.h2
           key={formatMonthYear(currentDate)}

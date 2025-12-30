@@ -1,16 +1,9 @@
-"use client";
+'use client';
 
-// CollaPlay 週間活動行事曆 - メインページ
-// 週間カレンダービューを表示し、イベントを閲覧可能
+import { motion } from 'motion/react';
+import { WeeklyCalendar } from '@/components/widget/weekly-calendar';
 
-import * as React from "react";
-import Link from "next/link";
-import { motion } from "motion/react";
-import { Settings, Sparkles, Calendar } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { WeeklyCalendar } from "@/components/widget/weekly-calendar";
-
-export default function HomePage() {
+export default function MainContainer() {
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
       {/* 背景デコレーション */}
@@ -28,7 +21,8 @@ export default function HomePage() {
           }}
           className="absolute -top-40 -right-40 w-96 h-96 rounded-full"
           style={{
-            background: "radial-gradient(circle, oklch(0.72 0.18 25 / 0.3) 0%, transparent 70%)",
+            background:
+              "radial-gradient(circle, oklch(0.72 0.18 25 / 0.3) 0%, transparent 70%)",
           }}
         />
         <motion.div
@@ -43,7 +37,8 @@ export default function HomePage() {
           }}
           className="absolute -bottom-40 -left-40 w-[500px] h-[500px] rounded-full"
           style={{
-            background: "radial-gradient(circle, oklch(0.7 0.15 180 / 0.2) 0%, transparent 70%)",
+            background:
+              "radial-gradient(circle, oklch(0.7 0.15 180 / 0.2) 0%, transparent 70%)",
           }}
         />
         {/* グリッドパターン */}
@@ -51,7 +46,7 @@ export default function HomePage() {
       </div>
 
       {/* メインコンテンツ */}
-      <main className="relative z-10 container mx-auto px-4 py-6">
+      <main className="relative z-10 container mx-auto px-4 py-12">
         {/* タイトルセクション */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -79,16 +74,14 @@ export default function HomePage() {
         </motion.div>
 
         {/* フッター情報 */}
-        <motion.div
+        <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.6 }}
           className="mt-6 text-center text-sm text-muted-foreground"
         >
-          <p>
-            點擊活動卡片查看詳細資訊 • 使用左右箭頭切換週次
-          </p>
-        </motion.div>
+          點擊活動卡片查看詳細資訊 • 使用左右箭頭切換週次
+        </motion.p>
       </main>
     </div>
   );
