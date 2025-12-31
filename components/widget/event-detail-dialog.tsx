@@ -15,6 +15,7 @@ import {
   Ticket,
   Users,
   CheckCircle2,
+  Loader2,
 } from "lucide-react";
 import {
   Dialog,
@@ -268,7 +269,12 @@ export function EventDetailDialog({
                 onClick={handleRegistration}
                 disabled={isLoading}
               >
-                {isRegistered ? (
+                {isLoading ? (
+                  <>
+                    <Loader2 className="size-4 mr-2 animate-spin" />
+                    報名中...
+                  </>
+                ) : isRegistered ? (
                   <>
                     <CheckCircle2 className="size-4 mr-2" />
                     已報名（點擊取消）
