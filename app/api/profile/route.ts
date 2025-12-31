@@ -16,8 +16,8 @@ const profileUpdateSchema = z.object({
   skills: z.array(z.string()).nullable().optional(),
   bio: z.string().max(100).nullable().optional(),
   isPublic: z.boolean().optional(),
-  extra: z.record(z.any()).nullable().optional(),
-  visibility: z.record(z.boolean()).nullable().optional(),
+  extra: z.record(z.string(), z.any()).nullable().optional(),
+  visibility: z.record(z.string(), z.boolean()).nullable().optional(),
 });
 
 // GET /api/profile - 取得目前登入使用者的個人資料
@@ -84,7 +84,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json<ApiResponse<null>>(
         {
           success: false,
-          error: `驗證錯誤: ${validationResult.error.errors[0]?.message || "無效的輸入"}`,
+          error: `驗證錯誤: ${validationResult.error.issues[0]?.message || "無效的輸入"}`,
         },
         { status: 400 }
       );
