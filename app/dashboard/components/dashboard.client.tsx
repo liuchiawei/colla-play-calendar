@@ -18,6 +18,7 @@ import {
   LayoutDashboard,
   Tag,
   RefreshCw,
+  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,6 +52,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { EventForm } from "@/components/widget/event-form";
 import { CategoryManager } from "@/components/widget/category-manager";
+import UserManagementClient from "./user-management.client";
 import { formatDate, formatTime } from "@/lib/date-utils";
 import type {
   EventWithCategory,
@@ -243,6 +245,10 @@ export default function DashboardClient() {
             <TabsTrigger value="categories" className="gap-2">
               <Tag className="h-4 w-4" />
               類型管理
+            </TabsTrigger>
+            <TabsTrigger value="users" className="gap-2">
+              <Users className="h-4 w-4" />
+              會員管理
             </TabsTrigger>
           </TabsList>
 
@@ -454,6 +460,17 @@ export default function DashboardClient() {
                 onUpdate={handleCategoryUpdate}
                 onDelete={handleCategoryDelete}
               />
+            </motion.div>
+          </TabsContent>
+
+          {/* 會員管理タブ */}
+          <TabsContent value="users">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-4"
+            >
+              <UserManagementClient />
             </motion.div>
           </TabsContent>
         </Tabs>

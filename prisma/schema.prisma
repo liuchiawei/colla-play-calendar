@@ -22,6 +22,7 @@ model User {
   email         String    @unique
   emailVerified Boolean   @default(false)
   image         String?
+  isAdmin       Boolean   @default(false) // 管理員標籤
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   // Better Auth 関連リレーション

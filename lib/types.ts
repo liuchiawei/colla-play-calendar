@@ -120,3 +120,33 @@ export type PublicProfileDto = {
   updatedAt: Date;
 };
 
+// ============================================
+// 用戶管理相關型別定義
+// ============================================
+
+// 包含管理員標籤的用戶型別
+export type UserWithAdmin = {
+  id: string;
+  name: string | null;
+  email: string;
+  emailVerified: boolean;
+  image: string | null;
+  isAdmin: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+// 用戶列表響應型別
+export type UserListResponse = {
+  users: UserWithAdmin[];
+  total: number;
+  page?: number;
+  pageSize?: number;
+};
+
+// 更新用戶輸入型別
+export type UpdateUserInput = {
+  isAdmin?: boolean;
+  name?: string | null;
+};
+

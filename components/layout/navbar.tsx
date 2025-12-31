@@ -6,8 +6,11 @@ import { motion } from "motion/react";
 import Link from "next/link";
 import { Calendar, Settings, Sparkles } from "lucide-react";
 import { ThemeToggle } from "@/components/widget/theme-toggle";
+import { useAuthStore } from "@/lib/stores/auth-store";
 
 export default function Navbar() {
+  // 從 auth store 讀取管理員狀態
+  const { isAdmin, initialized } = useAuthStore();
   const [isVisible, setIsVisible] = useState(() => {
     // Avoid initial flash on hydration; on the client we can read scroll position.
     if (typeof window === "undefined") return false;
@@ -83,16 +86,19 @@ export default function Navbar() {
               <span className="hidden md:inline">活動行事曆</span>
             </Button>
           </Link>
-          <Link href="/dashboard">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="flex items-center gap-2 hover:bg-primary/10 hover:text-primary"
-            >
-              <Settings className="size-4" />
-              <span className="hidden md:inline">後台管理</span>
-            </Button>
-          </Link>
+          {/* 僅管理員可見 Dashboard 連結 */}
+          {initialized && isAdmin && (
+            <Link href="/dashboard">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex items-center gap-2 hover:bg-primary/10 hover:text-primary"
+              >
+                <Settings className="size-4" />
+                <span className="hidden md:inline">後台管理</span>
+              </Button>
+            </Link>
+          )}
           <ThemeToggle className="hover:text-primary hover:bg-primary/10" />
         </nav>
       </div>
