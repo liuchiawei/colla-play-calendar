@@ -10,35 +10,152 @@ datasource db {
   provider = "postgresql"
 }
 
-// 活動類型/分類モデル
-model Category {
+// ============================================
+// Better Auth 認証関連モデル
+// ============================================
+
+// ユーザーモデル（Better Auth 標準）
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  // Better Auth 関連リレーション
+  sessions      Session[]
+  accounts      Account[]
+  // カスタムリレーション
+  profile       Profile?
+
+  @@map("user")
+}
+
+// セッションモデル（Better Auth 標準）
+
+model Session {
   id        String   @id @default(cuid())
-  name      String   // カテゴリ名（例：工作坊、講座、展演）
-  color     String   // 表示用の色（HEX形式）
+  userId    String
+  expiresAt DateTime
+  token     String   @unique
+  ipAddress String?
+  userAgent String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  events    Event[]  // このカテゴリに属するイベント
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@map("session")
+}
+
+// アカウントモデル（Better Auth 標準、OAuth用）
+
+model Account {
+  id           String    @id @default(cuid())
+  userId       String
+  accountId    String
+  providerId   String
+  accessToken  String?
+  refreshToken String?
+  expiresAt    DateTime?
+  scope        String?
+  idToken      String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  password              String?
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+  @@map("account")
+}
+
+// 検証トークンモデル（Better Auth 標準、メール検証用）
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([identifier, value])
+  @@index([identifier])
+  @@map("verification")
+}
+
+// ============================================
+// カスタムモデル：プロフィール
+// ============================================
+
+// ユーザープロフィールモデル
+
+model Profile {
+  id          String    @id @default(cuid())
+  userId      String    @unique
+  displayName String? // 姓名
+  birthDate   DateTime? // 生日
+  gender      String? // 性別（male/female/other/unspecified）
+  occupation  String? // 職業
+  education   String? // 學歷
+  skills      Json? // 技能（JSON配列として保存）
+  bio         String?   @db.VarChar(100) // 100字以內簡介
+  isPublic    Boolean   @default(false) // 是否公開
+  extra       Json?     @db.JsonB // 拡張フィールド（Admin用）
+  visibility  Json?     @db.JsonB // フィールド別公開設定（将来用）
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isPublic])
+  @@map("profile")
+}
+
+// ============================================
+// 既存モデル：カテゴリ・イベント
+// ============================================
+
+// 活動類型/分類モデル
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String // カテゴリ名（例：工作坊、講座、展演）
+  color     String // 表示用の色（HEX形式）
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  events    Event[] // このカテゴリに属するイベント
 }
 
 // 活動/イベントモデル
-model Event {
-  id              String    @id @default(cuid())
-  title           String    // イベントタイトル
-  description     String?   // イベント説明（オプション）
-  startTime       DateTime  // 開始日時
-  endTime         DateTime  // 終了日時
-  location        String?   // 場所（オプション）
-  organizer       String?   // 主催者（オプション）
-  imageUrl        String?   // イベント画像URL（オプション）
-  imageBlobUrl    String?   // Vercel Blob 上傳的圖片URL（オプション）
-  imageBlobPathname String? // Vercel Blob 的 pathname（用於刪除，オプション）
-  registrationUrl String?   // 登録/申込URL（オプション）
-  price           String?   // 料金情報（オプション、文字列で柔軟に対応）
-  categoryId      String?   // カテゴリID（オプション）
-  category        Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
 
-  @@index([startTime]) // 日時検索の最適化
-  @@index([categoryId]) // カテゴリ検索の最適化
+model Event {
+  id                String    @id @default(cuid())
+  title             String // イベントタイトル
+  description       String? // イベント説明（オプション）
+  startTime         DateTime // 開始日時
+  endTime           DateTime // 終了日時
+  location          String? // 場所（オプション）
+  organizer         String? // 主催者（オプション）
+  imageUrl          String? // イベント画像URL（オプション）
+  imageBlobUrl      String? // Vercel Blob 上傳的圖片URL（オプション）
+  imageBlobPathname String? // Vercel Blob の pathname（用於刪除，オプション）
+  registrationUrl   String? // 登録/申込URL（オプション）
+  price             String? // 料金情報（オプション、文字列で柔軟に対応）
+  categoryId        String? // カテゴリID（オプション）
+  category          Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // 日時検索の最適化
+  // カテゴリ検索の最適化
+  @@index([startTime])
+  @@index([categoryId])
 }
