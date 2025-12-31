@@ -2,20 +2,49 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { motion } from "motion/react";
 import Link from "next/link";
-import { Calendar, Settings, Sparkles } from "lucide-react";
+import { Calendar, Settings, LogIn } from "lucide-react";
 import { ThemeToggle } from "@/components/widget/theme-toggle";
+import { UserProfileSheet } from "@/components/features/user/user-profile-sheet";
+import { Sheet, SheetTrigger } from "@/components/ui/sheet";
+import { useAuthStore } from "@/lib/stores/auth-store";
+import { usePathname } from "next/navigation";
 
 export default function Navbar() {
+  // 從 auth store 讀取管理員狀態和用戶信息
+  const { isAdmin, initialized, user, fetchUser } = useAuthStore();
+  const pathname = usePathname();
+
+  // 調試信息（僅在開發環境）
+  useEffect(() => {
+    if (process.env.NODE_ENV === "development") {
+      console.log("[Navbar] Auth state:", {
+        initialized,
+        hasUser: !!user,
+        userEmail: user?.email,
+        isAdmin,
+      });
+    }
+  }, [initialized, user, isAdmin]);
   const [isVisible, setIsVisible] = useState(() => {
     // Avoid initial flash on hydration; on the client we can read scroll position.
     if (typeof window === "undefined") return false;
     return window.scrollY > 0;
   });
+  const [isProfileSheetOpen, setIsProfileSheetOpen] = useState(false);
 
   const lastVisibleRef = useRef(isVisible);
   const rafIdRef = useRef<number | null>(null);
+
+  // 監聽路由變化，重新獲取用戶信息（確保登入後狀態更新）
+  useEffect(() => {
+    if (initialized && pathname) {
+      // 在路由變化時重新獲取用戶信息，確保狀態同步
+      fetchUser();
+    }
+  }, [pathname, initialized, fetchUser]);
 
   useEffect(() => {
     const onScroll = () => {
@@ -83,17 +112,55 @@ export default function Navbar() {
               <span className="hidden md:inline">活動行事曆</span>
             </Button>
           </Link>
-          <Link href="/dashboard">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="flex items-center gap-2 hover:bg-primary/10 hover:text-primary"
-            >
-              <Settings className="size-4" />
-              <span className="hidden md:inline">後台管理</span>
-            </Button>
-          </Link>
+          {/* 僅管理員可見 Dashboard 連結 */}
+          {initialized && isAdmin && (
+            <Link href="/dashboard">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex items-center gap-2 hover:bg-primary/10 hover:text-primary"
+              >
+                <Settings className="size-4" />
+                <span className="hidden md:inline">後台管理</span>
+              </Button>
+            </Link>
+          )}
           <ThemeToggle className="hover:text-primary hover:bg-primary/10" />
+
+          {/* 登入/頭像區塊 */}
+          {initialized && (
+            <div className="flex items-center">
+              {user ? (
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Avatar className="size-8 cursor-pointer hover:opacity-80 transition-opacity">
+                      <AvatarImage
+                        src={user.image || undefined}
+                        alt={user.name || user.email}
+                      />
+                      <AvatarFallback className="text-xs font-semibold">
+                        {user.name
+                          ? user.name.charAt(0).toUpperCase()
+                          : user.email.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </SheetTrigger>
+                  <UserProfileSheet />
+                </Sheet>
+              ) : (
+                <Link href="/login">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex items-center gap-2 hover:bg-primary/10 hover:text-primary"
+                  >
+                    <LogIn className="size-4" />
+                    <span className="hidden md:inline">登入</span>
+                  </Button>
+                </Link>
+              )}
+            </div>
+          )}
         </nav>
       </div>
     </motion.header>

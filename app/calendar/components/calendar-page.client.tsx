@@ -4,9 +4,9 @@
 // 管理選中的活動狀態，並渲染行事曆和詳細資訊面板
 
 import * as React from "react";
-import { WeeklyCalendar } from "@/components/widget/weekly-calendar";
-import { EventDetailPanel } from "@/components/widget/event-detail-panel";
-import { EventDetailDialog } from "@/components/widget/event-detail-dialog";
+import { WeeklyCalendar } from "@/components/features/calendar/weekly-calendar";
+import { EventDetailPanel } from "@/components/features/events/event-detail-panel";
+import { EventDetailDialog } from "@/components/features/events/event-detail-dialog";
 import type { EventWithCategory } from "@/lib/types";
 
 export default function CalendarPageClient() {

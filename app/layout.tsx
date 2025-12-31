@@ -5,6 +5,7 @@ import "./globals.css";
 import { ThemeProvider } from "next-themes";
 import Navbar from "@/components/layout/navbar";
 import Footer from "@/components/layout/footer";
+import { AuthProvider } from "@/components/providers/auth-provider";
 
 // フォント設定
 const geistSans = Geist({
@@ -56,6 +57,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} antialiased font-sans min-h-screen`}
       >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <AuthProvider />
           <Navbar />
           {children}
           <Footer />

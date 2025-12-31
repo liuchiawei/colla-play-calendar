@@ -18,6 +18,9 @@ import {
   LayoutDashboard,
   Tag,
   RefreshCw,
+  Users,
+  Eye,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,15 +51,23 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { EventForm } from "@/components/widget/event-form";
-import { CategoryManager } from "@/components/widget/category-manager";
+import { EventForm } from "@/components/features/events/event-form";
+import { CategoryManager } from "@/components/features/dashboard/category-manager";
+import UserManagementClient from "./user-management.client";
 import { formatDate, formatTime } from "@/lib/date-utils";
 import type {
   EventWithCategory,
   EventInput,
   Category,
   CategoryInput,
+  EventRegistrationWithUser,
 } from "@/lib/types";
 
 export default function DashboardClient() {
@@ -76,6 +87,15 @@ export default function DashboardClient() {
     React.useState<EventWithCategory | null>(null);
   // 削除確認ダイアログ
   const [deleteId, setDeleteId] = React.useState<string | null>(null);
+  // 報名列表ダイアログ
+  const [registrationsEventId, setRegistrationsEventId] = React.useState<
+    string | null
+  >(null);
+  const [registrations, setRegistrations] = React.useState<
+    EventRegistrationWithUser[]
+  >([]);
+  const [isLoadingRegistrations, setIsLoadingRegistrations] =
+    React.useState(false);
 
   // データ取得
   const fetchData = React.useCallback(async () => {
@@ -170,6 +190,32 @@ export default function DashboardClient() {
     if (response.ok) await fetchData();
   };
 
+  // 取得報名列表
+  const fetchRegistrations = React.useCallback(async (eventId: string) => {
+    setIsLoadingRegistrations(true);
+    try {
+      const response = await fetch(`/api/events/${eventId}/registrations`);
+      const data = await response.json();
+      if (data.success) {
+        setRegistrations(data.data);
+      } else {
+        console.error("Failed to fetch registrations:", data.error);
+        setRegistrations([]);
+      }
+    } catch (error) {
+      console.error("Failed to fetch registrations:", error);
+      setRegistrations([]);
+    } finally {
+      setIsLoadingRegistrations(false);
+    }
+  }, []);
+
+  // 開啟報名列表
+  const handleViewRegistrations = (eventId: string) => {
+    setRegistrationsEventId(eventId);
+    fetchRegistrations(eventId);
+  };
+
   // フィルタリングされたイベント
   const filteredEvents = events.filter((event) => {
     const matchesSearch =
@@ -244,6 +290,10 @@ export default function DashboardClient() {
               <Tag className="h-4 w-4" />
               類型管理
             </TabsTrigger>
+            <TabsTrigger value="users" className="gap-2">
+              <Users className="h-4 w-4" />
+              會員管理
+            </TabsTrigger>
           </TabsList>
 
           {/* 活動管理タブ */}
@@ -310,6 +360,7 @@ export default function DashboardClient() {
                     <TableHead>日期時間</TableHead>
                     <TableHead>類型</TableHead>
                     <TableHead>地點</TableHead>
+                    <TableHead>報名人數</TableHead>
                     <TableHead className="text-right">操作</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -331,6 +382,9 @@ export default function DashboardClient() {
                           <Skeleton className="h-5 w-[120px]" />
                         </TableCell>
                         <TableCell>
+                          <Skeleton className="h-5 w-[80px]" />
+                        </TableCell>
+                        <TableCell>
                           <Skeleton className="h-8 w-[80px] ml-auto" />
                         </TableCell>
                       </TableRow>
@@ -338,7 +392,7 @@ export default function DashboardClient() {
                   ) : filteredEvents.length === 0 ? (
                     // 空の状態
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-12">
+                      <TableCell colSpan={6} className="text-center py-12">
                         <div className="text-muted-foreground">
                           <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
                           <p className="text-lg font-medium">目前沒有活動</p>
@@ -404,8 +458,25 @@ export default function DashboardClient() {
                         <TableCell className="text-muted-foreground">
                           {event.location || "-"}
                         </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Users className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm">
+                              {event.registrationCount || 0}
+                            </span>
+                          </div>
+                        </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => handleViewRegistrations(event.id)}
+                              title="查看報名"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                            </Button>
                             <Button
                               variant="ghost"
                               size="icon"
@@ -456,6 +527,17 @@ export default function DashboardClient() {
               />
             </motion.div>
           </TabsContent>
+
+          {/* 會員管理タブ */}
+          <TabsContent value="users">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-4"
+            >
+              <UserManagementClient />
+            </motion.div>
+          </TabsContent>
         </Tabs>
       </main>
 
@@ -471,6 +553,73 @@ export default function DashboardClient() {
         onSubmit={handleEventSubmit}
         isLoading={isSubmitting}
       />
+
+      {/* 報名列表ダイアログ */}
+      <Dialog
+        open={!!registrationsEventId}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRegistrationsEventId(null);
+            setRegistrations([]);
+          }
+        }}
+      >
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>報名列表</DialogTitle>
+          </DialogHeader>
+          {isLoadingRegistrations ? (
+            <div className="py-8 text-center text-muted-foreground">
+              載入中...
+            </div>
+          ) : registrations.length === 0 ? (
+            <div className="py-8 text-center text-muted-foreground">
+              尚無報名記錄
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {registrations.map((reg) => (
+                <div
+                  key={reg.id}
+                  className="flex items-center justify-between p-3 border rounded-lg"
+                >
+                  <div className="flex items-center gap-3">
+                    {reg.user ? (
+                      <>
+                        {reg.user.image && (
+                          <img
+                            src={reg.user.image}
+                            alt={reg.user.name || reg.user.email}
+                            className="h-10 w-10 rounded-full"
+                          />
+                        )}
+                        <div>
+                          <div className="font-medium">
+                            {reg.user.name || reg.user.email}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {reg.user.email}
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div>
+                        <div className="font-medium">匿名用戶</div>
+                        <div className="text-sm text-muted-foreground">
+                          匿名報名
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {new Date(reg.createdAt).toLocaleString("zh-TW")}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* 削除確認ダイアログ */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>

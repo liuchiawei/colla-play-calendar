@@ -1,7 +1,12 @@
 // CollaPlay 活動行事曆 TypeScript 型別定義
 // イベントとカテゴリの型定義
 
-import type { Event, Category } from "@/lib/generated/prisma/client";
+import type {
+  Event,
+  Category,
+  Profile,
+  EventRegistration,
+} from "@/lib/generated/prisma/client";
 
 // カテゴリ型（Prismaから生成）
 export type { Category };
@@ -9,6 +14,8 @@ export type { Category };
 // イベント型（カテゴリ情報を含む）
 export type EventWithCategory = Event & {
   category: Category | null;
+  registrationCount?: number;
+  isRegistered?: boolean;
 };
 
 // APIレスポンス用の型
@@ -84,3 +91,85 @@ export const DEFAULT_CATEGORIES: CategoryInput[] = [
   { name: "其他", color: "#DDA0DD" },
 ];
 
+// ============================================
+// 個人資料相關型別定義
+// ============================================
+
+// 個人資料型別（由 Prisma 生成）
+export type { Profile };
+
+// 個人資料更新用輸入型別
+export type ProfileUpdateInput = {
+  displayName?: string | null;
+  birthDate?: string | null; // ISO 格式日期字串
+  gender?: string | null;
+  occupation?: string | null;
+  education?: string | null;
+  skills?: string[] | null; // 技能陣列（前端以字串處理）
+  bio?: string | null;
+  isPublic?: boolean;
+  extra?: Record<string, any> | null;
+  visibility?: Record<string, boolean> | null;
+};
+
+// 公開個人資料型別（僅在 isPublic=true 時）
+export type PublicProfileDto = {
+  id: string;
+  userId: string;
+  displayName: string | null;
+  birthDate: Date | null;
+  gender: string | null;
+  occupation: string | null;
+  education: string | null;
+  skills: string[] | null;
+  bio: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+// ============================================
+// 用戶管理相關型別定義
+// ============================================
+
+// 包含管理員標籤的用戶型別
+export type UserWithAdmin = {
+  id: string;
+  name: string | null;
+  email: string;
+  emailVerified: boolean;
+  image: string | null;
+  isAdmin: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+// 用戶列表響應型別
+export type UserListResponse = {
+  users: UserWithAdmin[];
+  total: number;
+  page?: number;
+  pageSize?: number;
+};
+
+// 更新用戶輸入型別
+export type UpdateUserInput = {
+  isAdmin?: boolean;
+  name?: string | null;
+};
+
+// ============================================
+// 活動報名相關型別定義
+// ============================================
+
+// 活動報名型別（由 Prisma 生成）
+export type { EventRegistration };
+
+// 活動報名（包含用戶資訊）
+export type EventRegistrationWithUser = EventRegistration & {
+  user: {
+    id: string;
+    name: string | null;
+    email: string;
+    image: string | null;
+  } | null;
+};

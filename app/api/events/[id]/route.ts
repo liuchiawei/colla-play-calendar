@@ -1,7 +1,9 @@
 // Events API Route - GET（単一取得）、PUT（更新）、DELETE（削除）
 import { NextRequest, NextResponse } from "next/server";
 import { del } from "@vercel/blob";
+import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { getAnonymousSessionId } from "@/lib/utils/registration";
 import type { ApiResponse, EventWithCategory, EventInput } from "@/lib/types";
 
 type RouteContext = {
@@ -13,10 +15,32 @@ export async function GET(request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
 
+    // 取得當前用戶 ID（如果已登入）
+    const session = await auth.api.getSession({ headers: request.headers });
+    const userId = session?.user?.id || null;
+
+    // 取得匿名 session ID（如果未登入）
+    let anonymousSessionId: string | undefined;
+    if (!userId) {
+      anonymousSessionId = await getAnonymousSessionId();
+    }
+
     const event = await prisma.event.findUnique({
       where: { id },
       include: {
         category: true,
+        _count: {
+          select: { registrations: true },
+        },
+        registrations: {
+          where: {
+            OR: [
+              userId ? { userId } : { id: "" },
+              anonymousSessionId ? { anonymousSessionId } : { id: "" },
+            ],
+          },
+          select: { id: true },
+        },
       },
     });
 
@@ -30,9 +54,17 @@ export async function GET(request: NextRequest, context: RouteContext) {
       );
     }
 
+    // 轉換為前端格式
+    const { registrations, _count, ...eventData } = event;
+    const eventWithCount: EventWithCategory = {
+      ...eventData,
+      registrationCount: _count.registrations,
+      isRegistered: registrations.length > 0,
+    };
+
     return NextResponse.json<ApiResponse<EventWithCategory>>({
       success: true,
-      data: event,
+      data: eventWithCount,
     });
   } catch (error) {
     console.error("Failed to fetch event:", error);

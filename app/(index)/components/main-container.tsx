@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { motion } from 'motion/react';
-import { WeeklyCalendar } from '@/components/widget/weekly-calendar';
+import { motion } from "motion/react";
+import { WeeklyCalendar } from "@/components/features/calendar/weekly-calendar";
 
 export default function MainContainer() {
   return (

@@ -1,6 +1,8 @@
 // Events API Route - GET（一覧取得）、POST（新規作成）
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { getAnonymousSessionId } from "@/lib/utils/registration";
 import type { ApiResponse, EventWithCategory, EventInput } from "@/lib/types";
 
 // GET /api/events - イベント一覧を取得
@@ -35,19 +37,51 @@ export async function GET(request: NextRequest) {
       where.AND = [{ startTime: { lte: new Date(end) } }];
     }
 
+    // 取得當前用戶 ID（如果已登入）
+    const session = await auth.api.getSession({ headers: request.headers });
+    const userId = session?.user?.id || null;
+
+    // 取得匿名 session ID（如果未登入）
+    let anonymousSessionId: string | undefined;
+    if (!userId) {
+      anonymousSessionId = await getAnonymousSessionId();
+    }
+
     const events = await prisma.event.findMany({
       where,
       include: {
         category: true,
+        _count: {
+          select: { registrations: true },
+        },
+        registrations: {
+          where: {
+            OR: [
+              userId ? { userId } : { id: "" },
+              anonymousSessionId ? { anonymousSessionId } : { id: "" },
+            ],
+          },
+          select: { id: true },
+        },
       },
       orderBy: {
         startTime: "asc",
       },
     });
 
+    // 轉換為前端格式
+    const eventsWithCount: EventWithCategory[] = events.map((event) => {
+      const { registrations, _count, ...eventData } = event;
+      return {
+        ...eventData,
+        registrationCount: _count.registrations,
+        isRegistered: registrations.length > 0,
+      };
+    });
+
     return NextResponse.json<ApiResponse<EventWithCategory[]>>({
       success: true,
-      data: events,
+      data: eventsWithCount,
     });
   } catch (error) {
     console.error("Failed to fetch events:", error);
