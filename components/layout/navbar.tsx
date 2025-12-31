@@ -8,6 +8,7 @@ import Link from "next/link";
 import { Calendar, Settings, LogIn } from "lucide-react";
 import { ThemeToggle } from "@/components/widget/theme-toggle";
 import { UserProfileSheet } from "@/components/widget/user-profile-sheet";
+import { Sheet, SheetTrigger } from "@/components/ui/sheet";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { usePathname } from "next/navigation";
 
@@ -130,23 +131,22 @@ export default function Navbar() {
           {initialized && (
             <div className="flex items-center">
               {user ? (
-                <button
-                  onClick={() => setIsProfileSheetOpen(true)}
-                  className="rounded-full focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                  aria-label="開啟個人資料"
-                >
-                  <Avatar className="size-8 cursor-pointer hover:opacity-80 transition-opacity">
-                    <AvatarImage
-                      src={user.image || undefined}
-                      alt={user.name || user.email}
-                    />
-                    <AvatarFallback className="text-xs font-semibold">
-                      {user.name
-                        ? user.name.charAt(0).toUpperCase()
-                        : user.email.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                </button>
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Avatar className="size-8 cursor-pointer hover:opacity-80 transition-opacity">
+                      <AvatarImage
+                        src={user.image || undefined}
+                        alt={user.name || user.email}
+                      />
+                      <AvatarFallback className="text-xs font-semibold">
+                        {user.name
+                          ? user.name.charAt(0).toUpperCase()
+                          : user.email.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </SheetTrigger>
+                  <UserProfileSheet />
+                </Sheet>
               ) : (
                 <Link href="/login">
                   <Button
@@ -163,14 +163,6 @@ export default function Navbar() {
           )}
         </nav>
       </div>
-
-      {/* 個人資料 Sheet */}
-      {user && (
-        <UserProfileSheet
-          open={isProfileSheetOpen}
-          onOpenChange={setIsProfileSheetOpen}
-        />
-      )}
     </motion.header>
   );
 }
