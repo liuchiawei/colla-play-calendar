@@ -32,8 +32,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   fetchUser: async () => {
     set({ isLoading: true });
     try {
-      const response = await fetch("/api/auth/me");
+      // 確保 fetch 請求包含 credentials（cookies）
+      const response = await fetch("/api/auth/me", {
+        method: "GET",
+        credentials: "include", // 確保包含 cookies
+        cache: "no-store", // 禁用快取
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
       const data = await response.json();
+
+      // 調試信息（僅在開發環境）
+      if (process.env.NODE_ENV === "development") {
+        console.log("[Auth Store] fetchUser response:", {
+          success: data.success,
+          hasData: !!data.data,
+          status: response.status,
+        });
+      }
 
       if (data.success && data.data) {
         set({
@@ -42,6 +60,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           isLoading: false,
           initialized: true,
         });
+        
+        // 調試信息
+        if (process.env.NODE_ENV === "development") {
+          console.log("[Auth Store] User set:", data.data.email);
+        }
       } else {
         // 未登入或獲取失敗
         set({
@@ -50,9 +73,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           isLoading: false,
           initialized: true,
         });
+        
+        // 調試信息
+        if (process.env.NODE_ENV === "development") {
+          console.log("[Auth Store] No user found, error:", data.error);
+        }
       }
     } catch (error) {
-      console.error("Failed to fetch user:", error);
+      console.error("[Auth Store] Failed to fetch user:", error);
       set({
         user: null,
         isAdmin: false,

@@ -5,6 +5,9 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import RegisterForm from "./component/register-form";
 
+// 強制動態渲染，確保不會快取
+export const dynamic = "force-dynamic";
+
 export default async function RegisterPage() {
   // 若已登入，則導向個人資料頁面
   const session = await auth.api.getSession({ headers: await headers() });

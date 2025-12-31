@@ -35,6 +35,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { AvatarUpload } from "@/components/widget/avatar-upload";
+import { useAuthStore } from "@/lib/stores/auth-store";
 import type { Profile, ProfileUpdateInput } from "@/lib/types";
 
 // 個人資料表單驗證規則
@@ -60,6 +62,7 @@ interface ProfileFormProps {
 
 export default function ProfileForm({ initialProfile }: ProfileFormProps) {
   const router = useRouter();
+  const { user, fetchUser } = useAuthStore();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -144,6 +147,17 @@ export default function ProfileForm({ initialProfile }: ProfileFormProps) {
   };
 
   const handleSignOut = async () => {
+    try {
+      // 清除快取
+      await fetch("/api/revalidate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tags: ["user-auth"] }),
+      });
+    } catch (revalidateError) {
+      console.error("Failed to revalidate cache:", revalidateError);
+    }
+
     await authClient.signOut();
     router.push("/login");
     router.refresh();
@@ -175,6 +189,21 @@ export default function ProfileForm({ initialProfile }: ProfileFormProps) {
             {error}
           </div>
         )}
+
+        {/* 頭像上傳區塊 */}
+        <div className="mb-6 flex justify-center">
+          <AvatarUpload
+            currentAvatarUrl={user?.image}
+            userName={user?.name || user?.email}
+            onUploadSuccess={() => {
+              fetchUser();
+              router.refresh();
+            }}
+            size="lg"
+          />
+        </div>
+
+        <Separator className="mb-6" />
 
         {isEditing ? (
           <Form {...form}>

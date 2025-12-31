@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { authClient } from "@/lib/auth-client";
+import { useAuthStore } from "@/lib/stores/auth-store";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { AuthFormLayout } from "@/components/widget/auth-form-layout";
@@ -32,6 +33,7 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function RegisterForm() {
   const router = useRouter();
+  const { fetchUser } = useAuthStore();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -76,7 +78,24 @@ export default function RegisterForm() {
         return;
       }
 
-      // 註冊成功後，自動登入並導向個人資料頁面
+      // 註冊成功後，清除快取並更新狀態
+      try {
+        // 清除用戶認證快取
+        await fetch("/api/revalidate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tags: ["user-auth"] }),
+          credentials: "include", // 確保包含 cookies
+        });
+
+        // 更新客戶端 auth store
+        await fetchUser();
+      } catch (revalidateError) {
+        console.error("Failed to revalidate cache:", revalidateError);
+        // 即使 revalidate 失敗，仍然繼續註冊流程
+      }
+
+      // 自動登入並導向個人資料頁面
       router.push("/profile");
       router.refresh();
     } catch (err) {

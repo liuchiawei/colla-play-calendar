@@ -5,6 +5,9 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import LoginForm from "./component/login-form";
 
+// 強制動態渲染，確保不會快取
+export const dynamic = "force-dynamic";
+
 export default async function LoginPage() {
   // 若已登入，則導向個人資料頁面
   const session = await auth.api.getSession({ headers: await headers() });
