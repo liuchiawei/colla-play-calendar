@@ -30,6 +30,8 @@ model User {
   accounts      Account[]
   // カスタムリレーション
   profile       Profile?
+  // 報名關係
+  eventRegistrations EventRegistration[]
 
   @@map("user")
 }
@@ -154,9 +156,38 @@ model Event {
   category          Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
+  // 報名關係
+  registrations     EventRegistration[]
 
   // 日時検索の最適化
   // カテゴリ検索の最適化
   @@index([startTime])
   @@index([categoryId])
+}
+
+// ============================================
+// 活動報名モデル
+// ============================================
+
+// 活動報名記錄モデル
+
+model EventRegistration {
+  id                String   @id @default(cuid())
+  eventId           String   // 活動ID
+  userId            String?  // 登入用戶ID（可選）
+  anonymousSessionId String? // 匿名用戶session identifier（可選）
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // 關係
+  event             Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user              User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // 索引和約束
+  @@index([eventId])
+  @@index([userId])
+  @@index([anonymousSessionId])
+  @@unique([eventId, userId]) // 登入用戶不能重複報名同一活動
+  @@unique([eventId, anonymousSessionId]) // 匿名用戶不能重複報名同一活動
+  @@map("event_registration")
 }

@@ -13,6 +13,8 @@ import {
   Tag,
   ExternalLink,
   Ticket,
+  Users,
+  CheckCircle2,
 } from "lucide-react";
 import {
   Dialog,
@@ -25,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { formatDate, formatTime } from "@/lib/date-utils";
 import type { EventWithCategory } from "@/lib/types";
+import { useAuthStore } from "@/lib/stores/auth-store";
 
 interface EventDetailDialogProps {
   event: EventWithCategory | null;
@@ -37,6 +40,59 @@ export function EventDetailDialog({
   open,
   onOpenChange,
 }: EventDetailDialogProps) {
+  const { user } = useAuthStore();
+  const [isRegistered, setIsRegistered] = React.useState(
+    event?.isRegistered || false
+  );
+  const [registrationCount, setRegistrationCount] = React.useState(
+    event?.registrationCount || 0
+  );
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+
+  // 當 event 改變時更新狀態
+  React.useEffect(() => {
+    if (event) {
+      setIsRegistered(event.isRegistered || false);
+      setRegistrationCount(event.registrationCount || 0);
+    }
+  }, [event]);
+
+  // 處理報名/取消報名
+  const handleRegistration = async () => {
+    if (!event) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const method = isRegistered ? "DELETE" : "POST";
+      const response = await fetch(`/api/events/${event.id}/register`, {
+        method,
+        credentials: "include",
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setIsRegistered(!isRegistered);
+        // 更新報名人數
+        if (isRegistered) {
+          setRegistrationCount((prev) => Math.max(0, prev - 1));
+        } else {
+          setRegistrationCount((prev) => prev + 1);
+        }
+      } else {
+        setError(data.error || "操作失敗");
+      }
+    } catch (err) {
+      setError("操作失敗，請再試一次");
+      console.error("Registration error:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   if (!event) return null;
 
   const categoryColor = event.category?.color || "#6366f1";
@@ -94,6 +150,7 @@ export function EventDetailDialog({
             </motion.div>
           </DialogHeader>
 
+          {/* 活動基本資料 */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -102,12 +159,8 @@ export function EventDetailDialog({
           >
             {/* 日時情報 */}
             <div className="flex items-start gap-3">
-              <div
-                className="p-2 rounded-full bg-primary/10 text-primary"
-              >
-                <Calendar
-                  className="size-4"
-                />
+              <div className="p-2 rounded-full bg-primary/10 text-primary">
+                <Calendar className="size-4" />
               </div>
               <div>
                 <div className="text-sm font-medium text-foreground">
@@ -123,12 +176,8 @@ export function EventDetailDialog({
             {/* 場所 */}
             {event.location && (
               <div className="flex items-start gap-3">
-                <div
-                  className="p-2 rounded-full bg-primary/10 text-primary"
-                >
-                  <MapPin
-                    className="size-4"
-                  />
+                <div className="p-2 rounded-full bg-primary/10 text-primary">
+                  <MapPin className="size-4" />
                 </div>
                 <div className="text-sm text-foreground">{event.location}</div>
               </div>
@@ -137,9 +186,7 @@ export function EventDetailDialog({
             {/* 主催者 */}
             {event.organizer && (
               <div className="flex items-start gap-3">
-                <div
-                  className="p-2 rounded-full bg-primary/10 text-primary"
-                >
+                <div className="p-2 rounded-full bg-primary/10 text-primary">
                   <User className="size-4" />
                 </div>
                 <div className="text-sm text-foreground">{event.organizer}</div>
@@ -149,14 +196,43 @@ export function EventDetailDialog({
             {/* 料金 */}
             {event.price && (
               <div className="flex items-start gap-3">
-                <div
-                  className="p-2 rounded-full bg-primary/10 text-primary"
-                >
+                <div className="p-2 rounded-full bg-primary/10 text-primary">
                   <Ticket className="size-4" />
                 </div>
                 <div className="text-sm text-foreground">{event.price}</div>
               </div>
             )}
+
+            {/* 報名網址 */}
+            {event.registrationUrl && (
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-full bg-primary/10 text-primary">
+                  <ExternalLink className="size-4" />
+                </div>
+                <div className="text-sm text-foreground">
+                  <a
+                    href={event.registrationUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    {event.registrationUrl}
+                  </a>
+                </div>
+              </div>
+            )}
+
+            {/* 報名人數 */}
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-full bg-primary/10 text-primary">
+                <Users className="size-4" />
+              </div>
+              <div className="text-sm text-foreground">
+                {registrationCount > 0
+                  ? `已有 ${registrationCount} 人報名`
+                  : "尚未有人報名"}
+              </div>
+            </div>
 
             {/* 説明 */}
             {event.description && (
@@ -175,27 +251,39 @@ export function EventDetailDialog({
             )}
 
             {/* 報名ボタン */}
-            {event.registrationUrl && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="pt-2"
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="pt-2 space-y-2"
+            >
+              {error && (
+                <div className="text-sm text-destructive text-center">
+                  {error}
+                </div>
+              )}
+              <Button
+                className="w-full"
+                variant={isRegistered ? "outline" : "default"}
+                onClick={handleRegistration}
+                disabled={isLoading}
               >
-                <Button
-                  className="w-full"
-                  variant="default"
-                  onClick={() => window.open(event.registrationUrl!, "_blank")}
-                >
-                  <ExternalLink className="size-4 mr-2" />
-                  立即報名
-                </Button>
-              </motion.div>
-            )}
+                {isRegistered ? (
+                  <>
+                    <CheckCircle2 className="size-4 mr-2" />
+                    已報名（點擊取消）
+                  </>
+                ) : (
+                  <>
+                    <Users className="size-4 mr-2" />
+                    立即報名
+                  </>
+                )}
+              </Button>
+            </motion.div>
           </motion.div>
         </div>
       </DialogContent>
     </Dialog>
   );
 }
-

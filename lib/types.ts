@@ -1,7 +1,12 @@
 // CollaPlay 活動行事曆 TypeScript 型別定義
 // イベントとカテゴリの型定義
 
-import type { Event, Category, Profile } from "@/lib/generated/prisma/client";
+import type {
+  Event,
+  Category,
+  Profile,
+  EventRegistration,
+} from "@/lib/generated/prisma/client";
 
 // カテゴリ型（Prismaから生成）
 export type { Category };
@@ -9,6 +14,8 @@ export type { Category };
 // イベント型（カテゴリ情報を含む）
 export type EventWithCategory = Event & {
   category: Category | null;
+  registrationCount?: number;
+  isRegistered?: boolean;
 };
 
 // APIレスポンス用の型
@@ -150,3 +157,19 @@ export type UpdateUserInput = {
   name?: string | null;
 };
 
+// ============================================
+// 活動報名相關型別定義
+// ============================================
+
+// 活動報名型別（由 Prisma 生成）
+export type { EventRegistration };
+
+// 活動報名（包含用戶資訊）
+export type EventRegistrationWithUser = EventRegistration & {
+  user: {
+    id: string;
+    name: string | null;
+    email: string;
+    image: string | null;
+  } | null;
+};
