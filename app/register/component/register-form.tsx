@@ -20,7 +20,7 @@ import {
 const registerSchema = z
   .object({
     email: z.string().email("請輸入有效的電子郵件地址"),
-    password: z.string().min(6, "密碼至少需要 6 個字元"),
+    password: z.string().min(8, "密碼至少需要 8 個字元"),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
