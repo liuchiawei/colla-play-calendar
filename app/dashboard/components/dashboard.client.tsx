@@ -58,8 +58,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { EventForm } from "@/components/widget/event-form";
-import { CategoryManager } from "@/components/widget/category-manager";
+import { EventForm } from "@/components/features/events/event-form";
+import { CategoryManager } from "@/components/features/dashboard/category-manager";
 import UserManagementClient from "./user-management.client";
 import { formatDate, formatTime } from "@/lib/date-utils";
 import type {
@@ -88,9 +88,14 @@ export default function DashboardClient() {
   // 削除確認ダイアログ
   const [deleteId, setDeleteId] = React.useState<string | null>(null);
   // 報名列表ダイアログ
-  const [registrationsEventId, setRegistrationsEventId] = React.useState<string | null>(null);
-  const [registrations, setRegistrations] = React.useState<EventRegistrationWithUser[]>([]);
-  const [isLoadingRegistrations, setIsLoadingRegistrations] = React.useState(false);
+  const [registrationsEventId, setRegistrationsEventId] = React.useState<
+    string | null
+  >(null);
+  const [registrations, setRegistrations] = React.useState<
+    EventRegistrationWithUser[]
+  >([]);
+  const [isLoadingRegistrations, setIsLoadingRegistrations] =
+    React.useState(false);
 
   // データ取得
   const fetchData = React.useCallback(async () => {

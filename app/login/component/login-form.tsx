@@ -10,11 +10,11 @@ import { authClient } from "@/lib/auth-client";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
-import { AuthFormLayout } from "@/components/widget/auth-form-layout";
+import { AuthFormLayout } from "@/components/features/user/auth-form-layout";
 import {
   EmailField,
   PasswordField,
-} from "@/components/widget/auth-form-fields";
+} from "@/components/features/user/auth-form-fields";
 
 // 登入表單驗證規則
 const loginSchema = z.object({

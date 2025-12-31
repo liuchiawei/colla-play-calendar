@@ -19,8 +19,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Calendar } from "@/components/ui/calendar";
-import { EventCard } from "@/components/widget/event-card";
-import { EventDetailDialog } from "@/components/widget/event-detail-dialog";
+import { EventCard } from "@/components/features/events/event-card";
+import { EventDetailDialog } from "@/components/features/events/event-detail-dialog";
 import {
   getWeekRange,
   getWeekDays,

@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { AvatarUpload } from "./avatar-upload";
+import { AvatarUpload } from "../../widget/avatar-upload";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { User, Mail, ExternalLink } from "lucide-react";
 

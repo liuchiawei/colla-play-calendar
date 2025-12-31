@@ -4,7 +4,7 @@
 // 處理用戶列表的獲取、搜尋、篩選、更新管理員狀態等邏輯
 
 import * as React from "react";
-import { UserManager } from "@/components/widget/user-manager";
+import { UserManager } from "@/components/features/dashboard/user-manager";
 import type { UserWithAdmin, UserListResponse } from "@/lib/types";
 import { useAuthStore } from "@/lib/stores/auth-store";
 
@@ -100,4 +100,3 @@ export default function UserManagementClient() {
     </div>
   );
 }
-

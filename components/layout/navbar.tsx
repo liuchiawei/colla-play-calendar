@@ -7,7 +7,7 @@ import { motion } from "motion/react";
 import Link from "next/link";
 import { Calendar, Settings, LogIn } from "lucide-react";
 import { ThemeToggle } from "@/components/widget/theme-toggle";
-import { UserProfileSheet } from "@/components/widget/user-profile-sheet";
+import { UserProfileSheet } from "@/components/features/user/user-profile-sheet";
 import { Sheet, SheetTrigger } from "@/components/ui/sheet";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { usePathname } from "next/navigation";
