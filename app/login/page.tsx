@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
-import LoginForm from "./login-form";
+import LoginForm from "./component/login-form";
 
 export default async function LoginPage() {
   // 若已登入，則導向個人資料頁面
@@ -13,7 +13,7 @@ export default async function LoginPage() {
   }
 
   return (
-    <div className="container flex min-h-screen items-center justify-center py-12">
+    <div className="w-full min-h-screen flex items-center justify-center">
       <LoginForm />
     </div>
   );

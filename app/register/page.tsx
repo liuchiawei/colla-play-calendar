@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
-import RegisterForm from "./register-form";
+import RegisterForm from "./component/register-form";
 
 export default async function RegisterPage() {
   // 若已登入，則導向個人資料頁面
@@ -13,7 +13,7 @@ export default async function RegisterPage() {
   }
 
   return (
-    <div className="container flex min-h-screen items-center justify-center py-12">
+    <div className="w-full min-h-screen flex items-center justify-center">
       <RegisterForm />
     </div>
   );

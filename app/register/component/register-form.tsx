@@ -8,23 +8,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Form } from "@/components/ui/form";
+import { AuthFormLayout } from "@/components/widget/auth-form-layout";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import Link from "next/link";
+  EmailField,
+  PasswordField,
+  ConfirmPasswordField,
+} from "@/components/widget/auth-form-fields";
 
 // 註冊表單驗證規則
 const registerSchema = z
@@ -61,14 +51,20 @@ export default function RegisterForm() {
     try {
       // Better Auth 需要 name 參數，使用 email 的本地部分作為預設名稱
       const name = data.email.split("@")[0] || "";
-      
+
       // デバッグ用：リクエスト前の状態を確認
       if (process.env.NODE_ENV === "development") {
         console.log("[Debug] 準備發送註冊請求");
-        console.log("[Debug] NEXT_PUBLIC_APP_URL:", process.env.NEXT_PUBLIC_APP_URL || "未設定");
-        console.log("[Debug] 當前頁面 URL:", typeof window !== "undefined" ? window.location.href : "N/A");
+        console.log(
+          "[Debug] NEXT_PUBLIC_APP_URL:",
+          process.env.NEXT_PUBLIC_APP_URL || "未設定"
+        );
+        console.log(
+          "[Debug] 當前頁面 URL:",
+          typeof window !== "undefined" ? window.location.href : "N/A"
+        );
       }
-      
+
       const result = await authClient.signUp.email({
         email: data.email,
         password: data.password,
@@ -86,10 +82,10 @@ export default function RegisterForm() {
     } catch (err) {
       // エラーメッセージを詳細化（SSL/Mixed Content/Invalid URL などの問題を特定）
       let errorMessage = "註冊失敗，請再試一次";
-      
+
       if (err instanceof Error) {
         const errorMsg = err.message.toLowerCase();
-        
+
         // SSL/Mixed Content エラーの検出
         if (
           errorMsg.includes("ssl") ||
@@ -128,13 +124,16 @@ export default function RegisterForm() {
           errorMessage = err.message || errorMessage;
         }
       }
-      
+
       setError(errorMessage);
       console.error("Register error:", err);
       // デバッグ用：実際のリクエスト URL を確認
       if (typeof window !== "undefined") {
         console.log("[Debug] Current window.location:", window.location.href);
-        console.log("[Debug] NEXT_PUBLIC_APP_URL:", process.env.NEXT_PUBLIC_APP_URL || "未設定");
+        console.log(
+          "[Debug] NEXT_PUBLIC_APP_URL:",
+          process.env.NEXT_PUBLIC_APP_URL || "未設定"
+        );
       }
     } finally {
       setIsLoading(false);
@@ -142,79 +141,25 @@ export default function RegisterForm() {
   };
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader>
-        <CardTitle>註冊</CardTitle>
-        <CardDescription>建立新帳號開始使用</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {error && (
-              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                {error}
-              </div>
-            )}
+    <AuthFormLayout
+      title="註冊"
+      description="建立新帳號開始使用"
+      error={error}
+      footerText="已有帳號？"
+      footerLinkText="登入"
+      footerLinkHref="/login"
+    >
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <EmailField control={form.control} />
+          <PasswordField control={form.control} />
+          <ConfirmPasswordField control={form.control} />
 
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>電子郵件</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="email"
-                      placeholder="example@email.com"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>密碼</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="confirmPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>確認密碼</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "註冊中..." : "註冊"}
-            </Button>
-          </form>
-        </Form>
-
-        <div className="mt-4 text-center text-sm">
-          <span className="text-muted-foreground">已有帳號？</span>{" "}
-          <Link href="/login" className="text-primary hover:underline">
-            登入
-          </Link>
-        </div>
-      </CardContent>
-    </Card>
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? "註冊中..." : "註冊"}
+          </Button>
+        </form>
+      </Form>
+    </AuthFormLayout>
   );
 }
