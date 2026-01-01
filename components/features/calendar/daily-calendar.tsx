@@ -235,13 +235,7 @@ export function DailyCalendar({
             </div>
 
             {/* 日の列 */}
-            <div
-              className={cn(
-                "relative border-r border-border/30",
-                isToday(baseDay) && "bg-primary/5",
-                "bg-primary/5 ring-2 ring-primary/30 ring-inset"
-              )}
-            >
+            <div className="relative">
               {/* 時間グリッドの背景線 */}
               {timeSlots.map((slot) => (
                 <div
