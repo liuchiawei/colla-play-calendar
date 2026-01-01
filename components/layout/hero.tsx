@@ -70,7 +70,12 @@ export default function Hero() {
           {PAGE_LINKS.map((link) => (
             <Tooltip key={link.href}>
               <TooltipTrigger asChild>
-                <Button size="icon" variant="ghost" className="rounded-full" asChild>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="relative rounded-full hover:bg-transparent dark:hover:bg-transparent hover:text-white after:content-[''] after:absolute after:top-0 after:left-0 after:w-full after:h-full after:rounded-full after:bg-transparent after:-z-10 after:transition-blur after:duration-200 hover:after:bg-black/60 hover:after:blur-sm"
+                  asChild
+                >
                   <Link href={link.href}>
                     <link.icon className="size-4" />
                   </Link>

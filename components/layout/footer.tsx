@@ -27,7 +27,7 @@ export default function Footer() {
 
   return (
     <footer className="p-4">
-      <div className="p-8">
+      <div className="p-8 glass-surface">
         <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
           {/* ブランドセクション */}
           <div className="lg:col-span-2 flex flex-col justify-between gap-6">

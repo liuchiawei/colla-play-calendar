@@ -5,6 +5,7 @@ import "./globals.css";
 import { ThemeProvider } from "next-themes";
 import Navbar from "@/components/layout/navbar";
 import Footer from "@/components/layout/footer";
+import BackgroundDecoration from "@/components/layout/background-decoration";
 import { AuthProvider } from "@/components/providers/auth-provider";
 
 // フォント設定
@@ -54,10 +55,11 @@ export default function RootLayout({
   return (
     <html lang="zh-TW" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} antialiased font-sans min-h-screen`}
+        className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} antialiased font-sans min-h-screen relative`}
       >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider />
+          <BackgroundDecoration />
           <Navbar />
           {children}
           <Footer />
