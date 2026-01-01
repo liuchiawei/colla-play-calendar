@@ -29,7 +29,7 @@ export default function Navbar() {
         height="100%"
         borderRadius={100}
         className=""
-        contentClassName="flex-row py-1 px-2 gap-2"
+        contentClassName="flex-row py-1 px-2 gap-1"
       >
         <ThemeToggle className="hover:text-primary hover:bg-background/50" />
         {/* Menu Button */}
