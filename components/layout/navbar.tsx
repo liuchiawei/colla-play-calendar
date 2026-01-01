@@ -31,13 +31,13 @@ export default function Navbar() {
         className=""
         contentClassName="flex-row py-1 px-2 gap-1"
       >
-        <ThemeToggle className="hover:text-primary hover:bg-background/50" />
+        <ThemeToggle className="hover:text-white hover:bg-black/50" />
         {/* Menu Button */}
         <NavSheet>
           <Button
             variant="ghost"
             size="icon"
-            className="rounded-full hover:text-primary hover:bg-background/50"
+            className="rounded-full hover:text-white hover:bg-black/50"
           >
             <Menu className="size-4" />
           </Button>
