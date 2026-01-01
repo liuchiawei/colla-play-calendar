@@ -4,19 +4,13 @@
 // イベントの詳細情報を表示するモーダル
 
 import * as React from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
+import Link from "next/link";
 import {
-  Calendar,
-  Clock,
-  MapPin,
-  User,
-  Tag,
-  ExternalLink,
-  Ticket,
-  Users,
-  CheckCircle2,
-  Loader2,
-} from "lucide-react";
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Dialog,
   DialogContent,
@@ -29,6 +23,19 @@ import { Separator } from "@/components/ui/separator";
 import { formatDate, formatTime } from "@/lib/date-utils";
 import type { EventWithCategory } from "@/lib/types";
 import { useAuthStore } from "@/lib/stores/auth-store";
+import {
+  Calendar,
+  Clock,
+  MapPin,
+  User,
+  Tag,
+  ExternalLink,
+  Ticket,
+  Users,
+  CheckCircle2,
+  Loader2,
+  Eye,
+} from "lucide-react";
 
 interface EventDetailDialogProps {
   event: EventWithCategory | null;
@@ -256,15 +263,25 @@ export function EventDetailDialog({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="pt-2 space-y-2"
+              className="flex gap-2"
             >
               {error && (
                 <div className="text-sm text-destructive text-center">
                   {error}
                 </div>
               )}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="icon" asChild>
+                    <Link href={`/event/${event.id}`}>
+                      <Eye className="size-4" />
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>查看活動詳細</TooltipContent>
+              </Tooltip>
               <Button
-                className="w-full"
+                className="flex-1"
                 variant={isRegistered ? "outline" : "default"}
                 onClick={handleRegistration}
                 disabled={isLoading}
