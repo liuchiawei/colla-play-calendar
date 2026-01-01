@@ -7,11 +7,13 @@ import { Calendar, Tag, Users } from "lucide-react";
 export const STORE_CONFIG = {
   name: "CollaPlay",
   subtitle: "可能存在的遊樂園",
+  catchphrase: "一座專為大人打造的遊樂園。",
   description: [
     "Collaboration + Play = CollaPlay",
     "一座專為大人打造的遊樂園",
     "咖啡館｜工作空間｜多功能教室｜社群活動｜場地租借",
   ],
+  since: 2025,
   phone: "02 6627 0836",
   email: "hello@collaplay.com",
   address: "108臺北市萬華區武昌街二段83之6號3樓",
