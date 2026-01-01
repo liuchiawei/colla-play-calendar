@@ -7,10 +7,9 @@ import * as React from "react";
 import { EventsManagement } from "@/components/features/dashboard/events-management";
 import { CategoriesManagement } from "@/components/features/dashboard/categories-management";
 import { UsersManagement } from "@/components/features/dashboard/users-management";
-import type { DashboardTab } from "@/components/features/dashboard/dashboard-sidebar";
+import type { DashboardTab } from "@/lib/config";
 import type {
   EventWithCategory,
-  EventInput,
   Category,
   CategoryInput,
 } from "@/lib/types";
@@ -84,4 +83,3 @@ export function DashboardContent({
       return null;
   }
 }
-

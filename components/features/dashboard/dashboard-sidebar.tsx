@@ -4,8 +4,7 @@
 // 使用 shadcn Sidebar 組件實現導航功能
 
 import * as React from "react";
-import Link from "next/link";
-import { Calendar, Tag, Grid, Users, LayoutDashboard } from "lucide-react";
+import { LayoutDashboard } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
