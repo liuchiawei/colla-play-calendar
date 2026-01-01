@@ -27,7 +27,7 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
     <Button
       variant="ghost"
       size="icon"
-      className={cn("relative rounded-full overflow-hidden", className)}
+      className={cn("relative rounded-full", className)}
       onClick={toggleTheme}
       aria-label={isDark ? "switch to light mode" : "switch to dark mode"}
     >

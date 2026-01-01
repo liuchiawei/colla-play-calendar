@@ -1,4 +1,14 @@
-import { Calendar, Tag, Users } from "lucide-react";
+import {
+  Calendar,
+  Tag,
+  Users,
+  Home,
+  Layout,
+  Settings,
+  Instagram,
+  Facebook,
+  Info,
+} from "lucide-react";
 
 // 商店基本設定
 // CollaPlay の店舗情報を一元管理
@@ -30,26 +40,26 @@ export const STORE_CONFIG = {
 } as const;
 
 // クイックリンク設定
-export const QUICK_LINKS = [
-  { label: "首頁", href: "/" },
-  { label: "活動行事曆", href: "/calendar" },
-  { label: "後台管理", href: "/dashboard" },
-] as const;
+export const PAGE_LINKS = [
+  { label: "首頁", href: "/", icon: Home },
+  { label: "關於我們", href: "/about", icon: Info },
+  { label: "活動行事曆", href: "/calendar", icon: Calendar },
+];
 
 // ソーシャルリンク設定
 // icon: lucide-react のアイコン名を指定
 export const SOCIAL_LINKS = [
   {
-    icon: "Instagram" as const,
+    icon: Instagram,
     label: "Instagram",
     href: "https://www.instagram.com/colla_play/",
   },
   {
-    icon: "Facebook" as const,
+    icon: Facebook,
     label: "Facebook",
     href: "https://www.facebook.com/collaplay",
   },
-] as const;
+];
 
 export type DashboardTab = "events" | "categories" | "users";
 
@@ -78,5 +88,5 @@ export const dashboardNavigationItems: Array<{
 // 型別定義
 export type StoreConfig = typeof STORE_CONFIG;
 export type BusinessHours = typeof STORE_CONFIG.businessHours;
-export type QuickLink = (typeof QUICK_LINKS)[number];
+export type PageLink = (typeof PAGE_LINKS)[number];
 export type SocialLink = (typeof SOCIAL_LINKS)[number];

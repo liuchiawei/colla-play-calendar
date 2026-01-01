@@ -1,8 +1,15 @@
 "use client";
 
 import { motion } from "motion/react";
+import Link from "next/link";
 import { BackgroundGradientAnimation } from "../ui/background-gradient-animation";
-import { STORE_CONFIG } from "@/lib/config";
+import { STORE_CONFIG, PAGE_LINKS } from "@/lib/config";
+import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export default function Hero() {
   return (
@@ -32,7 +39,7 @@ export default function Hero() {
               d="M50 20 L20 80 L80 80 Z"
               fill="none"
               stroke="currentColor"
-              stroke-width="5"
+              strokeWidth="5"
               className="text-foreground"
             />
           </svg>
@@ -58,15 +65,23 @@ export default function Hero() {
             ))}
           </h4>
         </motion.div>
-        {/* CATCHPHRASE */}
-        <motion.h3
-          initial={{ opacity: 0, y: 20, filter: "blur(15px)" }}
-          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="absolute bottom-4 left-4 text-sm md:text-base font-light tracking-wider"
-        >
-          {STORE_CONFIG.catchphrase}
-        </motion.h3>
+        {/* PAGE LINKS */}
+        <div className="absolute bottom-4 left-4 flex flex-col gap-4 pointer-events-auto">
+          {PAGE_LINKS.map((link) => (
+            <Tooltip key={link.href}>
+              <TooltipTrigger asChild>
+                <Button size="icon" variant="ghost" className="rounded-full" asChild>
+                  <Link href={link.href}>
+                    <link.icon className="size-4" />
+                  </Link>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                <p className="text-sm">{link.label}</p>
+              </TooltipContent>
+            </Tooltip>
+          ))}
+        </div>
         {/* TITLE */}
         <motion.h2
           initial={{ opacity: 0, y: 20, filter: "blur(15px)" }}

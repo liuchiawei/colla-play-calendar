@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { STORE_CONFIG, QUICK_LINKS, SOCIAL_LINKS } from "@/lib/config";
+import { STORE_CONFIG, PAGE_LINKS, SOCIAL_LINKS } from "@/lib/config";
 import Link from "next/link";
 import GlassSurface from "@/components/ui/glass-surface";
 import {
@@ -47,7 +47,6 @@ export default function Footer() {
             {/* ソーシャルリンク */}
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               {SOCIAL_LINKS.map((social) => {
-                const Icon = iconMap[social.icon];
                 return (
                   <Button
                     key={social.label}
@@ -61,7 +60,7 @@ export default function Footer() {
                       rel="noopener noreferrer"
                       aria-label={social.label}
                     >
-                      {Icon && <Icon className="w-4 h-4" />}
+                      <social.icon className="w-4 h-4" />
                     </a>
                   </Button>
                 );
@@ -76,7 +75,7 @@ export default function Footer() {
               快速連結
             </h3>
             <ul className="space-y-2">
-              {QUICK_LINKS.map((link) => (
+              {PAGE_LINKS.map((link) => (
                 <li key={link.href}>
                   <Link href={link.href}>
                     <Button
