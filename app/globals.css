@@ -197,54 +197,56 @@
   }
 
   .liquid-glass {
+    /* 基础半透明背景色 - 关键：提供可见的半透明基础 */
+    background-color: rgba(255, 255, 255, 0.15);
     /* 半透明背景渐变 - 增强层次感 */
-    background: linear-gradient(
+    background-image: linear-gradient(
       135deg,
-      rgba(255, 255, 255, 0.15) 0%,
-      rgba(255, 255, 255, 0.08) 50%,
-      rgba(255, 255, 255, 0.05) 100%
+      rgba(255, 255, 255, 0.2) 0%,
+      rgba(255, 255, 255, 0.1) 50%,
+      rgba(255, 255, 255, 0.08) 100%
     );
-
-    /* 毛玻璃模糊效果 */
+    /* 毛玻璃模糊效果 - backdrop-filter 是关键 */
     -webkit-backdrop-filter: blur(20px) saturate(180%);
     backdrop-filter: blur(20px) saturate(180%);
-
     /* 精致的边框 - 模拟玻璃边缘 */
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    border-top: 1px solid rgba(255, 255, 255, 0.35);
-    border-left: 1px solid rgba(255, 255, 255, 0.28);
-    border-right: 1px solid rgba(255, 255, 255, 0.08);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-top: 1px solid rgba(255, 255, 255, 0.4);
+    border-left: 1px solid rgba(255, 255, 255, 0.3);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     /* 双层阴影系统 - 参考 neumorphic 设计，增强立体感 */
-    /* 高光阴影（左上） - 模拟光线从左上角照射 */
-    box-shadow: -8px -8px 32px rgba(255, 255, 255, 0.6),
+    box-shadow: 
+      /* 高光阴影（左上） - 模拟光线从左上角照射 */ -8px -8px 32px
+        rgba(255, 255, 255, 0.6),
       /* 深色阴影（右下） - 增加深度 */ 8px 8px 16px rgba(0, 39, 80, 0.12),
       /* 外部柔和阴影 - 增强悬浮感 */ 0 8px 32px rgba(0, 0, 0, 0.08),
       /* 内部高光 - 增强玻璃质感 */ inset 0 1px 0 rgba(255, 255, 255, 0.4);
-
-    /* 确保元素可以显示伪元素 */
+    /* 确保元素可以显示伪元素和正确的层级 */
     position: relative;
-    isolation: isolate;
-  }
-
-  /* 添加顶部光泽叠加层 - 模拟玻璃表面反射 */
-  .liquid-glass::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 40%;
-    background: linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.25) 0%,
-      rgba(255, 255, 255, 0.1) 50%,
-      transparent 100%
-    );
-    border-radius: inherit;
-    pointer-events: none;
-    z-index: -1;
+    /* 添加顶部光泽叠加层 - 模拟玻璃表面反射 */
+    &::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 40%;
+      background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.3) 0%,
+        rgba(255, 255, 255, 0.15) 50%,
+        transparent 100%
+      );
+      border-radius: inherit;
+      pointer-events: none;
+      z-index: 0;
+    }
+    /* 确保内容在光泽层之上 */
+    & > * {
+      position: relative;
+      z-index: 1;
+    }
   }
 
   /* テキストグラデーション */
