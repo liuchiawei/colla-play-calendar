@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { Calendar, Settings, Menu } from "lucide-react";
-import { ThemeToggle } from "@/components/widget/theme-toggle";
-import { NavSheet } from "@/components/layout/nav-sheet";
-import { useAuthStore } from "@/lib/stores/auth-store";
 import { usePathname } from "next/navigation";
+import { useAuthStore } from "@/lib/stores/auth-store";
+import { NavSheet } from "@/components/layout/nav-sheet";
+import GlassSurface from "@/components/ui/glass-surface";
+import { ThemeToggle } from "@/components/widget/theme-toggle";
+import { Button } from "@/components/ui/button";
+import { Menu } from "lucide-react";
 
 export default function Navbar() {
   // 從 auth store 讀取管理員狀態和用戶信息
@@ -23,18 +23,26 @@ export default function Navbar() {
   }, [pathname, initialized, fetchUser]);
 
   return (
-    <nav className="fixed top-4 right-4 z-40 flex items-center gap-2">
-      <ThemeToggle className="hover:text-primary hover:bg-primary/10" />
-      {/* Menu Button */}
-      <NavSheet>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-8 hover:text-primary"
-        >
-          <Menu className="size-5" />
-        </Button>
-      </NavSheet>
+    <nav className="fixed top-4 right-4 z-40">
+      <GlassSurface
+        width="100%"
+        height="100%"
+        borderRadius={100}
+        className=""
+        contentClassName="flex-row py-1 px-2 gap-2"
+      >
+        <ThemeToggle className="hover:text-primary hover:bg-background/50" />
+        {/* Menu Button */}
+        <NavSheet>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full hover:text-primary hover:bg-background/50"
+          >
+            <Menu className="size-4" />
+          </Button>
+        </NavSheet>
+      </GlassSurface>
     </nav>
   );
 }

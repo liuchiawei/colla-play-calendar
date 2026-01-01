@@ -44,9 +44,6 @@ export function NavSheet({ children }: NavSheetProps) {
 
       // 清除 store 狀態
       logout();
-
-      // 導航到登入頁面
-      router.push("/login");
       router.refresh();
     } catch (error) {
       console.error("Sign out error:", error);

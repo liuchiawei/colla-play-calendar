@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useId } from 'react';
+import { cn } from '@/lib/utils';
 
 export interface GlassSurfaceProps {
   children?: React.ReactNode;
@@ -38,6 +39,7 @@ export interface GlassSurfaceProps {
     | 'plus-darker'
     | 'plus-lighter';
   className?: string;
+  contentClassName?: string;
   style?: React.CSSProperties;
 }
 
@@ -78,6 +80,7 @@ const GlassSurface: React.FC<GlassSurfaceProps> = ({
   yChannel = 'G',
   mixBlendMode = 'difference',
   className = '',
+  contentClassName = '',
   style = {}
 }) => {
   const uniqueId = useId().replace(/:/g, '-');
@@ -369,7 +372,7 @@ const GlassSurface: React.FC<GlassSurfaceProps> = ({
         </defs>
       </svg>
 
-      <div className="w-full h-full flex items-center justify-center p-2 rounded-[inherit] relative z-10">
+      <div className={cn("w-full h-full flex flex-col items-center justify-center rounded-[inherit] relative z-10", contentClassName)}>
         {children}
       </div>
     </div>

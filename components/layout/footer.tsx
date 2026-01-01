@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { STORE_CONFIG, QUICK_LINKS, SOCIAL_LINKS } from "@/lib/config";
 import Link from "next/link";
+import GlassSurface from "@/components/ui/glass-surface";
 import {
   MapPin,
   Mail,
@@ -12,7 +13,6 @@ import {
   Instagram,
   Facebook,
   ExternalLink,
-  Heart,
   type LucideIcon,
 } from "lucide-react";
 
@@ -26,9 +26,9 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-background/80 backdrop-blur-md">
-      <div className="container mx-auto px-4 py-12 relative">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
+    <footer className="p-4">
+      <div className="p-8">
+        <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
           {/* ブランドセクション */}
           <div className="lg:col-span-2 flex flex-col justify-between gap-6">
             <Link href="/" className="flex flex-col gap-1 group">
@@ -118,16 +118,16 @@ export default function Footer() {
               <li className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Clock className="w-4 h-4 shrink-0 text-muted-foreground/70" />
                 <span>
-                  {String(STORE_CONFIG.businessHours.open).padStart(2, "0")}:00
+                  {String(STORE_CONFIG.businessHours.open).padStart(2, "0")}
+                  :00
                   {" - "}
-                  {String(STORE_CONFIG.businessHours.close).padStart(2, "0")}:00
+                  {String(STORE_CONFIG.businessHours.close).padStart(2, "0")}
+                  :00
                 </span>
               </li>
             </ul>
           </div>
         </div>
-
-        <Separator className="my-4 bg-border/50" />
 
         {/* ボトムセクション */}
         <div className="flex items-center justify-center select-none">
