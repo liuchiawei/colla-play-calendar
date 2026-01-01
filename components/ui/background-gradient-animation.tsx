@@ -141,7 +141,8 @@ export const BackgroundGradientAnimation = ({
     <div
       ref={containerRef}
       className={cn(
-        "h-svh w-full relative overflow-hidden top-0 left-0 right-0 bg-[linear-gradient(40deg,var(--gradient-background-start),var(--gradient-background-end))]",
+        // "h-svh w-full relative overflow-hidden top-0 left-0 right-0 bg-[linear-gradient(40deg,var(--gradient-background-start),var(--gradient-background-end))]",
+        "h-full w-full relative",
         containerClassName
       )}
     >
@@ -166,7 +167,7 @@ export const BackgroundGradientAnimation = ({
       <div className={cn("", className)}>{children}</div>
       <div
         className={cn(
-          "gradients-container h-full w-full blur-lg",
+          "gradients-container h-full min-h-svh w-full overflow-hidden blur-lg",
           isSafari ? "blur-2xl" : "[filter:url(#blurMe)_blur(40px)]"
         )}
       >

@@ -1,3 +1,5 @@
+import { Calendar, Tag, Users } from "lucide-react";
+
 // 商店基本設定
 // CollaPlay の店舗情報を一元管理
 
@@ -46,6 +48,30 @@ export const SOCIAL_LINKS = [
     href: "https://www.facebook.com/collaplay",
   },
 ] as const;
+
+export type DashboardTab = "events" | "categories" | "users";
+
+export const dashboardNavigationItems: Array<{
+  id: DashboardTab;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}> = [
+  {
+    id: "events",
+    label: "活動管理",
+    icon: Calendar,
+  },
+  {
+    id: "categories",
+    label: "類型管理",
+    icon: Tag,
+  },
+  {
+    id: "users",
+    label: "會員管理",
+    icon: Users,
+  },
+];
 
 // 型別定義
 export type StoreConfig = typeof STORE_CONFIG;

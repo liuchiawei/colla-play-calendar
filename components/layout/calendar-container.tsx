@@ -5,46 +5,7 @@ import { WeeklyCalendar } from "@/components/features/calendar/weekly-calendar";
 
 export default function CalendarContainer() {
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* 背景デコレーション */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* グラデーションオーブ */}
-        <motion.div
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.5, 0.3],
-          }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-          className="absolute -top-40 -right-40 w-96 h-96 rounded-full"
-          style={{
-            background:
-              "radial-gradient(circle, oklch(0.72 0.18 25 / 0.3) 0%, transparent 70%)",
-          }}
-        />
-        <motion.div
-          animate={{
-            scale: [1.2, 1, 1.2],
-            opacity: [0.2, 0.4, 0.2],
-          }}
-          transition={{
-            duration: 10,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-          className="absolute -bottom-40 -left-40 w-[500px] h-[500px] rounded-full"
-          style={{
-            background:
-              "radial-gradient(circle, oklch(0.7 0.15 180 / 0.2) 0%, transparent 70%)",
-          }}
-        />
-        {/* グリッドパターン */}
-        <div className="absolute inset-0 bg-grid-pattern opacity-30" />
-      </div>
-
+    <div className="min-h-screen">
       {/* メインコンテンツ */}
       <main className="relative z-10 container mx-auto px-4 py-12">
         {/* タイトルセクション */}
