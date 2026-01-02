@@ -61,6 +61,11 @@ export function NavSheet({ children }: NavSheetProps) {
         <div className="flex flex-col h-full">
           {/* SheetHeader */}
           <SheetHeader className="pb-4">
+            {isAdmin && (
+              <Badge variant="default" className="w-fit">
+                管理員
+              </Badge>
+            )}
             {user ? (
               <div className="flex flex-col gap-4">
                 <div className="flex items-center gap-3">
@@ -86,11 +91,6 @@ export function NavSheet({ children }: NavSheetProps) {
                     </p>
                   </div>
                 </div>
-                {isAdmin && (
-                  <Badge variant="default" className="w-fit">
-                    管理員
-                  </Badge>
-                )}
               </div>
             ) : (
               <div>

@@ -114,7 +114,7 @@ export function EventDetailDialog({
             <img
               src={event.imageBlobUrl || event.imageUrl || ""}
               alt={event.title}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover border"
             />
           ) : (
             <div
@@ -272,7 +272,7 @@ export function EventDetailDialog({
               )}
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="icon" asChild>
+                  <Button size="icon" className="rounded-full" asChild>
                     <Link href={`/event/${event.id}`}>
                       <Eye className="size-4" />
                     </Link>
@@ -282,7 +282,7 @@ export function EventDetailDialog({
               </Tooltip>
               <Button
                 className="flex-1"
-                variant={isRegistered ? "outline" : "default"}
+                variant={isRegistered ? "secondary" : "default"}
                 onClick={handleRegistration}
                 disabled={isLoading}
               >
