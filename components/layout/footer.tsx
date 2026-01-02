@@ -78,7 +78,7 @@ export default function Footer() {
               {/* Page Links */}
               <div>
                 <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-                  <ExternalLink className="w-4 h-4 text-primary" />
+                  <ExternalLink className="size-4 text-accent" />
                   快速連結
                 </h3>
                 <ul className="space-y-2">
@@ -99,7 +99,7 @@ export default function Footer() {
               {/* Contact Information */}
               <div>
                 <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-primary" />
+                  <MapPin className="size-4 text-accent" />
                   聯絡我們
                 </h3>
                 <ul className="space-y-3">

@@ -16,8 +16,9 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { authClient } from "@/lib/auth-client";
-import { Home, Calendar, User, LogIn, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PAGE_LINKS } from "@/lib/config";
+import { Home, Calendar, User, LogIn, LogOut } from "lucide-react";
 
 interface NavSheetProps {
   children: React.ReactNode;
@@ -53,12 +54,6 @@ export function NavSheet({ children }: NavSheetProps) {
     }
   };
 
-  const navLinks = [
-    { href: "/", label: "首頁", icon: Home },
-    { href: "/calendar", label: "活動行事曆", icon: Calendar },
-    ...(user ? [{ href: "/profile", label: "個人資料", icon: User }] : []),
-  ];
-
   return (
     <Sheet>
       <SheetTrigger asChild>{children}</SheetTrigger>
@@ -69,17 +64,19 @@ export function NavSheet({ children }: NavSheetProps) {
             {user ? (
               <div className="flex flex-col gap-4">
                 <div className="flex items-center gap-3">
-                  <Avatar className="size-12">
-                    <AvatarImage
-                      src={user.image || undefined}
-                      alt={user.name || user.email}
-                    />
-                    <AvatarFallback className="text-sm font-semibold">
-                      {user.name
-                        ? user.name.charAt(0).toUpperCase()
-                        : user.email.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+                  <Link href="/profile">
+                    <Avatar className="size-12">
+                      <AvatarImage
+                        src={user.image || undefined}
+                        alt={user.name || user.email}
+                      />
+                      <AvatarFallback className="text-sm font-semibold">
+                        {user.name
+                          ? user.name.charAt(0).toUpperCase()
+                          : user.email.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Link>
                   <div className="flex-1 min-w-0">
                     <SheetTitle className="text-lg font-semibold truncate">
                       {user.name || "用戶"}
@@ -108,17 +105,18 @@ export function NavSheet({ children }: NavSheetProps) {
           <Separator />
 
           {/* SheetContent - Navigation Links */}
-          <div className="flex-1 py-4 space-y-1">
-            {navLinks.map((link) => {
+          <div className="flex-1 p-4 space-y-2">
+            {PAGE_LINKS.map((link) => {
               const Icon = link.icon;
               const isActive = pathname === link.href;
               return (
                 <Button
                   key={link.href}
                   asChild
+                  size="lg"
                   variant={isActive ? "secondary" : "ghost"}
                   className={cn(
-                    "w-full justify-start gap-3",
+                    "w-full justify-start gap-3 text-xl",
                     isActive && "bg-secondary"
                   )}
                 >
@@ -130,11 +128,8 @@ export function NavSheet({ children }: NavSheetProps) {
               );
             })}
           </div>
-
-          <Separator />
-
           {/* SheetFooter */}
-          <SheetFooter className="pt-4">
+          <SheetFooter>
             {user ? (
               <Button
                 onClick={handleSignOut}
