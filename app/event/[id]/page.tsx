@@ -22,6 +22,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { EventRegistrationButton } from "@/components/features/events/event-registration-button";
+import { EventRegisteredUsersAvatars } from "@/components/features/events/event-registered-users-avatars";
+import { Suspense } from "react";
+import { EventRegisteredUsersAvatarsSkeleton } from "@/components/features/events/event-registered-users-avatars-skeleton";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -253,11 +256,26 @@ export default async function EventDetailPage({ params }: PageProps) {
                 <div className="p-2 rounded-full bg-primary/10 text-primary flex-shrink-0">
                   <Users className="size-5" />
                 </div>
-                <div className="text-base text-foreground">
+                <div className="flex-1">
+                  <div className="text-base text-foreground">
+                    {eventWithCount.registrationCount &&
+                    eventWithCount.registrationCount > 0
+                      ? `已有 ${eventWithCount.registrationCount} 人報名`
+                      : "尚未有人報名"}
+                  </div>
+                  {/* 已報名使用者頭像堆疊 */}
                   {eventWithCount.registrationCount &&
-                  eventWithCount.registrationCount > 0
-                    ? `已有 ${eventWithCount.registrationCount} 人報名`
-                    : "尚未有人報名"}
+                    eventWithCount.registrationCount > 0 && (
+                      <div className="mt-2">
+                        <Suspense
+                          fallback={<EventRegisteredUsersAvatarsSkeleton />}
+                        >
+                          <EventRegisteredUsersAvatars
+                            eventId={eventWithCount.id}
+                          />
+                        </Suspense>
+                      </div>
+                    )}
                 </div>
               </div>
 

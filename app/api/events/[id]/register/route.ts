@@ -78,6 +78,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
       revalidateTag(`user-events-${userId}`, "max");
     }
 
+    // 清除活動已報名使用者列表快取
+    revalidateTag(`event-registered-users-${eventId}`, "max");
+
     return NextResponse.json<ApiResponse<{ id: string }>>(
       {
         success: true,
@@ -155,6 +158,9 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     if (userId) {
       revalidateTag(`user-events-${userId}`, "max");
     }
+
+    // 清除活動已報名使用者列表快取
+    revalidateTag(`event-registered-users-${eventId}`, "max");
 
     return NextResponse.json<ApiResponse<{ id: string }>>({
       success: true,
