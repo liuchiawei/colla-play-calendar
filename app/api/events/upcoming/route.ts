@@ -5,7 +5,7 @@ import { unstable_cache } from "next/cache";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { getAnonymousSessionId } from "@/lib/utils/registration";
-import type { ApiResponse, EventWithCategory } from "@/lib/types";
+import type { ApiResponse, EventWithCategory, Category } from "@/lib/types";
 
 // 內部查詢函數（不帶快取）
 // 查詢未來的活動列表（不包含用戶特定的註冊狀態）
@@ -26,7 +26,7 @@ async function fetchUpcomingEventsFromDB(): Promise<
     categoryId: string | null;
     createdAt: Date;
     updatedAt: Date;
-    category: { id: string; name: string; color: string } | null;
+    category: Category | null;
     registrationCount: number;
   }>
 > {
