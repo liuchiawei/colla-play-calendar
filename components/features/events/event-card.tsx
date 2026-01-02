@@ -3,7 +3,6 @@
 // イベントカードコンポーネント
 // カレンダー上に表示されるイベントの視覚的表現
 
-import * as React from "react";
 import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { formatTime } from "@/lib/date-utils";
