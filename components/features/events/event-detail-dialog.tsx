@@ -4,6 +4,7 @@
 // イベントの詳細情報を表示するモーダル
 
 import * as React from "react";
+import { Suspense } from "react";
 import { motion } from "motion/react";
 import Link from "next/link";
 import {
@@ -36,6 +37,8 @@ import {
   Loader2,
   Eye,
 } from "lucide-react";
+import { EventRegisteredUsersAvatars } from "@/components/features/events/event-registered-users-avatars";
+import { EventRegisteredUsersAvatarsSkeleton } from "@/components/features/events/event-registered-users-avatars-skeleton";
 
 interface EventDetailDialogProps {
   event: EventWithCategory | null;
@@ -232,13 +235,25 @@ export function EventDetailDialog({
 
             {/* 報名人數 */}
             <div className="flex items-start gap-3">
-              <div className="p-2 rounded-full bg-primary/10 text-primary">
+              <div className="p-2 rounded-full bg-primary/10 text-primary flex-shrink-0">
                 <Users className="size-4" />
               </div>
-              <div className="text-sm text-foreground">
-                {registrationCount > 0
-                  ? `已有 ${registrationCount} 人報名`
-                  : "尚未有人報名"}
+              <div className="flex-1">
+                <div className="text-sm text-foreground">
+                  {registrationCount > 0
+                    ? `已有 ${registrationCount} 人報名`
+                    : "尚未有人報名"}
+                </div>
+                {/* 已報名使用者頭像堆疊 */}
+                {registrationCount > 0 && (
+                  <div className="mt-2">
+                    <Suspense
+                      fallback={<EventRegisteredUsersAvatarsSkeleton />}
+                    >
+                      <EventRegisteredUsersAvatars eventId={event.id} />
+                    </Suspense>
+                  </div>
+                )}
               </div>
             </div>
 
