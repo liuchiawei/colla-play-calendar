@@ -30,8 +30,8 @@ export default function Footer() {
       <div className="px-4 py-8 glass-surface shadow-sm rounded-2xl">
         <div className="w-full flex gap-4 mb-4">
           {/* Social Links */}
-          <div className="flex flex-col justify-between text-sm">
-            <h3 className="self-start text-sm font-semibold [writing-mode:vertical-rl]">
+          <div className="space-x-10 text-sm">
+            <h3 className="text-sm font-semibold [writing-mode:vertical-lr]">
               Follow Us
             </h3>
             <div className="flex flex-col gap-2">
@@ -40,7 +40,7 @@ export default function Footer() {
                   <Button
                     key={social.label}
                     size="icon"
-                    className="size-8 rounded-full"
+                    className="size-6 rounded-full"
                     asChild
                   >
                     <a
@@ -49,7 +49,7 @@ export default function Footer() {
                       rel="noopener noreferrer"
                       aria-label={social.label}
                     >
-                      <social.icon className="w-4 h-4" />
+                      <social.icon className="size-3" />
                     </a>
                   </Button>
                 );
