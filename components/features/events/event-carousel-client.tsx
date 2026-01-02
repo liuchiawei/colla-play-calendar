@@ -58,7 +58,7 @@ function EventPosterCard({
           />
         )}
         {/* 疊加層 - 從底部向上漸變 */}
-        <div className="absolute inset-0 bg-gradient-to-l from-black/20 to-transparent group-hover:from-black/80" />
+        <div className="absolute inset-0 bg-gradient-to-bl from-black/20 to-transparent group-hover:from-black/80" />
         {/* 類別標籤 */}
         {event.category && (
           <div className="absolute top-3 left-3 z-10">
