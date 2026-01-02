@@ -10,7 +10,10 @@ import { z } from "zod";
 const profileUpdateSchema = z.object({
   displayName: z.string().max(100).nullable().optional(),
   birthDate: z.string().nullable().optional(), // ISO 格式日期字串
-  gender: z.enum(["male", "female", "other", "unspecified"]).nullable().optional(),
+  gender: z
+    .enum(["male", "female", "other", "unspecified"])
+    .nullable()
+    .optional(),
   occupation: z.string().max(200).nullable().optional(),
   education: z.string().max(200).nullable().optional(),
   skills: z.array(z.string()).nullable().optional(),
@@ -84,7 +87,9 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json<ApiResponse<null>>(
         {
           success: false,
-          error: `驗證錯誤: ${validationResult.error.issues[0]?.message || "無效的輸入"}`,
+          error: `驗證錯誤: ${
+            validationResult.error.issues[0]?.message || "無效的輸入"
+          }`,
         },
         { status: 400 }
       );
@@ -93,7 +98,11 @@ export async function PUT(request: NextRequest) {
     const validatedData = validationResult.data;
 
     // 檢查簡介字數（100 字以內）
-    if (validatedData.bio !== undefined && validatedData.bio !== null && validatedData.bio.length > 100) {
+    if (
+      validatedData.bio !== undefined &&
+      validatedData.bio !== null &&
+      validatedData.bio.length > 100
+    ) {
       return NextResponse.json<ApiResponse<null>>(
         {
           success: false,
@@ -122,19 +131,43 @@ export async function PUT(request: NextRequest) {
         bio: validatedData.bio ?? null,
         isPublic: validatedData.isPublic ?? false,
         extra: validatedData.extra ? (validatedData.extra as any) : null,
-        visibility: validatedData.visibility ? (validatedData.visibility as any) : null,
+        visibility: validatedData.visibility
+          ? (validatedData.visibility as any)
+          : null,
       },
       update: {
-        displayName: validatedData.displayName !== undefined ? validatedData.displayName : undefined,
+        displayName:
+          validatedData.displayName !== undefined
+            ? validatedData.displayName
+            : undefined,
         birthDate: birthDate !== undefined ? birthDate : undefined,
-        gender: validatedData.gender !== undefined ? validatedData.gender : undefined,
-        occupation: validatedData.occupation !== undefined ? validatedData.occupation : undefined,
-        education: validatedData.education !== undefined ? validatedData.education : undefined,
-        skills: validatedData.skills !== undefined ? (validatedData.skills as any) : undefined,
+        gender:
+          validatedData.gender !== undefined ? validatedData.gender : undefined,
+        occupation:
+          validatedData.occupation !== undefined
+            ? validatedData.occupation
+            : undefined,
+        education:
+          validatedData.education !== undefined
+            ? validatedData.education
+            : undefined,
+        skills:
+          validatedData.skills !== undefined
+            ? (validatedData.skills as any)
+            : undefined,
         bio: validatedData.bio !== undefined ? validatedData.bio : undefined,
-        isPublic: validatedData.isPublic !== undefined ? validatedData.isPublic : undefined,
-        extra: validatedData.extra !== undefined ? (validatedData.extra as any) : undefined,
-        visibility: validatedData.visibility !== undefined ? (validatedData.visibility as any) : undefined,
+        isPublic:
+          validatedData.isPublic !== undefined
+            ? validatedData.isPublic
+            : undefined,
+        extra:
+          validatedData.extra !== undefined
+            ? (validatedData.extra as any)
+            : undefined,
+        visibility:
+          validatedData.visibility !== undefined
+            ? (validatedData.visibility as any)
+            : undefined,
       },
     });
 
@@ -153,4 +186,3 @@ export async function PUT(request: NextRequest) {
     );
   }
 }
-

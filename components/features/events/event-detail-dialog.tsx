@@ -4,19 +4,14 @@
 // イベントの詳細情報を表示するモーダル
 
 import * as React from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { Suspense } from "react";
+import { motion } from "motion/react";
+import Link from "next/link";
 import {
-  Calendar,
-  Clock,
-  MapPin,
-  User,
-  Tag,
-  ExternalLink,
-  Ticket,
-  Users,
-  CheckCircle2,
-  Loader2,
-} from "lucide-react";
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Dialog,
   DialogContent,
@@ -29,6 +24,21 @@ import { Separator } from "@/components/ui/separator";
 import { formatDate, formatTime } from "@/lib/date-utils";
 import type { EventWithCategory } from "@/lib/types";
 import { useAuthStore } from "@/lib/stores/auth-store";
+import {
+  Calendar,
+  Clock,
+  MapPin,
+  User,
+  Tag,
+  ExternalLink,
+  Ticket,
+  Users,
+  CheckCircle2,
+  Loader2,
+  Eye,
+} from "lucide-react";
+import { EventRegisteredUsersAvatars } from "@/components/features/events/event-registered-users-avatars";
+import { EventRegisteredUsersAvatarsSkeleton } from "@/components/features/events/event-registered-users-avatars-skeleton";
 
 interface EventDetailDialogProps {
   event: EventWithCategory | null;
@@ -107,7 +117,7 @@ export function EventDetailDialog({
             <img
               src={event.imageBlobUrl || event.imageUrl || ""}
               alt={event.title}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover border"
             />
           ) : (
             <div
@@ -225,13 +235,25 @@ export function EventDetailDialog({
 
             {/* 報名人數 */}
             <div className="flex items-start gap-3">
-              <div className="p-2 rounded-full bg-primary/10 text-primary">
+              <div className="p-2 rounded-full bg-primary/10 text-primary flex-shrink-0">
                 <Users className="size-4" />
               </div>
-              <div className="text-sm text-foreground">
-                {registrationCount > 0
-                  ? `已有 ${registrationCount} 人報名`
-                  : "尚未有人報名"}
+              <div className="flex-1">
+                <div className="text-sm text-foreground">
+                  {registrationCount > 0
+                    ? `已有 ${registrationCount} 人報名`
+                    : "尚未有人報名"}
+                </div>
+                {/* 已報名使用者頭像堆疊 */}
+                {registrationCount > 0 && (
+                  <div className="mt-2">
+                    <Suspense
+                      fallback={<EventRegisteredUsersAvatarsSkeleton />}
+                    >
+                      <EventRegisteredUsersAvatars eventId={event.id} />
+                    </Suspense>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -256,16 +278,26 @@ export function EventDetailDialog({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="pt-2 space-y-2"
+              className="flex gap-2"
             >
               {error && (
                 <div className="text-sm text-destructive text-center">
                   {error}
                 </div>
               )}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button size="icon" className="rounded-full" asChild>
+                    <Link href={`/event/${event.id}`}>
+                      <Eye className="size-4" />
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>查看活動詳細</TooltipContent>
+              </Tooltip>
               <Button
-                className="w-full"
-                variant={isRegistered ? "outline" : "default"}
+                className="flex-1"
+                variant={isRegistered ? "secondary" : "default"}
                 onClick={handleRegistration}
                 disabled={isLoading}
               >

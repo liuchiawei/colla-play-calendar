@@ -5,28 +5,7 @@ import CalendarPageClient from "./components/calendar-page.client";
 
 export default function CalendarPage() {
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* 背景デコレーション */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* グラデーションオーブ */}
-        <div
-          className="absolute -top-40 -right-40 w-96 h-96 rounded-full"
-          style={{
-            background:
-              "radial-gradient(circle, oklch(0.72 0.18 25 / 0.3) 0%, transparent 70%)",
-          }}
-        />
-        <div
-          className="absolute -bottom-40 -left-40 w-[500px] h-[500px] rounded-full"
-          style={{
-            background:
-              "radial-gradient(circle, oklch(0.7 0.15 180 / 0.2) 0%, transparent 70%)",
-          }}
-        />
-        {/* グリッドパターン */}
-        <div className="absolute inset-0 bg-grid-pattern opacity-30" />
-      </div>
-
+    <div className="min-h-screen relative overflow-hidden">
       {/* メインコンテンツ */}
       <main className="relative z-10 container mx-auto px-4 md:px-0 py-8">
         {/* タイトルセクション */}

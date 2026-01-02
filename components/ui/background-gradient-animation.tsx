@@ -5,12 +5,12 @@ import { useEffect, useRef, useState } from "react";
 export const BackgroundGradientAnimation = ({
   gradientBackgroundStart = "rgb(108, 0, 162)",
   gradientBackgroundEnd = "rgb(0, 17, 82)",
-  firstColor = "18, 113, 255",
-  secondColor = "221, 74, 255",
-  thirdColor = "100, 220, 255",
-  fourthColor = "200, 50, 50",
-  fifthColor = "180, 180, 50",
-  pointerColor = "140, 100, 255",
+  firstColor = "20, 72, 140",
+  secondColor = "242, 61, 109",
+  thirdColor = "152, 50, 166",
+  fourthColor = "30, 164, 217",
+  fifthColor = "242, 87, 73",
+  pointerColor = "225, 160, 94",
   size = "80%",
   blendingValue = "hard-light",
   children,
@@ -141,7 +141,8 @@ export const BackgroundGradientAnimation = ({
     <div
       ref={containerRef}
       className={cn(
-        "h-svh w-full relative overflow-hidden top-0 left-0 right-0 bg-[linear-gradient(40deg,var(--gradient-background-start),var(--gradient-background-end))]",
+        // "h-svh w-full relative overflow-hidden top-0 left-0 right-0 bg-[linear-gradient(40deg,var(--gradient-background-start),var(--gradient-background-end))]",
+        "h-full w-full relative",
         containerClassName
       )}
     >
@@ -166,7 +167,7 @@ export const BackgroundGradientAnimation = ({
       <div className={cn("", className)}>{children}</div>
       <div
         className={cn(
-          "gradients-container h-full w-full blur-lg",
+          "gradients-container h-full min-h-svh w-full overflow-hidden blur-lg",
           isSafari ? "blur-2xl" : "[filter:url(#blurMe)_blur(40px)]"
         )}
       >

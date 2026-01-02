@@ -34,7 +34,7 @@ export function EventDetailPanel({
   const categoryColor = event?.category?.color || "#6366f1";
 
   return (
-    <div className="bg-card/80 backdrop-blur-sm rounded-2xl border border-border/50 shadow-xl flex flex-col h-full">
+    <div className="bg-card/80 backdrop-blur-sm rounded-2xl border border-border/50 shadow-xl flex flex-col h-full overflow-hidden">
       <AnimatePresence mode="wait">
         {event ? (
           <motion.div

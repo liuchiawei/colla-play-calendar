@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import ProfileForm from "./profile-form";
+import { ProfileTabs } from "./profile-tabs";
 
 export default async function ProfilePage() {
   // 取得登入狀態
@@ -24,8 +24,7 @@ export default async function ProfilePage() {
 
   return (
     <div className="container mx-auto max-w-4xl py-8">
-      <ProfileForm initialProfile={profile} />
+      <ProfileTabs initialProfile={profile} />
     </div>
   );
 }
-
