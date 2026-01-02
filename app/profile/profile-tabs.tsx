@@ -5,8 +5,8 @@
 
 import * as React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import ProfileForm from "./profile-form";
-import { EventsTab } from "./events-tab";
+import ProfileForm from "../../components/features/user/profile-form";
+import { EventsTab } from "../../components/features/events/events-tab";
 import type { Profile } from "@/lib/types";
 import { User, Calendar } from "lucide-react";
 
