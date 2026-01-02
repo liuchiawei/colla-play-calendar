@@ -126,7 +126,7 @@
   --secondary: oklch(0.464 0 52.59);
   --secondary-foreground: oklch(0.9612 0.0032 52.59);
   /* Muted: Darker background */
-  --muted: oklch(0.464 0 0);
+  --muted: oklch(0.287 0.0032 52.59);
   --muted-foreground: oklch(0.9612 0 0);
   /* Accent: Orange */
   --accent: oklch(0.755 0.1134 65.04);
@@ -135,7 +135,7 @@
   --destructive: oklch(0.72 0.18 25);
   /* Border & Input */
   --border: oklch(0.28 0.02 260);
-  --input: oklch(0.25 0.02 260);
+  --input: oklch(0.23 0.0076 84.56);
   --ring: oklch(0.8094 0.1521 72.45);
   /* Chart */
   --chart-1: oklch(0.8094 0.1521 72.45);

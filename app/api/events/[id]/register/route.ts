@@ -2,6 +2,7 @@
 // POST: 報名活動, DELETE: 取消報名, GET: 查詢報名狀態
 
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { getOrCreateAnonymousSessionId, getAnonymousSessionId } from "@/lib/utils/registration";
@@ -70,6 +71,12 @@ export async function POST(request: NextRequest, context: RouteContext) {
         anonymousSessionId: anonymousSessionId || null,
       },
     });
+
+    // 如果有 userId，清除該使用者的活動快取
+    // 使用 Next.js 16 語法：revalidateTag 的第二個參數為必須
+    if (userId) {
+      revalidateTag(`user-events-${userId}`, "max");
+    }
 
     return NextResponse.json<ApiResponse<{ id: string }>>(
       {
@@ -142,6 +149,12 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     await prisma.eventRegistration.delete({
       where: { id: registration.id },
     });
+
+    // 如果有 userId，清除該使用者的活動快取
+    // 使用 Next.js 16 語法：revalidateTag 的第二個參數為必須
+    if (userId) {
+      revalidateTag(`user-events-${userId}`, "max");
+    }
 
     return NextResponse.json<ApiResponse<{ id: string }>>({
       success: true,
