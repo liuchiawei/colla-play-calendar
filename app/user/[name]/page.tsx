@@ -3,20 +3,24 @@
 
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
+import { Suspense } from "react";
 import { auth } from "@/lib/auth";
 import { getUserByName } from "@/lib/services/profile/profile.service";
-import { getProfile, getPublicProfile } from "@/lib/services/profile/profile.service";
+import {
+  getProfile,
+  getPublicProfile,
+} from "@/lib/services/profile/profile.service";
 import ProfileForm from "@/components/features/user/profile-form";
 import SectionContainer from "@/components/layout/section-container";
+import { ProfileFormSkeleton } from "@/components/features/user/profile-form-skeleton";
 import type { Profile, PublicProfileDto, UserWithAdmin } from "@/lib/types";
 
 type PageProps = {
   params: Promise<{ name: string }>;
 };
 
-export default async function UserProfilePage({ params }: PageProps) {
-  const { name } = await params;
-
+// 異步資料獲取組件
+async function UserProfileContent({ name }: { name: string }) {
   // 解碼 URL 編碼的用戶名稱
   const decodedName = decodeURIComponent(name);
 
@@ -39,7 +43,7 @@ export default async function UserProfilePage({ params }: PageProps) {
 
   // 5. 根據是否為本人選擇獲取完整資料或公開資料
   let profile: Profile | PublicProfileDto | null = null;
-  
+
   if (isOwner) {
     // 本人：獲取完整資料
     profile = await getProfile(targetUserId);
@@ -52,13 +56,22 @@ export default async function UserProfilePage({ params }: PageProps) {
   const targetUserInfo: UserWithAdmin | null = targetUser;
 
   return (
-    <SectionContainer>
-      <ProfileForm 
-        initialProfile={profile} 
-        isOwner={isOwner}
-        targetUser={targetUserInfo}
-      />
-    </SectionContainer>
+    <ProfileForm
+      initialProfile={profile}
+      isOwner={isOwner}
+      targetUser={targetUserInfo}
+    />
   );
 }
 
+export default async function UserProfilePage({ params }: PageProps) {
+  const { name } = await params;
+
+  return (
+    <SectionContainer>
+      <Suspense fallback={<ProfileFormSkeleton />}>
+        <UserProfileContent name={name} />
+      </Suspense>
+    </SectionContainer>
+  );
+}

@@ -65,7 +65,7 @@ export function useProfileEvents(options?: { fallbackData?: EventWithCategory[] 
       revalidateOnFocus: false, // 關閉視窗聚焦重新驗證，減少不必要的 API 調用
       revalidateOnReconnect: true, // 保持網路重連時重新驗證
       dedupingInterval: 5000, // 增加為 5 秒，避免短時間內重複請求
-      staleTime: 2 * 60 * 1000, // 增加為 2 分鐘，減少不必要的資料庫查詢
+      staleTime: 5 * 60 * 1000, // 增加為 5 分鐘，減少不必要的資料庫查詢
       // 使用 keepPreviousData 保持舊資料顯示，直到新資料載入完成
       keepPreviousData: true,
       fallbackData: options?.fallbackData,

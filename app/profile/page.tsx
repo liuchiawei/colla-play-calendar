@@ -2,12 +2,15 @@
 // 顯示與編輯使用者的個人資料資訊
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
+import { Suspense } from "react";
 import { auth } from "@/lib/auth";
 import { getProfile } from "@/lib/services/profile/profile.service";
 import { ProfileTabs } from "./profile-tabs";
 import SectionContainer from "@/components/layout/section-container";
+import { ProfileFormSkeleton } from "@/components/features/user/profile-form-skeleton";
 
-export default async function ProfilePage() {
+// 異步資料獲取組件
+async function ProfileContent() {
   // 取得登入狀態
   const session = await auth.api.getSession({ headers: await headers() });
 
@@ -21,9 +24,15 @@ export default async function ProfilePage() {
   // 使用 profile service 取得個人資料（含快取）
   const profile = await getProfile(userId);
 
+  return <ProfileTabs initialProfile={profile} />;
+}
+
+export default async function ProfilePage() {
   return (
     <SectionContainer>
-      <ProfileTabs initialProfile={profile} />
+      <Suspense fallback={<ProfileFormSkeleton />}>
+        <ProfileContent />
+      </Suspense>
     </SectionContainer>
   );
 }
