@@ -98,7 +98,7 @@ export function EventRegisteredUsersAvatars({
               className="relative cursor-pointer"
               style={{ zIndex: displayUsers.length - index }}
             >
-              <Avatar className="size-8 md:size-10 border-2 border-background hover:scale-110 transition-transform">
+              <Avatar className="border-2 border-background hover:scale-110 transition-transform">
                 <AvatarImage
                   src={user.image || undefined}
                   alt={user.name || `使用者 ${user.id}`}

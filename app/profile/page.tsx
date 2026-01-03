@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { getProfile } from "@/lib/services/profile/profile.service";
 import { ProfileTabs } from "./profile-tabs";
+import SectionContainer from "@/components/layout/section-container";
 
 export default async function ProfilePage() {
   // 取得登入狀態
@@ -21,8 +22,8 @@ export default async function ProfilePage() {
   const profile = await getProfile(userId);
 
   return (
-    <div className="container mx-auto max-w-4xl py-8">
+    <SectionContainer>
       <ProfileTabs initialProfile={profile} />
-    </div>
+    </SectionContainer>
   );
 }
