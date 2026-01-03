@@ -50,9 +50,18 @@ export interface ProfileFormItemProps {
  * 顯示個人資料的單個字段，根據 isOwner 和 value 條件決定是否渲染。
  * 當 isOwner 為 false 且 value 為空時，組件不會渲染。
  *
- * @param props - ProfileFormItemProps
+ * @param label - 字段標籤
+ * @param value - 字段值（支持多種類型）
+ * @param className - 自定義 CSS 類名
+ * @param labelClassName - 自定義標籤 CSS
+ * @param valueClassName - 自定義值顯示區域 CSS
+ * @param iconContainerClassName - 自定義圖標容器 CSS 類名
+ * @param disableConditionalRender - 是否禁用條件渲染（默認為 false，用於特殊情況下的強制顯示）
+ * @param isVisible - 是否公開可見（僅在 isOwner 為 true 時顯示圖標）
+ * @param isOwner - 是否為資料擁有者
+ * @param showSeparator - 是否顯示分隔符（默認為 true）
+ * @param formatValue - 自定義值格式化函數
  * @returns JSX.Element | null
- *
  * @example
  * ```tsx
  * <ProfileFormItem
