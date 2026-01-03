@@ -10,10 +10,7 @@ async function fetchUpcomingEvents(): Promise<EventWithCategory[]> {
   try {
     // 在 Server Component 中，使用絕對 URL 調用內部 API
     const baseUrl =
-      process.env.NEXT_PUBLIC_BASE_URL ||
-      (process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}`
-        : "http://localhost:3000");
+      process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
     const headersList = await headers();
     const cookie = headersList.get("cookie") || "";
