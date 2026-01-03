@@ -1,8 +1,8 @@
 # TODO list
 
 - [ ] Auth: User Name
-  - 1. 更改註冊時 Name 邏輯，讓用戶必須提供 name (id)
-  - 2. 用戶註冊時增加對 name 唯一性的檢查
+  1. 更改註冊時 Name 邏輯，讓用戶必須提供 name (id)
+  2. 用戶註冊時增加對 name 唯一性的檢查
 - [ ] User profile hover card
 - [ ] Design: Profile page
 - [ ] Design: User page
