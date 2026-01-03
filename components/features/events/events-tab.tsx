@@ -8,6 +8,9 @@ import { useMemo, useState } from "react";
 import { EventListItem } from "./event-list-item";
 import { EventsTabSkeleton } from "./events-tab-skeleton";
 import { EventDetailDialog } from "@/components/features/events/event-detail-dialog";
+import { EventCarouselClient } from "./event-carousel-client";
+import { EventPosterCard } from "./event-poster-card";
+import { DisplayToggle } from "@/components/widget/display-toggle";
 import { useProfileEvents } from "@/lib/hooks/use-profile";
 import type { EventWithCategory } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,6 +25,7 @@ export function EventsTab() {
     null
   );
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [displayMode, setDisplayMode] = useState<"list" | "card">("list");
 
   // 將 SWR 錯誤轉換為字串
   const error = swrError
@@ -126,22 +130,29 @@ export function EventsTab() {
     <div className="space-y-8">
       {/* 已報名的未來活動 */}
       <div className="space-y-4">
-        <div>
-          <h2 className="text-xl font-semibold mb-1">已報名的未來活動</h2>
-          <p className="text-sm text-muted-foreground">
-            您已報名但尚未開始的活動
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-semibold mb-1">已報名的未來活動</h2>
+            <p className="text-sm text-muted-foreground">
+              您已報名但尚未開始的活動
+            </p>
+          </div>
+          <DisplayToggle value={displayMode} onValueChange={setDisplayMode} />
         </div>
         {upcomingEvents.length > 0 ? (
-          <div className="space-y-3">
-            {upcomingEvents.map((event) => (
-              <EventListItem
-                key={event.id}
-                event={event}
-                onClick={() => handleEventClick(event)}
-              />
-            ))}
-          </div>
+          displayMode === "list" ? (
+            <div className="space-y-3">
+              {upcomingEvents.map((event) => (
+                <EventListItem
+                  key={event.id}
+                  event={event}
+                  onClick={() => handleEventClick(event)}
+                />
+              ))}
+            </div>
+          ) : (
+            <EventCarouselClient events={upcomingEvents} />
+          )
         ) : (
           <Card>
             <CardContent className="pt-6">
@@ -158,22 +169,37 @@ export function EventsTab() {
 
       {/* 已參加的活動 */}
       <div className="space-y-4">
-        <div>
-          <h2 className="text-xl font-semibold mb-1">已參加的活動</h2>
-          <p className="text-sm text-muted-foreground">
-            您已經參加過的活動記錄
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-semibold mb-1">已參加的活動</h2>
+            <p className="text-sm text-muted-foreground">
+              您已經參加過的活動記錄
+            </p>
+          </div>
+          <DisplayToggle value={displayMode} onValueChange={setDisplayMode} />
         </div>
         {pastEvents.length > 0 ? (
-          <div className="space-y-3">
-            {pastEvents.map((event) => (
-              <EventListItem
-                key={event.id}
-                event={event}
-                onClick={() => handleEventClick(event)}
-              />
-            ))}
-          </div>
+          displayMode === "list" ? (
+            <div className="space-y-3">
+              {pastEvents.map((event) => (
+                <EventListItem
+                  key={event.id}
+                  event={event}
+                  onClick={() => handleEventClick(event)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {pastEvents.map((event) => (
+                <EventPosterCard
+                  key={event.id}
+                  event={event}
+                  onClick={() => handleEventClick(event)}
+                />
+              ))}
+            </div>
+          )
         ) : (
           <Card>
             <CardContent className="pt-6">
