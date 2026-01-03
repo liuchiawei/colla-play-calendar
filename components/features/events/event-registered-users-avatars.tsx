@@ -4,6 +4,7 @@
 // 顯示已報名使用者的頭像堆疊列表，使用 shadcn 組件
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   Tooltip,
@@ -98,16 +99,18 @@ export function EventRegisteredUsersAvatars({
               className="relative cursor-pointer"
               style={{ zIndex: displayUsers.length - index }}
             >
-              <Avatar className="border-2 border-background hover:scale-110 transition-transform">
-                <AvatarImage
-                  src={user.image || undefined}
-                  alt={user.name || `使用者 ${user.id}`}
-                  loading="lazy"
-                />
-                <AvatarFallback className="text-xs font-semibold bg-muted">
-                  {getFallbackText(user)}
-                </AvatarFallback>
-              </Avatar>
+              <Link href={`/user/${user.name}`}>
+                <Avatar className="border-2 border-background hover:scale-110 transition-transform">
+                  <AvatarImage
+                    src={user.image || undefined}
+                    alt={user.name || `使用者 ${user.id}`}
+                    loading="lazy"
+                  />
+                  <AvatarFallback className="text-xs font-semibold bg-muted">
+                    {getFallbackText(user)}
+                  </AvatarFallback>
+                </Avatar>
+              </Link>
             </div>
           </TooltipTrigger>
           <TooltipContent side="top">

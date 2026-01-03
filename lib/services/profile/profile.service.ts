@@ -1,6 +1,6 @@
 /**
  * 個人資料服務 (Profile Service)
- * 
+ *
  * 提供個人資料相關的業務邏輯處理，包括取得、更新、公開資料查詢等
  * 使用 Next.js unstable_cache 優化性能，減少資料庫查詢
  * 遵循單一職責原則，統一管理個人資料邏輯
@@ -9,7 +9,14 @@
 import { unstable_cache } from "next/cache";
 import { revalidateTag } from "next/cache";
 import prisma from "@/lib/prisma";
-import type { Profile, ProfileUpdateInput, PublicProfileDto, ProfileVisibility, EventWithCategory } from "@/lib/types";
+import type {
+  Profile,
+  ProfileUpdateInput,
+  PublicProfileDto,
+  ProfileVisibility,
+  EventWithCategory,
+  UserWithAdmin,
+} from "@/lib/types";
 
 // 可控制的個人資料字段列表
 const PROFILE_VISIBILITY_FIELDS = [
@@ -24,7 +31,7 @@ const PROFILE_VISIBILITY_FIELDS = [
 
 /**
  * 從資料庫獲取個人資料（內部函數，用於快取）
- * 
+ *
  * @param userId 用戶 ID
  * @returns Promise<Profile | null>
  */
@@ -43,12 +50,12 @@ async function fetchProfileFromDb(userId: string): Promise<Profile | null> {
 
 /**
  * 取得個人資料（帶快取）
- * 
+ *
  * 使用 Next.js unstable_cache 快取個人資料查詢結果：
  * - 快取 key: `profile-${userId}`
  * - 快取 tag: `profile-${userId}`, `profile`
  * - TTL: 5 分鐘
- * 
+ *
  * @param userId 用戶 ID
  * @returns Promise<Profile | null>
  */
@@ -77,9 +84,9 @@ export async function getProfile(userId: string): Promise<Profile | null> {
 
 /**
  * 更新個人資料
- * 
+ *
  * 更新後會自動清除相關快取
- * 
+ *
  * @param userId 用戶 ID
  * @param data 更新資料
  * @returns Promise<Profile>
@@ -92,10 +99,12 @@ export async function updateProfile(
   if (data.visibility) {
     const visibility = data.visibility as ProfileVisibility;
     const allowedFields = new Set(PROFILE_VISIBILITY_FIELDS);
-    
+
     // 檢查是否有不允許的字段
     for (const field of Object.keys(visibility)) {
-      if (!allowedFields.has(field as typeof PROFILE_VISIBILITY_FIELDS[number])) {
+      if (
+        !allowedFields.has(field as (typeof PROFILE_VISIBILITY_FIELDS)[number])
+      ) {
         throw new Error(`不允許的 visibility 字段: ${field}`);
       }
     }
@@ -129,7 +138,8 @@ export async function updateProfile(
       skills: data.skills !== undefined ? (data.skills as any) : undefined,
       bio: data.bio !== undefined ? data.bio : undefined,
       extra: data.extra !== undefined ? (data.extra as any) : undefined,
-      visibility: data.visibility !== undefined ? (data.visibility as any) : undefined,
+      visibility:
+        data.visibility !== undefined ? (data.visibility as any) : undefined,
     },
   });
 
@@ -144,7 +154,7 @@ export async function updateProfile(
 
 /**
  * 根據 visibility 過濾個人資料字段
- * 
+ *
  * @param profile 個人資料
  * @param visibility 可見性設定
  * @returns PublicProfileDto 過濾後的公開個人資料
@@ -206,7 +216,7 @@ export function filterProfileByVisibility(
 
 /**
  * 從資料庫獲取公開個人資料（內部函數，用於快取）
- * 
+ *
  * @param userId 用戶 ID
  * @returns Promise<PublicProfileDto | null>
  */
@@ -238,13 +248,13 @@ async function fetchPublicProfileFromDb(
 
 /**
  * 取得公開個人資料（帶快取）
- * 
+ *
  * 根據 visibility 設定過濾字段，只返回用戶允許公開的資料
  * 使用 Next.js unstable_cache 快取查詢結果：
  * - 快取 key: `public-profile-${userId}`
  * - 快取 tag: `public-profile-${userId}`, `public-profile`
  * - TTL: 5 分鐘
- * 
+ *
  * @param userId 用戶 ID
  * @returns Promise<PublicProfileDto | null>
  */
@@ -275,7 +285,7 @@ export async function getPublicProfile(
 
 /**
  * 從資料庫獲取使用者活動紀錄（內部函數，用於快取）
- * 
+ *
  * @param userId 用戶 ID
  * @returns Promise<EventWithCategory[]>
  */
@@ -317,23 +327,28 @@ async function fetchUserEventsFromDb(
       };
     });
   } catch (error) {
-    console.error("[Profile Service] Failed to fetch user events from DB:", error);
+    console.error(
+      "[Profile Service] Failed to fetch user events from DB:",
+      error
+    );
     return [];
   }
 }
 
 /**
  * 取得使用者活動紀錄（帶快取）
- * 
+ *
  * 使用 Next.js unstable_cache 快取查詢結果：
  * - 快取 key: `user-events-${userId}`
  * - 快取 tag: `user-events-${userId}`, `user-events`
  * - TTL: 60 秒
- * 
+ *
  * @param userId 用戶 ID
  * @returns Promise<EventWithCategory[]>
  */
-export async function getUserEvents(userId: string): Promise<EventWithCategory[]> {
+export async function getUserEvents(
+  userId: string
+): Promise<EventWithCategory[]> {
   if (!userId) {
     return [];
   }
@@ -353,5 +368,75 @@ export async function getUserEvents(userId: string): Promise<EventWithCategory[]
   } catch (error) {
     console.error("[Profile Service] Failed to get user events:", error);
     return [];
+  }
+}
+
+/**
+ * 從資料庫獲取用戶信息（根據名稱，內部函數，用於快取）
+ *
+ * @param name 用戶名稱
+ * @returns Promise<UserWithAdmin | null>
+ */
+async function fetchUserByNameFromDb(
+  name: string
+): Promise<UserWithAdmin | null> {
+  try {
+    const user = await prisma.user.findFirst({
+      where: { name },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        emailVerified: true,
+        image: true,
+        isAdmin: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return user as UserWithAdmin | null;
+  } catch (error) {
+    console.error(
+      "[Profile Service] Failed to fetch user by name from DB:",
+      error
+    );
+    return null;
+  }
+}
+
+/**
+ * 根據用戶名稱查找用戶（帶快取）
+ *
+ * 使用 Next.js unstable_cache 快取用戶名稱查詢結果：
+ * - 快取 key: `user-by-name-${name}`
+ * - 快取 tag: `user-by-name-${name}`, `user-by-name`
+ * - TTL: 5 分鐘
+ *
+ * @param name 用戶名稱
+ * @returns Promise<UserWithAdmin | null>
+ */
+export async function getUserByName(
+  name: string
+): Promise<UserWithAdmin | null> {
+  if (!name) {
+    return null;
+  }
+
+  try {
+    // 使用 unstable_cache 快取用戶名稱查詢
+    const cachedUser = await unstable_cache(
+      async () => fetchUserByNameFromDb(name),
+      [`user-by-name-${name}`], // 快取 key
+      {
+        tags: [`user-by-name-${name}`, "user-by-name"], // 快取標籤
+        revalidate: 300, // 5 分鐘 TTL
+      }
+    )();
+
+    return cachedUser;
+  } catch (error) {
+    console.error("[Profile Service] Failed to get user by name:", error);
+    return null;
   }
 }

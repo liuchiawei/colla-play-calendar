@@ -244,3 +244,36 @@ export async function clearUserCache(userId: string): Promise<void> {
     console.log(`[Auth Server Service] Should clear cache for user: ${userId}`);
   }
 }
+
+/**
+ * 獲取會話信息（用於 Server Components）
+ * 
+ * 在 Server Components 中使用，返回簡化的會話信息
+ * 使用 Next.js headers() 獲取請求頭
+ * 
+ * @returns Promise<{ userId: string | null; isAuthenticated: boolean }>
+ */
+export async function getSessionInfo(): Promise<{ userId: string | null; isAuthenticated: boolean }> {
+  try {
+    const { headers } = await import("next/headers");
+    const session = await auth.api.getSession({ headers: await headers() });
+
+    if (!session || !session.user) {
+      return {
+        userId: null,
+        isAuthenticated: false,
+      };
+    }
+
+    return {
+      userId: session.user.id || null,
+      isAuthenticated: true,
+    };
+  } catch (error) {
+    console.error("[Auth Server Service] Failed to get session info:", error);
+    return {
+      userId: null,
+      isAuthenticated: false,
+    };
+  }
+}
