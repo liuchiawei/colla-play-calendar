@@ -9,7 +9,7 @@
 import { unstable_cache } from "next/cache";
 import { revalidateTag } from "next/cache";
 import prisma from "@/lib/prisma";
-import type { Profile, ProfileUpdateInput, PublicProfileDto, ProfileVisibility } from "@/lib/types";
+import type { Profile, ProfileUpdateInput, PublicProfileDto, ProfileVisibility, EventWithCategory } from "@/lib/types";
 
 // 可控制的個人資料字段列表
 const PROFILE_VISIBILITY_FIELDS = [
@@ -270,5 +270,88 @@ export async function getPublicProfile(
   } catch (error) {
     console.error("[Profile Service] Failed to get public profile:", error);
     return null;
+  }
+}
+
+/**
+ * 從資料庫獲取使用者活動紀錄（內部函數，用於快取）
+ * 
+ * @param userId 用戶 ID
+ * @returns Promise<EventWithCategory[]>
+ */
+async function fetchUserEventsFromDb(
+  userId: string
+): Promise<EventWithCategory[]> {
+  try {
+    // 查詢使用者的所有報名記錄，包含活動和類別資訊
+    // 一次查詢所有資料，避免 N+1 問題
+    const registrations = await prisma.eventRegistration.findMany({
+      where: {
+        userId, // 只查詢登入使用者的報名記錄
+      },
+      include: {
+        event: {
+          include: {
+            category: true,
+            _count: {
+              select: { registrations: true },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc", // 依報名時間降序排列
+      },
+    });
+
+    // 轉換為 EventWithCategory 格式
+    // 所有查詢到的活動都是使用者已報名的，所以 isRegistered 為 true
+    return registrations.map((registration) => {
+      const { event } = registration;
+      const { _count, ...eventData } = event;
+      return {
+        ...eventData,
+        category: event.category,
+        registrationCount: _count.registrations,
+        isRegistered: true, // 所有查詢到的活動都是已報名的
+      };
+    });
+  } catch (error) {
+    console.error("[Profile Service] Failed to fetch user events from DB:", error);
+    return [];
+  }
+}
+
+/**
+ * 取得使用者活動紀錄（帶快取）
+ * 
+ * 使用 Next.js unstable_cache 快取查詢結果：
+ * - 快取 key: `user-events-${userId}`
+ * - 快取 tag: `user-events-${userId}`, `user-events`
+ * - TTL: 60 秒
+ * 
+ * @param userId 用戶 ID
+ * @returns Promise<EventWithCategory[]>
+ */
+export async function getUserEvents(userId: string): Promise<EventWithCategory[]> {
+  if (!userId) {
+    return [];
+  }
+
+  try {
+    // 使用 unstable_cache 快取使用者活動查詢
+    const cachedUserEvents = await unstable_cache(
+      async () => fetchUserEventsFromDb(userId),
+      [`user-events-${userId}`], // 快取 key
+      {
+        tags: [`user-events-${userId}`, "user-events"], // 快取標籤
+        revalidate: 60, // 60 秒 TTL
+      }
+    )();
+
+    return cachedUserEvents;
+  } catch (error) {
+    console.error("[Profile Service] Failed to get user events:", error);
+    return [];
   }
 }

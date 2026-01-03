@@ -32,6 +32,11 @@ export interface UserInfo {
 
 /**
  * 獲取會話（帶錯誤處理）
+ * 
+ * 注意：better-auth 的 getSession 每次都會查詢資料庫驗證 session。
+ * 為減少查詢次數，建議：
+ * 1. 調整客戶端 SWR 的 staleTime，減少 API 重新驗證頻率
+ * 2. 在同一個請求處理中，盡可能只調用一次 getSession
  *
  * @param request Next.js 請求對象
  * @returns Promise<SessionInfo>

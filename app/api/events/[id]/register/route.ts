@@ -5,7 +5,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { getOrCreateAnonymousSessionId, getAnonymousSessionId } from "@/lib/utils/registration";
+import {
+  getOrCreateAnonymousSessionId,
+  getAnonymousSessionId,
+} from "@/lib/utils/registration";
 import type { ApiResponse } from "@/lib/types";
 
 type RouteContext = {
@@ -76,6 +79,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
     // 使用 Next.js 16 語法：revalidateTag 的第二個參數為必須
     if (userId) {
       revalidateTag(`user-events-${userId}`, "max");
+      // 清除全局使用者活動快取標籤
+      revalidateTag("user-events", "max");
     }
 
     // 清除活動已報名使用者列表快取
@@ -157,6 +162,8 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     // 使用 Next.js 16 語法：revalidateTag 的第二個參數為必須
     if (userId) {
       revalidateTag(`user-events-${userId}`, "max");
+      // 清除全局使用者活動快取標籤
+      revalidateTag("user-events", "max");
     }
 
     // 清除活動已報名使用者列表快取
@@ -219,5 +226,3 @@ export async function GET(request: NextRequest, context: RouteContext) {
     );
   }
 }
-
-

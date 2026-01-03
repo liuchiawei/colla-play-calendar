@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
-import prisma from "@/lib/prisma";
+import { getProfile } from "@/lib/services/profile/profile.service";
 import { ProfileTabs } from "./profile-tabs";
 
 export default async function ProfilePage() {
@@ -17,10 +17,8 @@ export default async function ProfilePage() {
 
   const userId = session.user.id;
 
-  // 取得個人資料（不存在則為 null）
-  const profile = await prisma.profile.findUnique({
-    where: { userId },
-  });
+  // 使用 profile service 取得個人資料（含快取）
+  const profile = await getProfile(userId);
 
   return (
     <div className="container mx-auto max-w-4xl py-8">

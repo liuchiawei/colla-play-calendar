@@ -5,6 +5,7 @@
 
 import * as React from "react";
 import { Suspense } from "react";
+import { mutate } from "swr";
 import { motion } from "motion/react";
 import Link from "next/link";
 import {
@@ -93,6 +94,9 @@ export function EventDetailDialog({
         } else {
           setRegistrationCount((prev) => prev + 1);
         }
+        // 使 SWR 快取失效，自動重新驗證活動紀錄
+        // 服務端快取已在 API route 中清除
+        mutate("/api/profile/events");
       } else {
         setError(data.error || "操作失敗");
       }
