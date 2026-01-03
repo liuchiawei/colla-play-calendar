@@ -15,7 +15,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useAuthStore } from "@/lib/stores/auth-store";
-import { authClient } from "@/lib/auth-client";
+import { signOut } from "@/lib/services/auth/auth.service";
 import { cn } from "@/lib/utils";
 import { PAGE_LINKS } from "@/lib/config";
 import { Home, Calendar, User, LogIn, LogOut } from "lucide-react";
@@ -30,28 +30,12 @@ export function NavSheet({ children }: NavSheetProps) {
   const pathname = usePathname();
 
   const handleSignOut = async () => {
-    try {
-      // 清除快取
-      await fetch("/api/revalidate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tags: ["user-auth"] }),
-      }).catch(() => {
-        // 忽略錯誤，繼續登出流程
-      });
-
-      // 執行登出
-      await authClient.signOut();
-
-      // 清除 store 狀態
-      logout();
-      router.refresh();
-    } catch (error) {
-      console.error("Sign out error:", error);
-      // 即使出錯也清除本地狀態並導航
-      logout();
-      router.push("/login");
-    }
+    await signOut({
+      onLogout: logout,
+      onNavigate: (path) => router.push(path),
+      onRefresh: () => router.refresh(),
+      cleanupOnError: true,
+    });
   };
 
   return (

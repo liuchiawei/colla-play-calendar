@@ -2,7 +2,7 @@
 // 取得目前登入使用者的所有報名活動
 import { NextRequest, NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
-import { auth } from "@/lib/auth";
+import { requireAuth } from "@/lib/services/auth/auth-server.service";
 import prisma from "@/lib/prisma";
 import type { ApiResponse, EventWithCategory } from "@/lib/types";
 
@@ -53,20 +53,15 @@ async function fetchUserEventsFromDB(
 // GET /api/profile/events - 取得目前登入使用者的所有報名活動
 export async function GET(request: NextRequest) {
   try {
-    // 透過 Better Auth 取得登入狀態
-    const session = await auth.api.getSession({ headers: request.headers });
+    // 使用統一的認證服務檢查登入狀態
+    const authResult = await requireAuth(request);
 
-    if (!session || !session.user) {
-      return NextResponse.json<ApiResponse<null>>(
-        {
-          success: false,
-          error: "需要登入",
-        },
-        { status: 401 }
-      );
+    // 如果未登入，requireAuth 會返回 NextResponse
+    if (authResult instanceof NextResponse) {
+      return authResult;
     }
 
-    const userId = session.user.id;
+    const { userId } = authResult;
 
     // 為每個使用者創建獨立的快取函數
     // 使用 unstable_cache 包裝資料庫查詢，減少重複查詢
@@ -98,4 +93,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

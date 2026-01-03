@@ -110,15 +110,13 @@ model Profile {
   education   String? // 學歷
   skills      Json? // 技能（JSON配列として保存）
   bio         String?   @db.VarChar(100) // 100字以內簡介
-  isPublic    Boolean   @default(false) // 是否公開
   extra       Json?     @db.JsonB // 拡張フィールド（Admin用）
-  visibility  Json?     @db.JsonB // フィールド別公開設定（将来用）
+  visibility  Json?     @db.JsonB // フィールド別公開設定（各字段的可見性控制）
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@index([isPublic])
   @@map("profile")
 }
 

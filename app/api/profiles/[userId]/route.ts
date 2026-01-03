@@ -1,7 +1,7 @@
 // 公開個人資料 API Route - GET（取得公開個人資料）
-// 僅在 isPublic=true 時，取得指定使用者的個人資料
+// 根據 visibility 設定，取得指定使用者的公開個人資料
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { getPublicProfile } from "@/lib/services/profile/profile.service";
 import type { ApiResponse, PublicProfileDto } from "@/lib/types";
 
 type RouteContext = {
@@ -13,12 +13,10 @@ export async function GET(request: NextRequest, context: RouteContext) {
   try {
     const { userId } = await context.params;
 
-    // 取得個人資料
-    const profile = await prisma.profile.findUnique({
-      where: { userId },
-    });
+    // 使用 profile service 取得公開個人資料（根據 visibility 過濾字段）
+    const publicProfile = await getPublicProfile(userId);
 
-    if (!profile) {
+    if (!publicProfile) {
       return NextResponse.json<ApiResponse<null>>(
         {
           success: false,
@@ -28,8 +26,18 @@ export async function GET(request: NextRequest, context: RouteContext) {
       );
     }
 
-    // 若 isPublic 為 false，回傳 403
-    if (!profile.isPublic) {
+    // 檢查是否有任何公開的字段
+    const hasPublicFields =
+      publicProfile.displayName !== null ||
+      publicProfile.birthDate !== null ||
+      publicProfile.gender !== null ||
+      publicProfile.occupation !== null ||
+      publicProfile.education !== null ||
+      publicProfile.skills !== null ||
+      publicProfile.bio !== null;
+
+    // 如果沒有任何公開字段，回傳 403
+    if (!hasPublicFields) {
       return NextResponse.json<ApiResponse<null>>(
         {
           success: false,
@@ -38,21 +46,6 @@ export async function GET(request: NextRequest, context: RouteContext) {
         { status: 403 }
       );
     }
-
-    // 回傳公開用的個人資料（排除 extra 和 visibility）
-    const publicProfile: PublicProfileDto = {
-      id: profile.id,
-      userId: profile.userId,
-      displayName: profile.displayName,
-      birthDate: profile.birthDate,
-      gender: profile.gender,
-      occupation: profile.occupation,
-      education: profile.education,
-      skills: profile.skills as string[] | null,
-      bio: profile.bio,
-      createdAt: profile.createdAt,
-      updatedAt: profile.updatedAt,
-    };
 
     return NextResponse.json<ApiResponse<PublicProfileDto>>({
       success: true,

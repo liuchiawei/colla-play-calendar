@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { authClient } from "@/lib/auth-client";
+import { signIn } from "@/lib/services/auth/auth.service";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
@@ -43,36 +43,23 @@ export default function LoginForm() {
     setError(null);
 
     try {
-      const result = await authClient.signIn.email({
-        email: data.email,
-        password: data.password,
+      // 使用統一的認證服務進行登入
+      const result = await signIn(data.email, data.password, {
+        onSuccess: (user) => {
+          // 更新客戶端 auth store
+          if (user) {
+            fetchUser();
+          }
+        },
+        onNavigate: (path) => router.push(path),
+        onRefresh: () => router.refresh(),
+        redirectTo: "/profile",
       });
 
-      if (result.error) {
-        setError(result.error.message || "登入失敗");
+      if (!result.success) {
+        setError(result.error || "登入失敗");
         return;
       }
-
-      // 登入成功後，清除快取並更新狀態
-      try {
-        // 清除用戶認證快取
-        await fetch("/api/revalidate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ tags: ["user-auth"] }),
-          credentials: "include", // 確保包含 cookies
-        });
-
-        // 更新客戶端 auth store
-        await fetchUser();
-      } catch (revalidateError) {
-        console.error("[Login] Failed to revalidate cache:", revalidateError);
-        // 即使 revalidate 失敗，仍然繼續登入流程
-      }
-
-      // 導向個人資料頁面
-      router.push("/profile");
-      router.refresh();
     } catch (err) {
       setError("登入失敗，請再試一次");
       console.error("Login error:", err);
