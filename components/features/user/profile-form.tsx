@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -35,10 +34,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
 import { AvatarUpload } from "@/components/widget/avatar-upload";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { signOut } from "@/lib/services/auth/auth.service";
+import { ProfileFormItem } from "@/components/features/user/profile-form-item";
 import type {
   Profile,
   ProfileUpdateInput,
@@ -232,6 +231,7 @@ export default function ProfileForm({
         </div>
       </CardHeader>
       <CardContent>
+        {/* 錯誤訊息區塊 */}
         {error && (
           <div className="mb-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
             {error}
@@ -264,8 +264,6 @@ export default function ProfileForm({
             </Avatar>
           )}
         </div>
-
-        <Separator className="mb-6" />
 
         {isEditing ? (
           // 表單編輯模式
@@ -592,88 +590,124 @@ export default function ProfileForm({
         ) : (
           <div className="space-y-4">
             {/* 顯示模式：根據 isOwner 和 visibility 顯示字段和狀態 */}
-            <ProfileFormItem
-              label="姓名"
-              value={initialProfile?.displayName}
-              isVisible={visibility?.displayName}
-              isOwner={isOwner}
-            />
+            {(() => {
+              // 定義所有字段配置
+              const fieldConfigs = [
+                {
+                  key: "displayName",
+                  label: "姓名",
+                  value: initialProfile?.displayName,
+                  isVisible: visibility?.displayName,
+                },
+                {
+                  key: "birthDate",
+                  label: "生日",
+                  value: initialProfile?.birthDate,
+                  isVisible: visibility?.birthDate,
+                  formatValue: (
+                    value: string | Date | string[] | null | undefined
+                  ) => {
+                    if (!value) return "尚未填寫";
+                    if (value instanceof Date) {
+                      return value.toLocaleDateString("zh-TW");
+                    }
+                    if (typeof value === "string") {
+                      return new Date(value).toLocaleDateString("zh-TW");
+                    }
+                    return "尚未填寫";
+                  },
+                },
+                {
+                  key: "gender",
+                  label: "性別",
+                  value: initialProfile?.gender,
+                  isVisible: visibility?.gender,
+                  formatValue: (
+                    value: string | Date | string[] | null | undefined
+                  ) => {
+                    if (typeof value !== "string") return "尚未填寫";
+                    const genderMap: Record<string, string> = {
+                      male: "男性",
+                      female: "女性",
+                      other: "其他",
+                      unspecified: "不指定",
+                    };
+                    return genderMap[value] || "尚未填寫";
+                  },
+                },
+                {
+                  key: "occupation",
+                  label: "職業",
+                  value: initialProfile?.occupation,
+                  isVisible: visibility?.occupation,
+                },
+                {
+                  key: "education",
+                  label: "學歷",
+                  value: initialProfile?.education,
+                  isVisible: visibility?.education,
+                },
+                {
+                  key: "skills",
+                  label: "技能",
+                  value: initialProfile?.skills
+                    ? Array.isArray(initialProfile.skills)
+                      ? (initialProfile.skills.filter(
+                          (s): s is string => typeof s === "string"
+                        ) as string[])
+                      : undefined
+                    : undefined,
+                  isVisible: visibility?.skills,
+                  formatValue: (
+                    value: string | Date | string[] | null | undefined
+                  ) => {
+                    if (!value) return "尚未填寫";
+                    return Array.isArray(value)
+                      ? value.join(", ")
+                      : String(value);
+                  },
+                },
+                {
+                  key: "bio",
+                  label: "簡介",
+                  value: initialProfile?.bio,
+                  isVisible: visibility?.bio,
+                  className: "[&_p]:whitespace-pre-wrap",
+                },
+              ];
 
-            <ProfileFormItem
-              label="生日"
-              value={initialProfile?.birthDate}
-              isVisible={visibility?.birthDate}
-              isOwner={isOwner}
-              formatValue={(value) => {
-                if (!value) return "";
-                if (value instanceof Date) {
-                  return value.toLocaleDateString("zh-TW");
+              // 過濾可見字段：如果是 owner，所有字段都可見；如果不是 owner，只顯示有值的字段
+              const visibleFields = fieldConfigs.filter((field) => {
+                if (isOwner) return true; // owner 看到所有字段
+                return !!field.value; // 非 owner 只看到有值的字段
+              });
+
+              // 找到最後一個可見字段的 key
+              const lastVisibleKey =
+                visibleFields.length > 0
+                  ? visibleFields[visibleFields.length - 1].key
+                  : null;
+
+              return fieldConfigs.map((field) => {
+                // 如果不是 owner 且值為空，不渲染
+                if (!isOwner && !field.value) {
+                  return null;
                 }
-                if (typeof value === "string") {
-                  return new Date(value).toLocaleDateString("zh-TW");
-                }
-                return "";
-              }}
-            />
 
-            <ProfileFormItem
-              label="性別"
-              value={initialProfile?.gender}
-              isVisible={visibility?.gender}
-              isOwner={isOwner}
-              formatValue={(value) => {
-                if (typeof value !== "string") return "";
-                const genderMap: Record<string, string> = {
-                  male: "男性",
-                  female: "女性",
-                  other: "其他",
-                  unspecified: "不指定",
-                };
-                return genderMap[value] || "未設定";
-              }}
-            />
-
-            <ProfileFormItem
-              label="職業"
-              value={initialProfile?.occupation}
-              isVisible={visibility?.occupation}
-              isOwner={isOwner}
-            />
-
-            <ProfileFormItem
-              label="學歷"
-              value={initialProfile?.education}
-              isVisible={visibility?.education}
-              isOwner={isOwner}
-            />
-
-            <ProfileFormItem
-              label="技能"
-              value={
-                initialProfile?.skills
-                  ? Array.isArray(initialProfile.skills)
-                    ? (initialProfile.skills.filter(
-                        (s): s is string => typeof s === "string"
-                      ) as string[])
-                    : undefined
-                  : undefined
-              }
-              isVisible={visibility?.skills}
-              isOwner={isOwner}
-              formatValue={(value) => {
-                if (!value) return "";
-                return Array.isArray(value) ? value.join(", ") : String(value);
-              }}
-            />
-
-            <ProfileFormItem
-              label="簡介"
-              value={initialProfile?.bio}
-              isVisible={visibility?.bio}
-              isOwner={isOwner}
-              showSeparator={false}
-              className="[&_p]:whitespace-pre-wrap"
-            />
+                return (
+                  <ProfileFormItem
+                    key={field.key}
+                    label={field.label}
+                    value={field.value}
+                    isVisible={field.isVisible}
+                    isOwner={isOwner}
+                    showSeparator={field.key !== lastVisibleKey}
+                    formatValue={field.formatValue}
+                    className={field.className}
+                  />
+                );
+              });
+            })()}
 
             {/* 如果沒有任何資料，顯示提示 */}
             {(() => {
@@ -716,67 +750,5 @@ export default function ProfileForm({
         )}
       </CardContent>
     </Card>
-  );
-}
-
-// Profile 資訊項組件
-interface ProfileFormItemProps {
-  label: string;
-  value: string | Date | string[] | null | undefined;
-  isVisible?: boolean;
-  isOwner: boolean;
-  showSeparator?: boolean;
-  formatValue?: (value: string | Date | string[] | null | undefined) => string;
-  className?: string;
-}
-
-function ProfileFormItem({
-  label,
-  value,
-  isVisible,
-  isOwner,
-  showSeparator = true,
-  formatValue,
-  className,
-}: ProfileFormItemProps) {
-  // 如果值為空，不顯示
-  if (!value) {
-    return null;
-  }
-
-  // 格式化值
-  const displayValue = formatValue
-    ? formatValue(value)
-    : typeof value === "string"
-    ? value
-    : value instanceof Date
-    ? value.toLocaleDateString("zh-TW")
-    : Array.isArray(value)
-    ? value.join(", ")
-    : String(value);
-
-  return (
-    <>
-      <div className={className}>
-        <div className="flex items-center justify-between">
-          <div className="w-full flex justify-between items-center gap-2">
-            <label className="text-sm font-medium text-muted-foreground">
-              {label}
-            </label>
-            {isOwner && (
-              <div className="flex items-center gap-2">
-                {isVisible ? (
-                  <Eye className="size-4 text-muted-foreground" />
-                ) : (
-                  <EyeOff className="size-4 text-muted-foreground/40" />
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-        <p className="mt-1 text-base">{displayValue}</p>
-      </div>
-      {showSeparator && <Separator />}
-    </>
   );
 }
