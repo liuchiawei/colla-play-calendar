@@ -19,22 +19,23 @@ export function ProfileTabs({ initialProfile }: ProfileTabsProps) {
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      {/* 上方標籤列表 */}
       <TabsList className="grid w-full grid-cols-2">
         <TabsTrigger value="profile" className="flex items-center gap-2">
-          <User className="h-4 w-4" />
+          <User className="size-4" />
           個人資料
         </TabsTrigger>
         <TabsTrigger value="events" className="flex items-center gap-2">
-          <Calendar className="h-4 w-4" />
+          <Calendar className="size-4" />
           活動紀錄
         </TabsTrigger>
       </TabsList>
-
-      <TabsContent value="profile" className="mt-6">
+      {/* 個人資料頁 */}
+      <TabsContent value="profile">
         <ProfileForm initialProfile={initialProfile} />
       </TabsContent>
-
-      <TabsContent value="events" className="mt-6">
+      {/* 活動紀錄頁 */}
+      <TabsContent value="events">
         <EventsTab />
       </TabsContent>
     </Tabs>
