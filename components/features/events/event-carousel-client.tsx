@@ -123,17 +123,17 @@ export function EventCarouselClient({ events }: EventCarouselClientProps) {
         <Carousel
           opts={{
             align: "start",
-            loop: false,
+            loop: true,
           }}
-          className="w-full overflow-x-hidden"
+          className="w-full"
         >
           <CarouselContent className="-ml-2 md:-ml-4">
             {events.map((event) => (
               <CarouselItem
                 key={event.id}
-                className="pl-12 md:pl-18 lg:pl-24 basis-1/2 md:basis-1/3 lg:basis-1/4"
+                className="pl-12 md:pl-21 lg:pl-27 basis-1/2 md:basis-1/3 lg:basis-1/4"
               >
-                <div className="py-18 md:py-24 lg:py-30">
+                <div className="py-18 md:py-27 lg:py-36">
                   <EventPosterCard
                     event={event}
                     onClick={() => handleEventClick(event)}
@@ -142,8 +142,8 @@ export function EventCarouselClient({ events }: EventCarouselClientProps) {
               </CarouselItem>
             ))}
           </CarouselContent>
-          <CarouselPrevious className="left-0 md:-left-12" />
-          <CarouselNext className="right-0 md:-right-12" />
+          <CarouselPrevious className="left-4 hover:backdrop-blur-sm dark:shadow-white/20 hover:bg-accent/50 hover:text-accent-foreground dark:hover:bg-accent/50 hover:shadow-xl hover:scale-110 transition-all duration-300" />
+          <CarouselNext className="right-4 hover:backdrop-blur-sm dark:shadow-white/20 hover:bg-accent/50 hover:text-accent-foreground dark:hover:bg-accent/50 hover:shadow-xl hover:scale-110 transition-all duration-300" />
         </Carousel>
       </div>
       {/* 活動詳情對話框 */}
