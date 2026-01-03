@@ -37,7 +37,7 @@ import {
 import { startOfDay, addDays, isSameDay, endOfDay } from "date-fns";
 import type { EventWithCategory } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/lib/hooks/use-mobile";
 
 // コンポーネントのプロパティ型
 interface WeeklyCalendarProps {
