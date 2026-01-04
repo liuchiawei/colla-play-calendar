@@ -18,7 +18,7 @@ import { useAuthStore } from "@/lib/stores/auth-store";
 import { signOut } from "@/lib/services/auth/auth.service";
 import { cn } from "@/lib/utils";
 import { PAGE_LINKS } from "@/lib/config";
-import { Home, Calendar, User, LogIn, LogOut } from "lucide-react";
+import { LogIn, LogOut } from "lucide-react";
 
 interface NavSheetProps {
   children: React.ReactNode;

@@ -440,3 +440,73 @@ export async function getUserByName(
     return null;
   }
 }
+
+/**
+ * 從資料庫獲取用戶信息（根據 ID，內部函數，用於快取）
+ *
+ * @param id 用戶 ID
+ * @returns Promise<UserWithAdmin | null>
+ */
+async function fetchUserByIdFromDb(
+  id: string
+): Promise<UserWithAdmin | null> {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        emailVerified: true,
+        image: true,
+        isAdmin: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return user as UserWithAdmin | null;
+  } catch (error) {
+    console.error(
+      "[Profile Service] Failed to fetch user by id from DB:",
+      error
+    );
+    return null;
+  }
+}
+
+/**
+ * 根據用戶 ID 查找用戶（帶快取）
+ *
+ * 使用 Next.js unstable_cache 快取用戶 ID 查詢結果：
+ * - 快取 key: `user-by-id-${id}`
+ * - 快取 tag: `user-by-id-${id}`, `user-by-id`
+ * - TTL: 5 分鐘
+ *
+ * @param id 用戶 ID
+ * @returns Promise<UserWithAdmin | null>
+ */
+export async function getUserById(
+  id: string
+): Promise<UserWithAdmin | null> {
+  if (!id) {
+    return null;
+  }
+
+  try {
+    // 使用 unstable_cache 快取用戶 ID 查詢
+    const cachedUser = await unstable_cache(
+      async () => fetchUserByIdFromDb(id),
+      [`user-by-id-${id}`], // 快取 key
+      {
+        tags: [`user-by-id-${id}`, "user-by-id"], // 快取標籤
+        revalidate: 300, // 5 分鐘 TTL
+      }
+    )();
+
+    return cachedUser;
+  } catch (error) {
+    console.error("[Profile Service] Failed to get user by id:", error);
+    return null;
+  }
+}

@@ -99,7 +99,7 @@ export function EventRegisteredUsersAvatars({
               className="relative cursor-pointer"
               style={{ zIndex: displayUsers.length - index }}
             >
-              <Link href={`/user/${user.name}`}>
+              <Link href={`/user/${user.id}`}>
                 <Avatar className="border-2 border-background hover:scale-110 transition-transform">
                   <AvatarImage
                     src={user.image || undefined}
