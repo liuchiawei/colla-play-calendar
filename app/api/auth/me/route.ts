@@ -67,8 +67,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json<ApiResponse<null>>(
       {
         success: false,
-        error:
-          error instanceof Error ? error.message : "取得用戶信息失敗",
+        error: error instanceof Error ? error.message : "取得用戶信息失敗",
       },
       { status: 500 }
     );
@@ -139,4 +138,3 @@ export async function PATCH(request: NextRequest) {
     );
   }
 }
-
