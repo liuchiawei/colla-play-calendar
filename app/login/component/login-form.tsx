@@ -15,6 +15,7 @@ import {
   EmailField,
   PasswordField,
 } from "@/components/features/user/auth-form-fields";
+import { GoogleAuthButton } from "@/components/features/user/google-auth-button";
 
 // 登入表單驗證規則
 const loginSchema = z.object({
@@ -85,6 +86,24 @@ export default function LoginForm() {
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? "登入中..." : "登入"}
           </Button>
+
+          {/* 分隔線 */}
+          <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">
+                或
+              </span>
+            </div>
+          </div>
+
+          {/* Google 登入按鈕 */}
+          <GoogleAuthButton
+            label="使用 Google 登入"
+            redirectTo="/profile"
+          />
         </form>
       </Form>
     </AuthFormLayout>

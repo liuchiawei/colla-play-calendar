@@ -7,6 +7,7 @@ import * as React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProfileForm from "../../components/features/user/profile-form";
 import { EventsTab } from "../../components/features/events/events-tab";
+import { OAuthCallbackHandler } from "../../components/features/user/oauth-callback-handler";
 import type { Profile } from "@/lib/types";
 import { User, Calendar } from "lucide-react";
 
@@ -18,7 +19,10 @@ export function ProfileTabs({ initialProfile }: ProfileTabsProps) {
   const [activeTab, setActiveTab] = React.useState("profile");
 
   return (
-    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+    <>
+      {/* OAuth 回調處理器 */}
+      <OAuthCallbackHandler />
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
       {/* 上方標籤列表 */}
       <TabsList className="grid w-full grid-cols-2">
         <TabsTrigger value="profile" className="flex items-center gap-2">
@@ -39,6 +43,7 @@ export function ProfileTabs({ initialProfile }: ProfileTabsProps) {
         <EventsTab />
       </TabsContent>
     </Tabs>
+    </>
   );
 }
 

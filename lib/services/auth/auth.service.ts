@@ -350,6 +350,62 @@ export async function signUp(
 }
 
 /**
+ * 使用 Google 進行登入/註冊
+ * 
+ * 此函數會：
+ * 1. 重定向到 Google OAuth 授權頁面
+ * 2. 用戶授權後，Better Auth 會自動處理回調
+ * 3. 回調完成後會自動清除快取並更新用戶信息
+ * 
+ * 注意：此函數會觸發瀏覽器重定向，因此不會返回結果
+ * 實際的登入結果會在 callback route 中處理
+ * 
+ * @param options 登入選項（redirectTo 用於指定回調後的導航路徑）
+ * @returns Promise<void>
+ * 
+ * @example
+ * ```ts
+ * await signInWithGoogle({
+ *   redirectTo: "/profile",
+ * });
+ * ```
+ */
+export async function signInWithGoogle(
+  options: SignInOptions = {}
+): Promise<void> {
+  const { redirectTo = "/profile" } = options;
+
+  try {
+    // Better Auth の Google 認証を開始
+    // この関数は自動的に Google OAuth ページにリダイレクトする
+    // callbackURL は認証成功後のリダイレクト先を指定
+    // Better Auth は自動的に /api/auth/callback/google を処理し、
+    // その後 callbackURL にリダイレクトする
+    const result = await authClient.signIn.social({
+      provider: "google",
+      callbackURL: redirectTo,
+    });
+
+    // エラーが発生した場合
+    if (result.error) {
+      console.error("[Auth Service] Google sign in error:", result.error);
+      console.error("[Auth Service] Error details:", JSON.stringify(result.error, null, 2));
+      throw new Error(result.error.message || "Google 登入失敗");
+    }
+
+    // リダイレクトが発生するため、ここには到達しない
+    // ただし、エラー処理のために残しておく
+  } catch (error) {
+    console.error("[Auth Service] Google sign in error:", error);
+    if (error instanceof Error) {
+      console.error("[Auth Service] Error message:", error.message);
+      console.error("[Auth Service] Error stack:", error.stack);
+    }
+    throw error;
+  }
+}
+
+/**
  * 執行登出操作
  * 
  * 此函數會依序執行：
