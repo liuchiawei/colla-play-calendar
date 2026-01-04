@@ -447,9 +447,7 @@ export async function getUserByName(
  * @param id 用戶 ID
  * @returns Promise<UserWithAdmin | null>
  */
-async function fetchUserByIdFromDb(
-  id: string
-): Promise<UserWithAdmin | null> {
+async function fetchUserByIdFromDb(id: string): Promise<UserWithAdmin | null> {
   try {
     const user = await prisma.user.findUnique({
       where: { id },
@@ -486,9 +484,7 @@ async function fetchUserByIdFromDb(
  * @param id 用戶 ID
  * @returns Promise<UserWithAdmin | null>
  */
-export async function getUserById(
-  id: string
-): Promise<UserWithAdmin | null> {
+export async function getUserById(id: string): Promise<UserWithAdmin | null> {
   if (!id) {
     return null;
   }
