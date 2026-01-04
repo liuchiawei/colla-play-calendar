@@ -35,7 +35,9 @@ export async function POST(request: NextRequest) {
 
     if (!googleAccount) {
       // 用戶沒有 Google Account，不需要同步
-      return NextResponse.json<ApiResponse<{ synced: false; reason: "no_google_account" }>>({
+      return NextResponse.json<
+        ApiResponse<{ synced: false; reason: "no_google_account" }>
+      >({
         success: true,
         data: { synced: false, reason: "no_google_account" },
       });
@@ -62,7 +64,9 @@ export async function POST(request: NextRequest) {
 
     // 如果用戶已有頭像，不覆蓋（僅在 image 為空時設置）
     if (user.image) {
-      return NextResponse.json<ApiResponse<{ synced: false; reason: "avatar_exists" }>>({
+      return NextResponse.json<
+        ApiResponse<{ synced: false; reason: "avatar_exists" }>
+      >({
         success: true,
         data: { synced: false, reason: "avatar_exists" },
       });
@@ -111,7 +115,10 @@ export async function POST(request: NextRequest) {
           );
         }
       } catch (error) {
-        console.error("[Sync Google Avatar] Error fetching Google user info:", error);
+        console.error(
+          "[Sync Google Avatar] Error fetching Google user info:",
+          error
+        );
       }
     }
 
@@ -128,14 +135,18 @@ export async function POST(request: NextRequest) {
       revalidateTag(`user-${userId}`, "max");
       revalidateTag("user-auth", "max");
 
-      return NextResponse.json<ApiResponse<{ synced: true; imageUrl: googlePictureUrl }>>({
-        success: true,
-        data: { synced: true, imageUrl: googlePictureUrl },
-      });
+      return NextResponse.json<ApiResponse<{ synced: true; imageUrl: string }>>(
+        {
+          success: true,
+          data: { synced: true, imageUrl: googlePictureUrl },
+        }
+      );
     }
 
     // 無法獲取 Google picture
-    return NextResponse.json<ApiResponse<{ synced: false; reason: "no_picture_available" }>>({
+    return NextResponse.json<
+      ApiResponse<{ synced: false; reason: "no_picture_available" }>
+    >({
       success: true,
       data: { synced: false, reason: "no_picture_available" },
     });
@@ -150,4 +161,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

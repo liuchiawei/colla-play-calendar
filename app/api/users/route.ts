@@ -1,6 +1,6 @@
 // 用戶管理 API Route - GET（獲取用戶列表）
 // 僅管理員可訪問
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/services/auth/auth-server.service";
 import prisma from "@/lib/prisma";
 import type { ApiResponse, UserListResponse, UserWithAdmin } from "@/lib/types";
