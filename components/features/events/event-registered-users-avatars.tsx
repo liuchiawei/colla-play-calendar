@@ -4,15 +4,12 @@
 // 顯示已報名使用者的頭像堆疊列表，使用 shadcn 組件
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from "@/components/ui/tooltip";
+import UserAvatar from "@/components/features/user/user-avatar";
 import { EventRegisteredUsersAvatarsSkeleton } from "./event-registered-users-avatars-skeleton";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import type { UserWithAdmin } from "@/lib/types";
 
 interface RegisteredUser {
   id: string;
@@ -92,33 +89,8 @@ export function EventRegisteredUsersAvatars({
 
   return (
     <div className={cn("flex items-center -space-x-2", className)}>
-      {displayUsers.map((user, index) => (
-        <Tooltip key={user.id}>
-          <TooltipTrigger asChild>
-            <div
-              className="relative cursor-pointer"
-              style={{ zIndex: displayUsers.length - index }}
-            >
-              <Link href={`/user/${user.id}`}>
-                <Avatar className="border-2 border-background hover:scale-110 transition-transform">
-                  <AvatarImage
-                    src={user.image || undefined}
-                    alt={user.name || `使用者 ${user.id}`}
-                    loading="lazy"
-                  />
-                  <AvatarFallback className="text-xs font-semibold bg-muted">
-                    {getFallbackText(user)}
-                  </AvatarFallback>
-                </Avatar>
-              </Link>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent side="top">
-            <div className="text-xs">
-              {user.name ? <>{user.name}</> : "匿名"}
-            </div>
-          </TooltipContent>
-        </Tooltip>
+      {displayUsers.map((user) => (
+        <UserAvatar key={user.id} user={user} />
       ))}
 
       {/* 顯示剩餘數量 */}

@@ -184,3 +184,11 @@ export type EventRegistrationWithUser = EventRegistration & {
     image: string | null;
   } | null;
 };
+
+// 已報名使用者型別（用於活動報名列表）
+export type RegisteredUser = {
+  id: string;
+  name: string | null;
+  email?: string; // 可選，因為某些 API 可能不返回 email
+  image: string | null;
+};
