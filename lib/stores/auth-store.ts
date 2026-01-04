@@ -1,6 +1,8 @@
 // 認證狀態管理 Store（使用 Zustand）
 // 管理用戶登入狀態、管理員權限等全局狀態
+// 使用優化的快取策略減少不必要的網路請求
 import { create } from "zustand";
+import { fetchUser } from "@/lib/services/auth/auth.service";
 import type { UserWithAdmin } from "@/lib/types";
 
 interface AuthState {
@@ -28,55 +30,59 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isLoading: false,
   initialized: false,
 
-  // 從 API 獲取當前用戶信息
+  // 從 API 獲取當前用戶信息（使用優化的快取策略）
   fetchUser: async () => {
     set({ isLoading: true });
     try {
-      // 確保 fetch 請求包含 credentials（cookies）
-      const response = await fetch("/api/auth/me", {
-        method: "GET",
-        credentials: "include", // 確保包含 cookies
-        cache: "no-store", // 禁用快取
-        headers: {
-          "Content-Type": "application/json",
+      // 使用統一的認證服務獲取用戶信息（已包含快取邏輯）
+      const user = await fetchUser({
+        force: false, // 使用快取，減少不必要的請求
+        onSuccess: (userData) => {
+          if (userData) {
+            set({
+              user: userData,
+              isAdmin: userData.isAdmin,
+              isLoading: false,
+              initialized: true,
+            });
+
+            // 調試信息（僅在開發環境）
+            if (process.env.NODE_ENV === "development") {
+              console.log("[Auth Store] User set:", userData.email);
+            }
+          } else {
+            // 未登入或獲取失敗
+            set({
+              user: null,
+              isAdmin: false,
+              isLoading: false,
+              initialized: true,
+            });
+
+            // 調試信息
+            if (process.env.NODE_ENV === "development") {
+              console.log("[Auth Store] No user found");
+            }
+          }
         },
       });
 
-      const data = await response.json();
-
-      // 調試信息（僅在開發環境）
-      if (process.env.NODE_ENV === "development") {
-        console.log("[Auth Store] fetchUser response:", {
-          success: data.success,
-          hasData: !!data.data,
-          status: response.status,
-        });
-      }
-
-      if (data.success && data.data) {
-        set({
-          user: data.data,
-          isAdmin: data.data.isAdmin,
-          isLoading: false,
-          initialized: true,
-        });
-        
-        // 調試信息
-        if (process.env.NODE_ENV === "development") {
-          console.log("[Auth Store] User set:", data.data.email);
-        }
-      } else {
-        // 未登入或獲取失敗
-        set({
-          user: null,
-          isAdmin: false,
-          isLoading: false,
-          initialized: true,
-        });
-        
-        // 調試信息
-        if (process.env.NODE_ENV === "development") {
-          console.log("[Auth Store] No user found, error:", data.error);
+      // 如果 onSuccess 未觸發（例如快取命中），手動更新狀態
+      if (user !== undefined) {
+        if (user) {
+          set({
+            user,
+            isAdmin: user.isAdmin,
+            isLoading: false,
+            initialized: true,
+          });
+        } else {
+          set({
+            user: null,
+            isAdmin: false,
+            isLoading: false,
+            initialized: true,
+          });
         }
       }
     } catch (error) {

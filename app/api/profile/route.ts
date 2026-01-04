@@ -1,9 +1,9 @@
 // Profile API Route - GET（取得）、PUT（更新）
 // 取得或更新目前登入使用者的個人資料
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import prisma from "@/lib/prisma";
-import type { ApiResponse, Profile, ProfileUpdateInput } from "@/lib/types";
+import { requireAuth } from "@/lib/services/auth/auth-server.service";
+import { getProfile, updateProfile } from "@/lib/services/profile/profile.service";
+import type { ApiResponse, Profile, ProfileUpdateInput, ProfileVisibility } from "@/lib/types";
 import { z } from "zod";
 
 // 個人資料更新驗證規則
@@ -18,33 +18,36 @@ const profileUpdateSchema = z.object({
   education: z.string().max(200).nullable().optional(),
   skills: z.array(z.string()).nullable().optional(),
   bio: z.string().max(100).nullable().optional(),
-  isPublic: z.boolean().optional(),
   extra: z.record(z.string(), z.any()).nullable().optional(),
-  visibility: z.record(z.string(), z.boolean()).nullable().optional(),
+  visibility: z
+    .object({
+      displayName: z.boolean().optional(),
+      birthDate: z.boolean().optional(),
+      gender: z.boolean().optional(),
+      occupation: z.boolean().optional(),
+      education: z.boolean().optional(),
+      skills: z.boolean().optional(),
+      bio: z.boolean().optional(),
+    })
+    .nullable()
+    .optional(),
 });
 
 // GET /api/profile - 取得目前登入使用者的個人資料
 export async function GET(request: NextRequest) {
   try {
-    // 透過 Better Auth 取得登入狀態
-    const session = await auth.api.getSession({ headers: request.headers });
+    // 使用統一的認證服務檢查登入狀態
+    const authResult = await requireAuth(request);
 
-    if (!session || !session.user) {
-      return NextResponse.json<ApiResponse<null>>(
-        {
-          success: false,
-          error: "需要登入",
-        },
-        { status: 401 }
-      );
+    // 如果未登入，requireAuth 會返回 NextResponse
+    if (authResult instanceof NextResponse) {
+      return authResult;
     }
 
-    const userId = session.user.id;
+    const { userId } = authResult;
 
-    // 取得個人資料（不存在則回傳 null）
-    const profile = await prisma.profile.findUnique({
-      where: { userId },
-    });
+    // 使用 profile service 取得個人資料（含快取）
+    const profile = await getProfile(userId);
 
     return NextResponse.json<ApiResponse<Profile | null>>({
       success: true,
@@ -65,20 +68,15 @@ export async function GET(request: NextRequest) {
 // PUT /api/profile - 更新目前登入使用者的個人資料
 export async function PUT(request: NextRequest) {
   try {
-    // 透過 Better Auth 取得登入狀態
-    const session = await auth.api.getSession({ headers: request.headers });
+    // 使用統一的認證服務檢查登入狀態
+    const authResult = await requireAuth(request);
 
-    if (!session || !session.user) {
-      return NextResponse.json<ApiResponse<null>>(
-        {
-          success: false,
-          error: "需要登入",
-        },
-        { status: 401 }
-      );
+    // 如果未登入，requireAuth 會返回 NextResponse
+    if (authResult instanceof NextResponse) {
+      return authResult;
     }
 
-    const userId = session.user.id;
+    const { userId } = authResult;
     const body: ProfileUpdateInput = await request.json();
 
     // 驗證輸入資料
@@ -112,64 +110,8 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // 將生日字串轉換為 Date 物件（如果存在）
-    const birthDate = validatedData.birthDate
-      ? new Date(validatedData.birthDate)
-      : undefined;
-
-    // 建立或更新個人資料（不存在則建立，存在則更新）
-    const profile = await prisma.profile.upsert({
-      where: { userId },
-      create: {
-        userId,
-        displayName: validatedData.displayName ?? null,
-        birthDate: birthDate ?? null,
-        gender: validatedData.gender ?? null,
-        occupation: validatedData.occupation ?? null,
-        education: validatedData.education ?? null,
-        skills: validatedData.skills ? (validatedData.skills as any) : null,
-        bio: validatedData.bio ?? null,
-        isPublic: validatedData.isPublic ?? false,
-        extra: validatedData.extra ? (validatedData.extra as any) : null,
-        visibility: validatedData.visibility
-          ? (validatedData.visibility as any)
-          : null,
-      },
-      update: {
-        displayName:
-          validatedData.displayName !== undefined
-            ? validatedData.displayName
-            : undefined,
-        birthDate: birthDate !== undefined ? birthDate : undefined,
-        gender:
-          validatedData.gender !== undefined ? validatedData.gender : undefined,
-        occupation:
-          validatedData.occupation !== undefined
-            ? validatedData.occupation
-            : undefined,
-        education:
-          validatedData.education !== undefined
-            ? validatedData.education
-            : undefined,
-        skills:
-          validatedData.skills !== undefined
-            ? (validatedData.skills as any)
-            : undefined,
-        bio: validatedData.bio !== undefined ? validatedData.bio : undefined,
-        isPublic:
-          validatedData.isPublic !== undefined
-            ? validatedData.isPublic
-            : undefined,
-        extra:
-          validatedData.extra !== undefined
-            ? (validatedData.extra as any)
-            : undefined,
-        visibility:
-          validatedData.visibility !== undefined
-            ? (validatedData.visibility as any)
-            : undefined,
-      },
-    });
+    // 使用 profile service 更新個人資料（含快取失效）
+    const profile = await updateProfile(userId, validatedData);
 
     return NextResponse.json<ApiResponse<Profile>>({
       success: true,
@@ -177,10 +119,12 @@ export async function PUT(request: NextRequest) {
     });
   } catch (error) {
     console.error("Failed to update profile:", error);
+    const errorMessage =
+      error instanceof Error ? error.message : "更新個人資料失敗";
     return NextResponse.json<ApiResponse<null>>(
       {
         success: false,
-        error: "更新個人資料失敗",
+        error: errorMessage,
       },
       { status: 500 }
     );

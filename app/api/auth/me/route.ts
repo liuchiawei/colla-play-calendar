@@ -1,126 +1,36 @@
 // 獲取當前登入用戶信息 API Route
 // 返回當前用戶的完整信息（包含 isAdmin）
+// 使用快取策略優化性能，減少資料庫查詢
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { revalidateTag } from "next/cache";
+import { z } from "zod";
+import {
+  requireAuth,
+  getCurrentUser,
+} from "@/lib/services/auth/auth-server.service";
 import prisma from "@/lib/prisma";
 import type { ApiResponse, UserWithAdmin } from "@/lib/types";
-import { z } from "zod";
-import { revalidateTag } from "next/cache";
 
 // 更新用戶頭像驗證規則
 const updateAvatarSchema = z.object({
   image: z.string().url().nullable(),
 });
 
-// GET /api/auth/me - 獲取當前登入用戶的完整信息
+// GET /api/auth/me - 獲取當前登入用戶的完整信息（使用快取優化）
 export async function GET(request: NextRequest) {
   try {
-    // 透過 Better Auth 取得登入狀態
-    let session;
-    try {
-      // request.headers 已經是 Headers 對象，可以直接使用
-      session = await auth.api.getSession({ 
-        headers: request.headers 
-      });
-    } catch (sessionError) {
-      console.error("[API /auth/me] Failed to get session:", sessionError);
-      console.error("[API /auth/me] Session error details:", {
-        message: sessionError instanceof Error ? sessionError.message : String(sessionError),
-        stack: sessionError instanceof Error ? sessionError.stack : undefined,
-        errorName: sessionError instanceof Error ? sessionError.name : typeof sessionError,
-      });
-      
-      // 返回詳細錯誤信息（僅在開發環境）
-      const errorMessage = process.env.NODE_ENV === "development" 
-        ? (sessionError instanceof Error ? sessionError.message : "取得登入狀態失敗")
-        : "取得登入狀態失敗";
-        
-      return NextResponse.json<ApiResponse<null>>(
-        {
-          success: false,
-          error: errorMessage,
-        },
-        { status: 500 }
-      );
+    // 使用統一的認證服務檢查登入狀態
+    const authResult = await requireAuth(request);
+
+    // 如果未登入，requireAuth 會返回 NextResponse
+    if (authResult instanceof NextResponse) {
+      return authResult;
     }
 
-    if (!session || !session.user) {
-      return NextResponse.json<ApiResponse<null>>(
-        {
-          success: false,
-          error: "需要登入",
-        },
-        { status: 401 }
-      );
-    }
+    const { userId } = authResult;
 
-    const userId = session.user.id;
-
-    if (!userId) {
-      console.error("[API /auth/me] Session user ID is missing");
-      return NextResponse.json<ApiResponse<null>>(
-        {
-          success: false,
-          error: "用戶 ID 無效",
-        },
-        { status: 400 }
-      );
-    }
-
-    // 從資料庫獲取用戶完整信息（包含 isAdmin）
-    // 使用 select 僅查詢需要的欄位，減少記憶體負擔
-    let user;
-    try {
-      console.log("[API /auth/me] Querying user with ID:", userId, "Type:", typeof userId);
-      
-      // 先測試資料庫連接
-      await prisma.$connect().catch((connectError) => {
-        console.error("[API /auth/me] Database connection failed:", connectError);
-      });
-      
-      user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          emailVerified: true,
-          image: true,
-          isAdmin: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-      });
-      
-      console.log("[API /auth/me] User query result:", user ? `Found user: ${user.email}` : "Not found");
-    } catch (dbError) {
-      console.error("[API /auth/me] Database query failed:", dbError);
-      console.error("[API /auth/me] Database error details:", {
-        message: dbError instanceof Error ? dbError.message : String(dbError),
-        stack: dbError instanceof Error ? dbError.stack : undefined,
-        errorName: dbError instanceof Error ? dbError.name : typeof dbError,
-        userId: userId,
-        userIdType: typeof userId,
-        code: (dbError as any)?.code,
-        meta: (dbError as any)?.meta,
-      });
-      
-      // 返回詳細錯誤信息（僅在開發環境）
-      const errorMessage = process.env.NODE_ENV === "development"
-        ? (dbError instanceof Error ? `${dbError.message} (${dbError.name})` : "資料庫查詢失敗")
-        : "資料庫查詢失敗";
-        
-      return NextResponse.json<ApiResponse<null>>(
-        {
-          success: false,
-          error: errorMessage,
-        },
-        { status: 500 }
-      );
-    } finally {
-      // 不關閉連接，讓連接池管理
-      // await prisma.$disconnect();
-    }
+    // 使用快取的 getCurrentUser 獲取用戶信息（已包含快取邏輯）
+    const user = await getCurrentUser(userId);
 
     if (!user) {
       console.warn(`[API /auth/me] User not found for ID: ${userId}`);
@@ -139,18 +49,21 @@ export async function GET(request: NextRequest) {
       data: user,
     });
 
-    // 設置 cache headers（可選，用於客戶端快取）
+    // 設置 cache headers（用於客戶端快取，配合服務端快取）
     response.headers.set(
       "Cache-Control",
-      "private, no-cache, no-store, must-revalidate"
+      "private, s-maxage=300, stale-while-revalidate=60"
     );
 
     return response;
   } catch (error) {
     // 捕獲所有未預期的錯誤
     console.error("[API /auth/me] Unexpected error:", error);
-    console.error("[API /auth/me] Error stack:", error instanceof Error ? error.stack : "No stack trace");
-    
+    console.error(
+      "[API /auth/me] Error stack:",
+      error instanceof Error ? error.stack : "No stack trace"
+    );
+
     return NextResponse.json<ApiResponse<null>>(
       {
         success: false,
@@ -164,20 +77,15 @@ export async function GET(request: NextRequest) {
 // PATCH /api/auth/me - 更新當前登入用戶的頭像
 export async function PATCH(request: NextRequest) {
   try {
-    // 透過 Better Auth 取得登入狀態
-    const session = await auth.api.getSession({ headers: request.headers });
+    // 使用統一的認證服務檢查登入狀態
+    const authResult = await requireAuth(request);
 
-    if (!session || !session.user) {
-      return NextResponse.json<ApiResponse<null>>(
-        {
-          success: false,
-          error: "需要登入",
-        },
-        { status: 401 }
-      );
+    // 如果未登入，requireAuth 會返回 NextResponse
+    if (authResult instanceof NextResponse) {
+      return authResult;
     }
 
-    const userId = session.user.id;
+    const { userId } = authResult;
 
     // 解析請求體
     const body = await request.json();
@@ -230,4 +138,3 @@ export async function PATCH(request: NextRequest) {
     );
   }
 }
-

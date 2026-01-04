@@ -3,7 +3,7 @@
 
 import { headers } from "next/headers";
 import type { EventWithCategory } from "@/lib/types";
-import { EventCarouselClient } from "./event-carousel-client";
+import { EventCarouselClient } from "@/components/features/events/event-carousel-client";
 
 // 從 API 端點獲取未來活動資料
 async function fetchUpcomingEvents(): Promise<EventWithCategory[]> {
@@ -41,7 +41,7 @@ async function fetchUpcomingEvents(): Promise<EventWithCategory[]> {
 }
 
 // 主組件（Server Component）
-export async function EventCarousel() {
+export default async function UpcomingEventCarousel() {
   const events = await fetchUpcomingEvents();
 
   return <EventCarouselClient events={events} />;

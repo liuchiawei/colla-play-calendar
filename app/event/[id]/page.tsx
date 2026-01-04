@@ -18,6 +18,7 @@ import {
   ExternalLink,
   Ticket,
   Users,
+  type LucideIcon,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -25,6 +26,7 @@ import { EventRegistrationButton } from "@/components/features/events/event-regi
 import { EventRegisteredUsersAvatars } from "@/components/features/events/event-registered-users-avatars";
 import { Suspense } from "react";
 import { EventRegisteredUsersAvatarsSkeleton } from "@/components/features/events/event-registered-users-avatars-skeleton";
+import SectionContainer from "@/components/layout/section-container";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -133,130 +135,110 @@ export default async function EventDetailPage({ params }: PageProps) {
     const categoryColor = eventWithCount.category?.color || "#6366f1";
 
     return (
-      <div className="min-h-screen relative overflow-hidden">
+      <SectionContainer>
         {/* 主內容 */}
-        <main className="relative z-10 container mx-auto px-4 py-8 max-w-4xl">
-          {/* 圖片區塊 */}
-          <div className="relative h-64 md:h-96 rounded-2xl overflow-hidden mb-6 shadow-lg">
-            {eventWithCount.imageBlobUrl || eventWithCount.imageUrl ? (
-              <img
-                src={
-                  eventWithCount.imageBlobUrl || eventWithCount.imageUrl || ""
-                }
-                alt={eventWithCount.title}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div
-                className="w-full h-full"
-                style={{
-                  background: `linear-gradient(135deg, ${categoryColor}cc 0%, ${categoryColor}66 100%)`,
-                }}
-              />
-            )}
-            {/* 疊加層 */}
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
+        {/* 圖片區塊 */}
+        <div className="relative w-full h-64 md:h-96 rounded-2xl overflow-hidden mb-6 shadow-lg">
+          {eventWithCount.imageBlobUrl || eventWithCount.imageUrl ? (
+            <img
+              src={eventWithCount.imageBlobUrl || eventWithCount.imageUrl || ""}
+              alt={eventWithCount.title}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div
+              className="w-full h-full"
+              style={{
+                background: `linear-gradient(135deg, ${categoryColor}cc 0%, ${categoryColor}66 100%)`,
+              }}
+            />
+          )}
+          {/* 疊加層 */}
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
 
-            {/* 類別標籤 */}
-            {eventWithCount.category && (
-              <div className="absolute top-4 left-4">
-                <Badge
-                  style={{ backgroundColor: categoryColor }}
-                  className="text-white border-0"
-                >
-                  {eventWithCount.category.name}
-                </Badge>
-              </div>
-            )}
-          </div>
+          {/* 類別標籤 */}
+          {eventWithCount.category && (
+            <div className="absolute top-4 left-4">
+              <Badge
+                style={{ backgroundColor: categoryColor }}
+                className="text-white border-0"
+              >
+                {eventWithCount.category.name}
+              </Badge>
+            </div>
+          )}
+        </div>
 
-          {/* 內容區塊 */}
-          <div className="bg-card/80 backdrop-blur-sm rounded-2xl border border-border/50 shadow-xl p-6 md:p-8">
-            {/* 標題 */}
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground leading-tight mb-6 font-[var(--font-outfit)]">
-              {eventWithCount.title}
-            </h1>
+        {/* 內容區塊 */}
+        <div className="w-full bg-card/80 backdrop-blur-sm rounded-2xl border border-border/50 shadow-xl p-6 md:p-8">
+          {/* 標題 */}
+          <h1 className="text-3xl md:text-4xl font-bold text-foreground leading-tight mb-6 font-[var(--font-outfit)]">
+            {eventWithCount.title}
+          </h1>
 
+          {/* 活動完整資料 (基本資料、說明、報名按鈕) */}
+          <div className="space-y-4">
             {/* 活動基本資料 */}
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* 日時資訊 */}
-              <div className="flex items-start gap-3">
-                <div className="p-2 rounded-full bg-primary/10 text-primary flex-shrink-0">
-                  <Calendar className="size-5" />
-                </div>
-                <div>
-                  <div className="text-base font-medium text-foreground">
+              <EventBasicInfoItem icon={Calendar}>
+                <div className="flex flex-col md:flex-row gap-1 md:gap-2">
+                  <div className="flex items-center gap-1 font-medium text-foreground">
+                    <Calendar className="size-3" />
                     {formatDate(eventWithCount.startTime)}
                   </div>
-                  <div className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                    <Clock className="h-3 w-3" />
+                  <div className="flex items-center gap-1 text-muted-foreground">
+                    <Clock className="size-3" />
                     {formatTime(eventWithCount.startTime)} -{" "}
                     {formatTime(eventWithCount.endTime)}
                   </div>
                 </div>
-              </div>
+              </EventBasicInfoItem>
 
               {/* 地點 */}
               {eventWithCount.location && (
-                <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-full bg-primary/10 text-primary flex-shrink-0">
-                    <MapPin className="size-5" />
-                  </div>
+                <EventBasicInfoItem icon={MapPin}>
                   <div className="text-base text-foreground">
                     {eventWithCount.location}
                   </div>
-                </div>
+                </EventBasicInfoItem>
               )}
 
               {/* 主辦者 */}
               {eventWithCount.organizer && (
-                <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-full bg-primary/10 text-primary flex-shrink-0">
-                    <User className="size-5" />
-                  </div>
+                <EventBasicInfoItem icon={User}>
                   <div className="text-base text-foreground">
                     {eventWithCount.organizer}
                   </div>
-                </div>
+                </EventBasicInfoItem>
               )}
 
               {/* 價格 */}
               {eventWithCount.price && (
-                <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-full bg-primary/10 text-primary flex-shrink-0">
-                    <Ticket className="size-5" />
-                  </div>
+                <EventBasicInfoItem icon={Ticket}>
                   <div className="text-base text-foreground">
                     {eventWithCount.price}
                   </div>
-                </div>
+                </EventBasicInfoItem>
               )}
 
               {/* 報名網址 */}
               {eventWithCount.registrationUrl && (
-                <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-full bg-primary/10 text-primary flex-shrink-0">
-                    <ExternalLink className="size-5" />
-                  </div>
-                  <div className="text-base text-foreground">
-                    <a
-                      href={eventWithCount.registrationUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline break-all"
-                    >
-                      {eventWithCount.registrationUrl}
-                    </a>
-                  </div>
-                </div>
+                <EventBasicInfoItem icon={ExternalLink}>
+                  <a
+                    href={eventWithCount.registrationUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline break-all"
+                  >
+                    {eventWithCount.registrationUrl}
+                  </a>
+                </EventBasicInfoItem>
               )}
 
               {/* 報名人數 */}
-              <div className="flex items-start gap-3">
-                <div className="p-2 rounded-full bg-primary/10 text-primary flex-shrink-0">
-                  <Users className="size-5" />
-                </div>
-                <div className="flex-1">
+              <EventBasicInfoItem icon={Users}>
+                <div className="flex-1 flex flex-col md:flex-row items-center gap-1 md:gap-2">
                   <div className="text-base text-foreground">
                     {eventWithCount.registrationCount &&
                     eventWithCount.registrationCount > 0
@@ -266,53 +248,63 @@ export default async function EventDetailPage({ params }: PageProps) {
                   {/* 已報名使用者頭像堆疊 */}
                   {eventWithCount.registrationCount &&
                     eventWithCount.registrationCount > 0 && (
-                      <div className="mt-2">
-                        <Suspense
-                          fallback={<EventRegisteredUsersAvatarsSkeleton />}
-                        >
-                          <EventRegisteredUsersAvatars
-                            eventId={eventWithCount.id}
-                          />
-                        </Suspense>
-                      </div>
+                      <Suspense
+                        fallback={<EventRegisteredUsersAvatarsSkeleton />}
+                      >
+                        <EventRegisteredUsersAvatars
+                          eventId={eventWithCount.id}
+                        />
+                      </Suspense>
                     )}
                 </div>
-              </div>
-
-              {/* 說明 */}
-              {eventWithCount.description && (
-                <>
-                  <Separator className="my-6" />
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-base font-medium text-foreground">
-                      <Tag className="h-4 w-4" />
-                      活動說明
-                    </div>
-                    <p className="text-base text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                      {eventWithCount.description}
-                    </p>
-                  </div>
-                </>
-              )}
-
-              {/* 報名按鈕 */}
-              <Separator className="my-6" />
-              <div className="pt-2">
-                <EventRegistrationButton
-                  eventId={eventWithCount.id}
-                  initialIsRegistered={eventWithCount.isRegistered || false}
-                  initialRegistrationCount={
-                    eventWithCount.registrationCount || 0
-                  }
-                />
-              </div>
+              </EventBasicInfoItem>
             </div>
+
+            <Separator />
+
+            {/* 說明 */}
+            {eventWithCount.description && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-base font-medium text-foreground">
+                  <Tag className="h-4 w-4" />
+                  活動說明
+                </div>
+                <p className="text-base text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                  {eventWithCount.description}
+                </p>
+              </div>
+            )}
+
+            {/* 報名按鈕 */}
+            <EventRegistrationButton
+              eventId={eventWithCount.id}
+              initialIsRegistered={eventWithCount.isRegistered || false}
+              initialRegistrationCount={eventWithCount.registrationCount || 0}
+            />
           </div>
-        </main>
-      </div>
+        </div>
+      </SectionContainer>
     );
   } catch (error) {
     console.error("Failed to fetch event:", error);
     notFound();
   }
 }
+
+const EventBasicInfoItem = ({
+  icon,
+  children,
+}: {
+  icon: LucideIcon;
+  children: React.ReactNode;
+}) => {
+  const Icon = icon;
+  return (
+    <div className="flex items-center gap-3">
+      <div className="p-2 rounded-full bg-primary/10 text-primary flex-shrink-0">
+        <Icon className="size-4" />
+      </div>
+      {children}
+    </div>
+  );
+};

@@ -4,54 +4,35 @@
 // 顯示使用者參加過的活動和已報名的未來活動
 
 import * as React from "react";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { EventListItem } from "./event-list-item";
 import { EventsTabSkeleton } from "./events-tab-skeleton";
 import { EventDetailDialog } from "@/components/features/events/event-detail-dialog";
+import { EventCarouselClient } from "./event-carousel-client";
+import { EventPosterCard } from "./event-poster-card";
+import { DisplayToggle } from "@/components/widget/display-toggle";
+import { useProfileEvents } from "@/lib/hooks/use-profile";
 import type { EventWithCategory } from "@/lib/types";
-import type { UserEventsResponse } from "@/app/api/profile/events/route";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Calendar } from "lucide-react";
 import Link from "next/link";
 
 export function EventsTab() {
-  const [events, setEvents] = useState<EventWithCategory[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedEvent, setSelectedEvent] = useState<EventWithCategory | null>(null);
+  // 使用 SWR hook 獲取活動資料（自動快取與重新驗證）
+  const { data: events = [], isLoading, error: swrError } = useProfileEvents();
+  const [selectedEvent, setSelectedEvent] = useState<EventWithCategory | null>(
+    null
+  );
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [displayMode, setDisplayMode] = useState<"list" | "card">("list");
 
-  // 載入活動資料
-  useEffect(() => {
-    const fetchEvents = async () => {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const response = await fetch("/api/profile/events", {
-          credentials: "include",
-        });
-
-        const result = await response.json();
-
-        if (!result.success) {
-          setError(result.error || "載入活動記錄失敗");
-          return;
-        }
-
-        const data = result.data as UserEventsResponse;
-        setEvents(data.events || []);
-      } catch (err) {
-        setError("載入活動記錄失敗，請再試一次");
-        console.error("Failed to fetch user events:", err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchEvents();
-  }, []);
+  // 將 SWR 錯誤轉換為字串
+  const error = swrError
+    ? swrError instanceof Error
+      ? swrError.message
+      : "載入活動記錄失敗"
+    : null;
 
   // 使用 useMemo 分類過去和未來的活動
   const { pastEvents, upcomingEvents } = useMemo(() => {
@@ -69,10 +50,15 @@ export function EventsTab() {
     });
 
     // 過去活動依結束時間降序排列（最近的在前）
-    past.sort((a, b) => new Date(b.endTime).getTime() - new Date(a.endTime).getTime());
+    past.sort(
+      (a, b) => new Date(b.endTime).getTime() - new Date(a.endTime).getTime()
+    );
 
     // 未來活動依開始時間升序排列（最近的在前）
-    upcoming.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+    upcoming.sort(
+      (a, b) =>
+        new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+    );
 
     return { pastEvents: past, upcomingEvents: upcoming };
   }, [events]);
@@ -108,9 +94,7 @@ export function EventsTab() {
             <Button
               variant="outline"
               onClick={() => {
-                setIsLoading(true);
-                setError(null);
-                // 重新載入
+                // SWR 會自動重新驗證
                 window.location.reload();
               }}
             >
@@ -146,22 +130,29 @@ export function EventsTab() {
     <div className="space-y-8">
       {/* 已報名的未來活動 */}
       <div className="space-y-4">
-        <div>
-          <h2 className="text-xl font-semibold mb-1">已報名的未來活動</h2>
-          <p className="text-sm text-muted-foreground">
-            您已報名但尚未開始的活動
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-semibold mb-1">已報名的未來活動</h2>
+            <p className="text-sm text-muted-foreground">
+              您已報名但尚未開始的活動
+            </p>
+          </div>
+          <DisplayToggle value={displayMode} onValueChange={setDisplayMode} />
         </div>
         {upcomingEvents.length > 0 ? (
-          <div className="space-y-3">
-            {upcomingEvents.map((event) => (
-              <EventListItem
-                key={event.id}
-                event={event}
-                onClick={() => handleEventClick(event)}
-              />
-            ))}
-          </div>
+          displayMode === "list" ? (
+            <div className="space-y-3">
+              {upcomingEvents.map((event) => (
+                <EventListItem
+                  key={event.id}
+                  event={event}
+                  onClick={() => handleEventClick(event)}
+                />
+              ))}
+            </div>
+          ) : (
+            <EventCarouselClient events={upcomingEvents} />
+          )
         ) : (
           <Card>
             <CardContent className="pt-6">
@@ -178,22 +169,37 @@ export function EventsTab() {
 
       {/* 已參加的活動 */}
       <div className="space-y-4">
-        <div>
-          <h2 className="text-xl font-semibold mb-1">已參加的活動</h2>
-          <p className="text-sm text-muted-foreground">
-            您已經參加過的活動記錄
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-semibold mb-1">已參加的活動</h2>
+            <p className="text-sm text-muted-foreground">
+              您已經參加過的活動記錄
+            </p>
+          </div>
+          <DisplayToggle value={displayMode} onValueChange={setDisplayMode} />
         </div>
         {pastEvents.length > 0 ? (
-          <div className="space-y-3">
-            {pastEvents.map((event) => (
-              <EventListItem
-                key={event.id}
-                event={event}
-                onClick={() => handleEventClick(event)}
-              />
-            ))}
-          </div>
+          displayMode === "list" ? (
+            <div className="space-y-3">
+              {pastEvents.map((event) => (
+                <EventListItem
+                  key={event.id}
+                  event={event}
+                  onClick={() => handleEventClick(event)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {pastEvents.map((event) => (
+                <EventPosterCard
+                  key={event.id}
+                  event={event}
+                  onClick={() => handleEventClick(event)}
+                />
+              ))}
+            </div>
+          )
         ) : (
           <Card>
             <CardContent className="pt-6">
@@ -216,4 +222,3 @@ export function EventsTab() {
     </div>
   );
 }
-

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import RegisterForm from "./component/register-form";
+import SectionContainer from "@/components/layout/section-container";
 
 // 強制動態渲染，確保不會快取
 export const dynamic = "force-dynamic";
@@ -16,8 +17,8 @@ export default async function RegisterPage() {
   }
 
   return (
-    <div className="w-full min-h-screen flex items-center justify-center">
+    <SectionContainer>
       <RegisterForm />
-    </div>
+    </SectionContainer>
   );
 }

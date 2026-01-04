@@ -98,6 +98,18 @@ export const DEFAULT_CATEGORIES: CategoryInput[] = [
 // 個人資料型別（由 Prisma 生成）
 export type { Profile };
 
+// 個人資料可見性設定型別
+// 每個字段可以獨立設定是否公開
+export type ProfileVisibility = {
+  displayName?: boolean;
+  birthDate?: boolean;
+  gender?: boolean;
+  occupation?: boolean;
+  education?: boolean;
+  skills?: boolean;
+  bio?: boolean;
+};
+
 // 個人資料更新用輸入型別
 export type ProfileUpdateInput = {
   displayName?: string | null;
@@ -107,12 +119,11 @@ export type ProfileUpdateInput = {
   education?: string | null;
   skills?: string[] | null; // 技能陣列（前端以字串處理）
   bio?: string | null;
-  isPublic?: boolean;
   extra?: Record<string, any> | null;
-  visibility?: Record<string, boolean> | null;
+  visibility?: ProfileVisibility | null;
 };
 
-// 公開個人資料型別（僅在 isPublic=true 時）
+// 公開個人資料型別（根據 visibility 設定過濾後的資料）
 export type PublicProfileDto = {
   id: string;
   userId: string;

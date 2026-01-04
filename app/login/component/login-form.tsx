@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { authClient } from "@/lib/auth-client";
+import { signIn } from "@/lib/services/auth/auth.service";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
@@ -15,6 +15,7 @@ import {
   EmailField,
   PasswordField,
 } from "@/components/features/user/auth-form-fields";
+import { GoogleAuthButton } from "@/components/features/user/google-auth-button";
 
 // 登入表單驗證規則
 const loginSchema = z.object({
@@ -43,36 +44,23 @@ export default function LoginForm() {
     setError(null);
 
     try {
-      const result = await authClient.signIn.email({
-        email: data.email,
-        password: data.password,
+      // 使用統一的認證服務進行登入
+      const result = await signIn(data.email, data.password, {
+        onSuccess: (user) => {
+          // 更新客戶端 auth store
+          if (user) {
+            fetchUser();
+          }
+        },
+        onNavigate: (path) => router.push(path),
+        onRefresh: () => router.refresh(),
+        redirectTo: "/profile",
       });
 
-      if (result.error) {
-        setError(result.error.message || "登入失敗");
+      if (!result.success) {
+        setError(result.error || "登入失敗");
         return;
       }
-
-      // 登入成功後，清除快取並更新狀態
-      try {
-        // 清除用戶認證快取
-        await fetch("/api/revalidate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ tags: ["user-auth"] }),
-          credentials: "include", // 確保包含 cookies
-        });
-
-        // 更新客戶端 auth store
-        await fetchUser();
-      } catch (revalidateError) {
-        console.error("[Login] Failed to revalidate cache:", revalidateError);
-        // 即使 revalidate 失敗，仍然繼續登入流程
-      }
-
-      // 導向個人資料頁面
-      router.push("/profile");
-      router.refresh();
     } catch (err) {
       setError("登入失敗，請再試一次");
       console.error("Login error:", err);
@@ -98,6 +86,24 @@ export default function LoginForm() {
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? "登入中..." : "登入"}
           </Button>
+
+          {/* 分隔線 */}
+          <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">
+                或
+              </span>
+            </div>
+          </div>
+
+          {/* Google 登入按鈕 */}
+          <GoogleAuthButton
+            label="使用 Google 登入"
+            redirectTo="/profile"
+          />
         </form>
       </Form>
     </AuthFormLayout>
