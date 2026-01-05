@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Roboto, Roboto_Mono, Noto_Sans_TC } from "next/font/google";
 import { Outfit } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "next-themes";
@@ -9,20 +9,19 @@ import BackgroundDecoration from "@/components/layout/background-decoration";
 import { AuthProvider } from "@/components/providers/auth-provider";
 
 // フォント設定
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const robotoSans = Roboto({
+  variable: "--font-roboto-sans",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const robotoMono = Roboto_Mono({
+  variable: "--font-roboto-mono",
   subsets: ["latin"],
 });
 
-const outfit = Outfit({
-  variable: "--font-outfit",
+const notoSans = Noto_Sans_TC({
+  variable: "--font-noto-sans-tc",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
 });
 
 // メタデータ設定
@@ -55,7 +54,7 @@ export default function RootLayout({
   return (
     <html lang="zh-TW" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} antialiased font-sans min-h-screen relative`}
+        className={`${robotoSans.variable} ${robotoMono.variable} ${notoSans.variable} antialiased font-sans min-h-screen relative`}
       >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider />
