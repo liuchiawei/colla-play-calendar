@@ -449,8 +449,8 @@ export async function signOut(
     // 4. 執行路由刷新
     onRefresh?.();
 
-    // 5. 導航到登入頁面
-    onNavigate?.("/login");
+    // 5. 導航到頁面
+    onNavigate?.("/");
   } catch (error) {
     console.error("Sign out error:", error);
 
