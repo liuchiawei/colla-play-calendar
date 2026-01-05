@@ -12,7 +12,7 @@ import {
   addDays,
   parseISO,
 } from "date-fns";
-import { zhTW } from "date-fns/locale";
+import { zhTW, enUS } from "date-fns/locale";
 import type { WeekRange, TimeSlot, EventPosition } from "./types";
 import type { EventWithCategory } from "./types";
 import { STORE_CONFIG } from "./config";
@@ -59,12 +59,27 @@ export function getWeekDays(date: Date): Date[] {
   return Array.from({ length: 7 }, (_, i) => addDays(start, i));
 }
 
+// 年を取得（例："2025"）
+export function formatYear(date: Date): string {
+  return format(date, "yyyy", { locale: enUS });
+}
+
+// 月を取得（例："12月"）
+export function formatMonth(date: Date): string {
+  return format(date, "M月", { locale: zhTW });
+}
+
+// 月を取得（英語例："August"）
+export function formatMonthEng(date: Date): string {
+  return format(date, "MMMM", { locale: enUS });
+}
+
 // 日付をフォーマット（例："12/30 (一)"）
 export function formatDayHeader(date: Date): string {
   return format(date, "M/d (EEE)", { locale: zhTW });
 }
 
-// 月を取得（例："2025年12月"）
+// 年月を取得（例："2025年12月"）
 export function formatMonthYear(date: Date): string {
   return format(date, "yyyy年M月", { locale: zhTW });
 }
@@ -120,7 +135,10 @@ export function calculateEventPosition(
 
   // パーセンテージに変換
   const top = Math.max(0, (startMinutes / totalMinutes) * 100);
-  const height = Math.min(100 - top, ((endMinutes - startMinutes) / totalMinutes) * 100);
+  const height = Math.min(
+    100 - top,
+    ((endMinutes - startMinutes) / totalMinutes) * 100
+  );
 
   return {
     top,
@@ -157,4 +175,3 @@ export function formatForDateTimeInput(date: Date | string): string {
   const d = typeof date === "string" ? new Date(date) : date;
   return format(d, "yyyy-MM-dd'T'HH:mm");
 }
-
