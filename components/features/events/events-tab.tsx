@@ -8,7 +8,6 @@ import { useMemo, useState } from "react";
 import { EventListItem } from "./event-list-item";
 import { EventsTabSkeleton } from "./events-tab-skeleton";
 import { EventDetailDialog } from "@/components/features/events/event-detail-dialog";
-import { EventCarouselClient } from "./event-carousel-client";
 import { EventPosterCard } from "./event-poster-card";
 import { DisplayToggle } from "@/components/widget/display-toggle";
 import { useProfileEvents } from "@/lib/hooks/use-profile";
@@ -128,16 +127,21 @@ export function EventsTab() {
 
   return (
     <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl md:text-2xl lg:text-3xl font-semibold">
+          報名活動列表
+        </h2>
+        <DisplayToggle value={displayMode} onValueChange={setDisplayMode} />
+      </div>
       {/* 已報名的未來活動 */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-semibold mb-1">已報名的未來活動</h2>
-            <p className="text-sm text-muted-foreground">
+            <h2 className="text-lg font-semibold mb-1">已報名的未來活動</h2>
+            <p className="text-xs md:text-sm text-muted-foreground">
               您已報名但尚未開始的活動
             </p>
           </div>
-          <DisplayToggle value={displayMode} onValueChange={setDisplayMode} />
         </div>
         {upcomingEvents.length > 0 ? (
           displayMode === "list" ? (
@@ -151,7 +155,15 @@ export function EventsTab() {
               ))}
             </div>
           ) : (
-            <EventCarouselClient events={upcomingEvents} />
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {upcomingEvents.map((event) => (
+                <EventPosterCard
+                  key={event.id}
+                  event={event}
+                  onClick={() => handleEventClick(event)}
+                />
+              ))}
+            </div>
           )
         ) : (
           <Card>
@@ -169,14 +181,13 @@ export function EventsTab() {
 
       {/* 已參加的活動 */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center">
           <div>
-            <h2 className="text-xl font-semibold mb-1">已參加的活動</h2>
-            <p className="text-sm text-muted-foreground">
+            <h2 className="text-lg font-semibold mb-1">已參加的活動</h2>
+            <p className="text-xs md:text-sm text-muted-foreground">
               您已經參加過的活動記錄
             </p>
           </div>
-          <DisplayToggle value={displayMode} onValueChange={setDisplayMode} />
         </div>
         {pastEvents.length > 0 ? (
           displayMode === "list" ? (
@@ -190,7 +201,7 @@ export function EventsTab() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {pastEvents.map((event) => (
                 <EventPosterCard
                   key={event.id}
@@ -211,7 +222,7 @@ export function EventsTab() {
         )}
       </div>
 
-      {/* 活動詳細對話框 */}
+      {/* 活動詳細彈窗 */}
       {selectedEvent && (
         <EventDetailDialog
           event={selectedEvent}

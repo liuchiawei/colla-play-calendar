@@ -5,8 +5,8 @@ import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { Suspense } from "react";
 import { auth } from "@/lib/auth";
-import { getUserByName } from "@/lib/services/profile/profile.service";
 import {
+  getUserById,
   getProfile,
   getPublicProfile,
 } from "@/lib/services/profile/profile.service";
@@ -16,20 +16,17 @@ import { ProfileFormSkeleton } from "@/components/features/user/profile-form-ske
 import type { Profile, PublicProfileDto, UserWithAdmin } from "@/lib/types";
 
 type PageProps = {
-  params: Promise<{ name: string }>;
+  params: Promise<{ id: string }>;
 };
 
 // 異步資料獲取組件
-async function UserProfileContent({ name }: { name: string }) {
-  // 解碼 URL 編碼的用戶名稱
-  const decodedName = decodeURIComponent(name);
-
+async function UserProfileContent({ id }: { id: string }) {
   // 1. 獲取當前會話（用於判斷是否是本人）
   const session = await auth.api.getSession({ headers: await headers() });
   const currentUserId = session?.user?.id || null;
 
-  // 2. 根據 name 查找目標用戶（使用快取優化）
-  const targetUser = await getUserByName(decodedName);
+  // 2. 根據 id 查找目標用戶（使用快取優化）
+  const targetUser = await getUserById(id);
 
   // 3. 如果用戶不存在，返回 404
   if (!targetUser) {
@@ -65,12 +62,12 @@ async function UserProfileContent({ name }: { name: string }) {
 }
 
 export default async function UserProfilePage({ params }: PageProps) {
-  const { name } = await params;
+  const { id } = await params;
 
   return (
     <SectionContainer>
       <Suspense fallback={<ProfileFormSkeleton />}>
-        <UserProfileContent name={name} />
+        <UserProfileContent id={id} />
       </Suspense>
     </SectionContainer>
   );

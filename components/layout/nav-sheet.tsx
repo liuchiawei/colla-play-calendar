@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import {
@@ -18,7 +19,8 @@ import { useAuthStore } from "@/lib/stores/auth-store";
 import { signOut } from "@/lib/services/auth/auth.service";
 import { cn } from "@/lib/utils";
 import { PAGE_LINKS } from "@/lib/config";
-import { Home, Calendar, User, LogIn, LogOut } from "lucide-react";
+import { LogIn, LogOut } from "lucide-react";
+import { useIsMobile } from "@/lib/hooks/use-mobile";
 
 interface NavSheetProps {
   children: React.ReactNode;
@@ -28,6 +30,8 @@ export function NavSheet({ children }: NavSheetProps) {
   const { user, isAdmin, logout } = useAuthStore();
   const router = useRouter();
   const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   const handleSignOut = async () => {
     await signOut({
@@ -39,7 +43,7 @@ export function NavSheet({ children }: NavSheetProps) {
   };
 
   return (
-    <Sheet>
+    <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>{children}</SheetTrigger>
       <SheetContent side="right" className="w-full sm:max-w-md">
         <div className="flex flex-col h-full">
@@ -104,7 +108,14 @@ export function NavSheet({ children }: NavSheetProps) {
                     isActive && "bg-secondary"
                   )}
                 >
-                  <Link href={link.href}>
+                  <Link
+                    href={link.href}
+                    onClick={() => {
+                      if (isMobile) {
+                        setOpen(false);
+                      }
+                    }}
+                  >
                     <Icon className="size-4" />
                     {link.label}
                   </Link>
@@ -125,7 +136,14 @@ export function NavSheet({ children }: NavSheetProps) {
               </Button>
             ) : (
               <Button asChild variant="default" className="w-full gap-2">
-                <Link href="/login">
+                <Link
+                  href="/login"
+                  onClick={() => {
+                    if (isMobile) {
+                      setOpen(false);
+                    }
+                  }}
+                >
                   <LogIn className="size-4" />
                   登入
                 </Link>

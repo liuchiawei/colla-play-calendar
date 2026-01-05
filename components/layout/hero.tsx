@@ -20,7 +20,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 20, filter: "blur(10px)" }}
           animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="absolute top-4 left-2 text-4xl md:text-5xl text-foreground font-semibold tracking-[3vh] leading-12 md:leading-16 [writing-mode:vertical-lr]"
+          className="absolute top-4 left-2 text-4xl md:text-5xl text-foreground font-noto font-bold tracking-[3vh] leading-12 md:leading-16 [writing-mode:vertical-lr]"
         >
           {STORE_CONFIG.subtitle.slice(0, 5)}
           <br />
