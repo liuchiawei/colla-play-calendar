@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { Roboto, Roboto_Mono, Noto_Sans_TC } from "next/font/google";
-import { Outfit } from "next/font/google";
+import { Roboto, Roboto_Mono, Noto_Sans_TC, Noto_Serif_TC } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "next-themes";
 import Navbar from "@/components/layout/navbar";
@@ -21,6 +20,11 @@ const robotoMono = Roboto_Mono({
 
 const notoSans = Noto_Sans_TC({
   variable: "--font-noto-sans-tc",
+  subsets: ["latin"],
+});
+
+const notoSerif = Noto_Serif_TC({
+  variable: "--font-noto-serif-tc",
   subsets: ["latin"],
 });
 
@@ -54,7 +58,7 @@ export default function RootLayout({
   return (
     <html lang="zh-TW" suppressHydrationWarning>
       <body
-        className={`${robotoSans.variable} ${robotoMono.variable} ${notoSans.variable} antialiased font-sans min-h-screen relative`}
+        className={`${robotoSans.variable} ${notoSerif.variable} ${notoSans.variable} ${robotoMono.variable} antialiased font-sans min-h-screen relative`}
       >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider />

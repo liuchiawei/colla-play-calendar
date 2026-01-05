@@ -43,7 +43,7 @@ export function EventPosterCard({
           />
         )}
         {/* 疊加層 - 從底部向上漸變 */}
-        <div className="absolute inset-0 p-3 grid grid-cols-2 bg-gradient-to-bl from-black/20 to-transparent group-hover:from-black/80 select-none pointer-events-none z-10">
+        <div className="absolute inset-0 p-3 flex flex-col justify-between bg-gradient-to-t from-black/20 to-transparent group-hover:from-black/80 select-none pointer-events-none z-10">
           {/* 類別標籤 - 左上角 */}
           {event.category && (
             <Badge
@@ -57,12 +57,12 @@ export function EventPosterCard({
               {event.category.name}
             </Badge>
           )}
-          {/* 標題 - 右上角 */}
-          <p className="row-span-2 text-md md:text-lg lg:text-2xl xl:text-3xl font-semibold leading-tight line-clamp-2 text-white tracking-widest [writing-mode:vertical-rl] text-shadow-lg">
+          {/* 標題 - 中央垂直 */}
+          <p className="self-center text-sm md:text-md lg:text-xl font-semibold font-noto-serif leading-tight line-clamp-2 text-white tracking-widest [writing-mode:vertical-rl] text-shadow-lg text-shadow-black">
             {event.title}
           </p>
           {/* 活動日期 - 左下角 */}
-          <p className="self-end text-md md:text-lg  lg:text-xl xl:text-2xl 2xl:text-4xl font-light text-white tracking-wider">
+          <p className="text-md md:text-lg xl:text-xl 2xl:text-2xl font-light text-white tracking-wider">
             {formatDate(event.startTime).slice(5)}
           </p>
         </div>

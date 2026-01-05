@@ -17,6 +17,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-roboto-sans);
   --font-noto: var(--font-noto-sans-tc);
+  --font-noto-serif: var(--font-noto-serif-tc);
   --font-mono: var(--font-roboto-mono);
   --font-display: "Outfit", var(--font-roboto-sans);
   --color-sidebar-ring: var(--sidebar-ring);

@@ -159,7 +159,7 @@ export function EventDetailDialog({
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
             >
-              <DialogTitle className="text-xl font-bold text-foreground leading-tight">
+              <DialogTitle className="text-xl font-bold leading-tight">
                 {event.title}
               </DialogTitle>
             </motion.div>
@@ -170,7 +170,7 @@ export function EventDetailDialog({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="mt-4 space-y-4"
+            className="mt-4 grid grid-cols-2 gap-4"
           >
             {/* 日時情報 */}
             <div className="flex items-start gap-3">
@@ -178,7 +178,7 @@ export function EventDetailDialog({
                 <Calendar className="size-4" />
               </div>
               <div>
-                <div className="text-sm font-medium text-foreground">
+                <div className="text-sm font-medium ">
                   {formatDate(event.startTime)}
                 </div>
                 <div className="text-sm text-muted-foreground flex items-center gap-1">
@@ -194,7 +194,7 @@ export function EventDetailDialog({
                 <div className="p-2 rounded-full bg-primary/10 text-primary">
                   <MapPin className="size-4" />
                 </div>
-                <div className="text-sm text-foreground">{event.location}</div>
+                <div className="text-sm ">{event.location}</div>
               </div>
             )}
 
@@ -204,7 +204,7 @@ export function EventDetailDialog({
                 <div className="p-2 rounded-full bg-primary/10 text-primary">
                   <User className="size-4" />
                 </div>
-                <div className="text-sm text-foreground">{event.organizer}</div>
+                <div className="text-sm ">{event.organizer}</div>
               </div>
             )}
 
@@ -214,7 +214,7 @@ export function EventDetailDialog({
                 <div className="p-2 rounded-full bg-primary/10 text-primary">
                   <Ticket className="size-4" />
                 </div>
-                <div className="text-sm text-foreground">{event.price}</div>
+                <div className="text-sm ">{event.price}</div>
               </div>
             )}
 
@@ -224,7 +224,7 @@ export function EventDetailDialog({
                 <div className="p-2 rounded-full bg-primary/10 text-primary">
                   <ExternalLink className="size-4" />
                 </div>
-                <div className="text-sm text-foreground">
+                <div className="text-sm overflow-hidden truncate whitespace-nowrap">
                   <a
                     href={event.registrationUrl}
                     target="_blank"
@@ -243,7 +243,7 @@ export function EventDetailDialog({
                 <Users className="size-4" />
               </div>
               <div className="flex-1">
-                <div className="text-sm text-foreground">
+                <div className="text-sm ">
                   {registrationCount > 0
                     ? `已有 ${registrationCount} 人報名`
                     : "尚未有人報名"}
@@ -263,18 +263,15 @@ export function EventDetailDialog({
 
             {/* 説明 */}
             {event.description && (
-              <>
-                <Separator className="my-4" />
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                    <Tag className="h-4 w-4" />
-                    活動說明
-                  </div>
-                  <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                    {event.description}
-                  </p>
+              <div className="col-span-2 space-y-2">
+                <div className="flex items-center gap-2 text-sm font-medium ">
+                  <Tag className="h-4 w-4" />
+                  活動說明
                 </div>
-              </>
+                <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                  {event.description}
+                </p>
+              </div>
             )}
 
             {/* 報名ボタン */}
@@ -282,7 +279,7 @@ export function EventDetailDialog({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="flex gap-2"
+              className="col-span-2 flex gap-2"
             >
               {error && (
                 <div className="text-sm text-destructive text-center">
@@ -300,7 +297,7 @@ export function EventDetailDialog({
                 <TooltipContent>查看活動詳細</TooltipContent>
               </Tooltip>
               <Button
-                className="flex-1"
+                className="flex-1 cursor-pointer"
                 variant={isRegistered ? "secondary" : "default"}
                 onClick={handleRegistration}
                 disabled={isLoading}
