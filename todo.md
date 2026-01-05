@@ -1,9 +1,9 @@
 # TODO list
 
-- [ ] Auth: User Name
+- [x] Auth: User Name
   1. 更改註冊時 Name 邏輯，讓用戶必須提供 name (id)
   2. 用戶註冊時增加對 name 唯一性的檢查
-- [ ] User profile hover card
+- [X] User profile hover card
 - [ ] Design: Profile page
 - [ ] Design: User page
 - [ ] Design: calendar page
@@ -21,4 +21,4 @@
     - Prisma Schema
     - 相關 API 和 Service 檔案
     - 快取/效能/記憶體負擔/載入速度
-- [ ] Google Auth 登入整合
+- [X] Google Auth 登入整合
