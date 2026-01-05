@@ -31,7 +31,7 @@ export default function CalendarPageClient() {
   return (
     <>
       {/* 上半部：週間行事曆 */}
-      <div className="flex-1 bg-card/80 backdrop-blur-sm rounded-2xl border border-border/50 shadow-xl overflow-hidden">
+      <div className="flex-1 bg-card/80 rounded-2xl shadow-xl overflow-hidden">
         <WeeklyCalendar
           className="scrollbar-thin"
           onEventSelect={handleEventSelect}

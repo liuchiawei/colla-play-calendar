@@ -195,14 +195,15 @@ export function WeeklyCalendar({
   };
 
   return (
-    <div className={cn("flex flex-col h-full", className)}>
+    <div className={cn("flex flex-col h-full p-6 pb-2", className)}>
       <Collapsible open={!isCollapsed} onOpenChange={toggleCollapsed}>
         {/* ヘッダー：ナビゲーションと月表示 */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col items-center justify-between gap-2 p-6 border-b border-border/50 bg-card/50 backdrop-blur-sm select-none"
+          className="mb-4 flex flex-col items-center justify-between gap-2 select-none"
         >
+          {/* Year and collapse button */}
           <div className="flex items-center justify-between w-full">
             {/* 年 */}
             <motion.h2
@@ -230,29 +231,29 @@ export function WeeklyCalendar({
             </CollapsibleTrigger>
           </div>
           {/* 月份標題 */}
-          <div className="flex flex-col md:flex-row items-center md:items-start gap-1 md:self-start">
-            {/* 月(英語) */}
-            <motion.h2
-              key={formatMonthEng(currentDate)}
-              initial={{ opacity: 0, x: direction * 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="md:px-1 lg:px-2 text-primary text-lg lg:text-xl font-light md:[writing-mode:vertical-rl] tracking-wide"
-            >
-              {formatMonthEng(currentDate)}
-            </motion.h2>
+          <div className="flex-1 flex flex-col md:flex-row items-center justify-between md:items-start gap-1 md:self-start">
             {/* 月(中文) */}
             <motion.h1
               key={formatMonth(currentDate)}
-              initial={{ opacity: 0, x: direction * 20 }}
-              animate={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, y: direction * 20 }}
+              animate={{ opacity: 1, y: 0 }}
               className="text-5xl md:text-7xl lg:text-8xl font-sans font-bold tracking-wide"
             >
               {formatMonth(currentDate)}
             </motion.h1>
+            {/* 月(英語) */}
+            <motion.h2
+              key={formatMonthEng(currentDate)}
+              initial={{ opacity: 0, y: direction * 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="md:px-1 lg:px-2 text-primary text-lg lg:text-xl font-light md:[writing-mode:vertical-rl] tracking-wide"
+            >
+              {formatMonthEng(currentDate)}
+            </motion.h2>
           </div>
         </motion.div>
         {/* 摺疊內容 */}
-        <CollapsibleContent className="p-4">
+        <CollapsibleContent className="space-y-2">
           {/* 日期選擇器 */}
           <div className="w-full flex justify-between items-center">
             <Tooltip>
@@ -308,133 +309,131 @@ export function WeeklyCalendar({
             </Tooltip>
           </div>
           {/* カレンダーグリッド */}
-          <div className="flex-1 overflow-auto">
-            <div className={cn("w-full", "md:min-w-[800px]")}>
-              {/* 曜日ヘッダー */}
-              <div
-                className="grid border-b border-border/50 sticky top-0 bg-background/95 backdrop-blur-sm z-10"
-                style={{
-                  gridTemplateColumns: `60px repeat(${displayDays.length}, 1fr)`,
-                }}
-              >
-                <div className="p-2 border-r border-border/30" />{" "}
-                {/* 時間列のスペーサー */}
-                <AnimatePresence mode="popLayout">
-                  {displayDays.map((day, index) => (
-                    <motion.button
-                      key={day.toISOString()}
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      transition={{ delay: index * 0.03 }}
-                      type="button"
-                      onClick={() => resetCurrentDay(day)}
-                      aria-pressed={isCurrentDay(day)}
-                      aria-label={`選擇日期 ${formatDayHeader(day)}`}
-                      className={cn(
-                        "p-2 text-center border-r border-border/30 last:border-r-0 cursor-pointer select-none hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-inset",
-                        isToday(day) && "bg-primary/10",
-                        isCurrentDay(day) && "ring-2 ring-primary/50 ring-inset"
-                      )}
-                    >
-                      <div
-                        className={cn(
-                          "text-sm font-medium",
-                          isToday(day) || isCurrentDay(day)
-                            ? "text-primary font-semibold"
-                            : "text-muted-foreground"
-                        )}
-                      >
-                        {formatDayHeader(day)}
-                      </div>
-                    </motion.button>
-                  ))}
-                </AnimatePresence>
-              </div>
-
-              {/* 時間グリッド */}
-              <div
-                className="grid"
-                style={{
-                  gridTemplateColumns: `60px repeat(${displayDays.length}, 1fr)`,
-                }}
-              >
-                {/* 時間ラベル列 */}
-                <div className="border-r border-border/30">
-                  {timeSlots.map((slot, index) => (
-                    <motion.div
-                      key={slot.hour}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.02 }}
-                      className="h-16 border-b border-border/20 pr-2 text-right"
-                    >
-                      <span className="text-xs text-muted-foreground relative -top-2">
-                        {slot.label}
-                      </span>
-                    </motion.div>
-                  ))}
-                </div>
-
-                {/* 各曜日の列 */}
-                {displayDays.map((day, dayIndex) => (
-                  <div
+          <div className="flex-1 w-full space-y-1 overflow-hidden">
+            {/* 曜日ヘッダー */}
+            <div
+              className="grid border-b border-border/50 sticky top-0 bg-background/95 backdrop-blur-sm z-10"
+              style={{
+                gridTemplateColumns: `60px repeat(${displayDays.length}, 1fr)`,
+              }}
+            >
+              <div className="p-2 border-r border-border/30" />{" "}
+              {/* 時間列のスペーサー */}
+              <AnimatePresence mode="popLayout">
+                {displayDays.map((day, index) => (
+                  <motion.button
                     key={day.toISOString()}
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    transition={{ delay: index * 0.03 }}
+                    type="button"
+                    onClick={() => resetCurrentDay(day)}
+                    aria-pressed={isCurrentDay(day)}
+                    aria-label={`選擇日期 ${formatDayHeader(day)}`}
                     className={cn(
-                      "relative border-r border-border/30 last:border-r-0",
-                      isToday(day) && "bg-primary/5",
-                      isCurrentDay(day) &&
-                        "bg-primary/5 ring-2 ring-primary/30 ring-inset"
+                      "w-full p-2 text-center border-r border-border/30 last:border-r-0 cursor-pointer select-none hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/50 focus-visible:ring-inset rounded-sm",
+                      isToday(day) && "bg-primary/10",
+                      isCurrentDay(day) && "ring-1 ring-primary/50 ring-inset"
                     )}
                   >
-                    {/* 時間グリッドの背景線 */}
-                    {timeSlots.map((slot) => (
-                      <div
-                        key={slot.hour}
-                        className="h-16 border-b border-border/20"
-                      />
-                    ))}
-
-                    {/* イベントカード */}
-                    <div className="absolute inset-0 p-0.5">
-                      {isLoading ? (
-                        // ローディングスケルトン
-                        <div className="space-y-1 p-1">
-                          {dayIndex % 2 === 0 && (
-                            <Skeleton className="h-12 w-full rounded" />
-                          )}
-                          {dayIndex % 3 === 0 && (
-                            <Skeleton className="h-8 w-full rounded mt-20" />
-                          )}
-                        </div>
-                      ) : (
-                        // 実際のイベント
-                        events
-                          .filter((event) => isEventOnDay(event, day))
-                          .map((event, eventIndex) => {
-                            const position = calculateEventPosition(event, day);
-                            return (
-                              <EventCard
-                                key={event.id}
-                                event={event}
-                                position={position}
-                                index={eventIndex + dayIndex}
-                                onClick={() => {
-                                  // 外部コールバックを常に呼び出す
-                                  onEventSelect?.(event);
-                                  // 内部ダイアログが有効な場合のみ内部状態を更新
-                                  if (enableInternalDialog) {
-                                    setSelectedEvent(event);
-                                  }
-                                }}
-                              />
-                            );
-                          })
+                    <div
+                      className={cn(
+                        "text-sm font-medium",
+                        isToday(day) || isCurrentDay(day)
+                          ? "text-primary font-semibold"
+                          : "text-muted-foreground"
                       )}
+                    >
+                      {formatDayHeader(day)}
                     </div>
-                  </div>
+                  </motion.button>
+                ))}
+              </AnimatePresence>
+            </div>
+
+            {/* 時間グリッド */}
+            <div
+              className="grid"
+              style={{
+                gridTemplateColumns: `60px repeat(${displayDays.length}, 1fr)`,
+              }}
+            >
+              {/* 時間ラベル列 */}
+              <div className="border-r border-border/30">
+                {timeSlots.map((slot, index) => (
+                  <motion.div
+                    key={slot.hour}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.02 }}
+                    className="h-16 border-b border-border/20 pr-2 text-right"
+                  >
+                    <span className="text-xs text-muted-foreground relative -top-2">
+                      {slot.label}
+                    </span>
+                  </motion.div>
                 ))}
               </div>
+
+              {/* 各曜日の列 */}
+              {displayDays.map((day, dayIndex) => (
+                <div
+                  key={day.toISOString()}
+                  className={cn(
+                    "relative border-r border-border/30 last:border-r-0 rounded-sm",
+                    isToday(day) && "bg-primary/5",
+                    isCurrentDay(day) &&
+                      "bg-primary/5 ring-1 ring-primary/30 ring-inset"
+                  )}
+                >
+                  {/* 時間グリッドの背景線 */}
+                  {timeSlots.map((slot) => (
+                    <div
+                      key={slot.hour}
+                      className="h-16 border-b border-border/20"
+                    />
+                  ))}
+
+                  {/* イベントカード */}
+                  <div className="absolute inset-0 p-0.5">
+                    {isLoading ? (
+                      // ローディングスケルトン
+                      <div className="space-y-1 p-1">
+                        {dayIndex % 2 === 0 && (
+                          <Skeleton className="h-12 w-full rounded" />
+                        )}
+                        {dayIndex % 3 === 0 && (
+                          <Skeleton className="h-8 w-full rounded mt-20" />
+                        )}
+                      </div>
+                    ) : (
+                      // 実際のイベント
+                      events
+                        .filter((event) => isEventOnDay(event, day))
+                        .map((event, eventIndex) => {
+                          const position = calculateEventPosition(event, day);
+                          return (
+                            <EventCard
+                              key={event.id}
+                              event={event}
+                              position={position}
+                              index={eventIndex + dayIndex}
+                              onClick={() => {
+                                // 外部コールバックを常に呼び出す
+                                onEventSelect?.(event);
+                                // 内部ダイアログが有効な場合のみ内部状態を更新
+                                if (enableInternalDialog) {
+                                  setSelectedEvent(event);
+                                }
+                              }}
+                            />
+                          );
+                        })
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </CollapsibleContent>
