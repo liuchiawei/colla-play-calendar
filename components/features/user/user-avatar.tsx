@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import type { RegisteredUser, UserWithAdmin } from "@/lib/types";
 import { UserProfileHoverCard } from "./user-profile-hover-card";
+import { cn } from "@/lib/utils";
 
 interface UserAvatarProps {
   user: RegisteredUser | UserWithAdmin;
@@ -15,6 +16,7 @@ interface UserAvatarProps {
   // Hover card の開閉遅延時間
   hoverOpenDelay?: number;
   hoverCloseDelay?: number;
+  className?: string;
 }
 
 export default function UserAvatar({
@@ -22,10 +24,16 @@ export default function UserAvatar({
   disableHover = false,
   hoverOpenDelay,
   hoverCloseDelay,
+  className,
 }: UserAvatarProps) {
   const avatarContent = (
     <Link href={`/user/${user.id}`} className="inline-block">
-      <Avatar className="cursor-pointer hover:opacity-80 transition-opacity">
+      <Avatar
+        className={cn(
+          "cursor-pointer hover:opacity-80 transition-opacity",
+          className
+        )}
+      >
         <AvatarImage
           src={user.image || undefined}
           alt={user.name || `使用者 ${user.id}`}

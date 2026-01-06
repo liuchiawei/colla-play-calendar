@@ -188,7 +188,7 @@ export function EventDetailDialog({
             className="mt-4 grid grid-cols-2 gap-4"
           >
             {/* 活動時間 */}
-            <div className="flex items-start gap-3">
+            <div className="flex items-center gap-3">
               <div className="p-2 rounded-full bg-primary/10 text-primary">
                 <Clock className="size-4" />
               </div>
@@ -199,7 +199,7 @@ export function EventDetailDialog({
 
             {/* 地點 */}
             {event.location && (
-              <div className="flex items-start gap-3">
+              <div className="flex items-center gap-3">
                 <div className="p-2 rounded-full bg-primary/10 text-primary">
                   <MapPin className="size-4" />
                 </div>
@@ -209,7 +209,7 @@ export function EventDetailDialog({
 
             {/* 主辦單位 */}
             {event.organizer && (
-              <div className="flex items-start gap-3">
+              <div className="flex items-center gap-3">
                 <div className="p-2 rounded-full bg-primary/10 text-primary">
                   <User className="size-4" />
                 </div>
@@ -219,7 +219,7 @@ export function EventDetailDialog({
 
             {/* 費用 */}
             {event.price && (
-              <div className="flex items-start gap-3">
+              <div className="flex items-center gap-3">
                 <div className="p-2 rounded-full bg-primary/10 text-primary">
                   <Ticket className="size-4" />
                 </div>
@@ -228,11 +228,11 @@ export function EventDetailDialog({
             )}
 
             {/* 報名人數 */}
-            <div className="flex items-start gap-3">
+            <div className="flex items-center gap-3">
               <div className="p-2 rounded-full bg-primary/10 text-primary flex-shrink-0">
                 <Users className="size-4" />
               </div>
-              <div className="flex-1">
+              <div className="flex-1 flex flex-col gap-1 md:gap-2">
                 <div className="text-sm ">
                   {registrationCount > 0
                     ? `已有 ${registrationCount} 人報名`
@@ -240,20 +240,16 @@ export function EventDetailDialog({
                 </div>
                 {/* 已報名使用者頭像堆疊 */}
                 {registrationCount > 0 && (
-                  <div className="mt-2">
-                    <Suspense
-                      fallback={<EventRegisteredUsersAvatarsSkeleton />}
-                    >
-                      <EventRegisteredUsersAvatars eventId={event.id} />
-                    </Suspense>
-                  </div>
+                  <Suspense fallback={<EventRegisteredUsersAvatarsSkeleton />}>
+                    <EventRegisteredUsersAvatars eventId={event.id} className="-space-x-4 md:-space-x-2" />
+                  </Suspense>
                 )}
               </div>
             </div>
 
             {/* 報名網址 */}
             {event.registrationUrl && (
-              <div className="flex items-start gap-3">
+              <div className="flex items-center gap-3">
                 <div className="p-2 rounded-full bg-primary/10 text-primary">
                   <ExternalLink className="size-4" />
                 </div>
@@ -297,7 +293,12 @@ export function EventDetailDialog({
               )}
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="icon" className="rounded-full" asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="rounded-full"
+                    asChild
+                  >
                     <Link href={`/event/${event.id}`}>
                       <Eye className="size-4" />
                     </Link>
