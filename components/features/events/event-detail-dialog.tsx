@@ -114,57 +114,72 @@ export function EventDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden bg-card border-border/50">
-        {/* ヘッダー画像またはカラーバナー */}
-        <div className="relative h-32 overflow-hidden">
+      <DialogContent className="p-0 overflow-hidden bg-card border-border/50">
+        {/* 卡片封面 */}
+        <div className="relative w-full h-full min-h-36 overflow-hidden">
           {event.imageBlobUrl || event.imageUrl ? (
+            // 封面圖片
             <img
               src={event.imageBlobUrl || event.imageUrl || ""}
               alt={event.title}
-              className="w-full h-full object-cover border"
+              className="absolute inset-0 z-0 object-cover border pointer-events-none"
             />
           ) : (
+            // 分類背景色 (無圖片時)
             <div
-              className="w-full h-full"
+              className="absolute inset-0 z-0"
               style={{
                 background: `linear-gradient(135deg, ${categoryColor}cc 0%, ${categoryColor}66 100%)`,
               }}
             />
           )}
-          {/* オーバーレイ */}
-          <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
-
-          {/* カテゴリバッジ */}
-          {event.category && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="absolute top-3 left-3"
-            >
-              <Badge
-                style={{ backgroundColor: categoryColor }}
-                className="text-white border-0"
+          {/* 疊加層 */}
+          <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent select-none pointer-events-none" />
+          {/* 封面資訊區塊 (標題、分類標籤﹑日期) */}
+          <div className="w-full h-full flex flex-col justify-between gap-4 p-6 z-10">
+            {/* 分類標籤 */}
+            {event.category && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="z-10"
               >
-                {event.category.name}
-              </Badge>
-            </motion.div>
-          )}
+                <Badge
+                  style={{ backgroundColor: categoryColor }}
+                  className="text-white border-0 select-none"
+                >
+                  {event.category.name}
+                </Badge>
+              </motion.div>
+            )}
+            {/* 活動標題&日期 */}
+            <DialogHeader className="gap-0 z-10">
+              {/* 活動日期 */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+              >
+                <h3 className="text-white text-sm md:text-base lg:text-lg font-light tracking-wide">
+                  {formatDate(event.startTime)}
+                </h3>
+              </motion.div>
+              {/* 活動標題 */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+              >
+                <DialogTitle className="text-white text-2xl lg:text-3xl xl:text-4xl font-bold text-shadow-md leading-tight">
+                  {event.title}
+                </DialogTitle>
+              </motion.div>
+            </DialogHeader>
+          </div>
         </div>
 
         {/* コンテンツ */}
         <div className="px-6 pb-6">
-          <DialogHeader className="-mt-6 relative z-10">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-            >
-              <DialogTitle className="text-xl font-bold leading-tight">
-                {event.title}
-              </DialogTitle>
-            </motion.div>
-          </DialogHeader>
-
           {/* 活動基本資料 */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -172,25 +187,19 @@ export function EventDetailDialog({
             transition={{ delay: 0.2 }}
             className="mt-4 grid grid-cols-2 gap-4"
           >
-            {/* 日時情報 */}
-            <div className="flex items-start gap-3">
+            {/* 活動時間 */}
+            <div className="flex items-center gap-3">
               <div className="p-2 rounded-full bg-primary/10 text-primary">
-                <Calendar className="size-4" />
+                <Clock className="size-4" />
               </div>
-              <div>
-                <div className="text-sm font-medium ">
-                  {formatDate(event.startTime)}
-                </div>
-                <div className="text-sm text-muted-foreground flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  {formatTime(event.startTime)} - {formatTime(event.endTime)}
-                </div>
+              <div className="text-sm">
+                {formatTime(event.startTime)} - {formatTime(event.endTime)}
               </div>
             </div>
 
-            {/* 場所 */}
+            {/* 地點 */}
             {event.location && (
-              <div className="flex items-start gap-3">
+              <div className="flex items-center gap-3">
                 <div className="p-2 rounded-full bg-primary/10 text-primary">
                   <MapPin className="size-4" />
                 </div>
@@ -198,9 +207,9 @@ export function EventDetailDialog({
               </div>
             )}
 
-            {/* 主催者 */}
+            {/* 主辦單位 */}
             {event.organizer && (
-              <div className="flex items-start gap-3">
+              <div className="flex items-center gap-3">
                 <div className="p-2 rounded-full bg-primary/10 text-primary">
                   <User className="size-4" />
                 </div>
@@ -208,9 +217,9 @@ export function EventDetailDialog({
               </div>
             )}
 
-            {/* 料金 */}
+            {/* 費用 */}
             {event.price && (
-              <div className="flex items-start gap-3">
+              <div className="flex items-center gap-3">
                 <div className="p-2 rounded-full bg-primary/10 text-primary">
                   <Ticket className="size-4" />
                 </div>
@@ -218,9 +227,29 @@ export function EventDetailDialog({
               </div>
             )}
 
+            {/* 報名人數 */}
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-full bg-primary/10 text-primary flex-shrink-0">
+                <Users className="size-4" />
+              </div>
+              <div className="flex-1 flex flex-col gap-1 md:gap-2">
+                <div className="text-sm ">
+                  {registrationCount > 0
+                    ? `已有 ${registrationCount} 人報名`
+                    : "尚未有人報名"}
+                </div>
+                {/* 已報名使用者頭像堆疊 */}
+                {registrationCount > 0 && (
+                  <Suspense fallback={<EventRegisteredUsersAvatarsSkeleton />}>
+                    <EventRegisteredUsersAvatars eventId={event.id} className="-space-x-4 md:-space-x-2" />
+                  </Suspense>
+                )}
+              </div>
+            </div>
+
             {/* 報名網址 */}
             {event.registrationUrl && (
-              <div className="flex items-start gap-3">
+              <div className="flex items-center gap-3">
                 <div className="p-2 rounded-full bg-primary/10 text-primary">
                   <ExternalLink className="size-4" />
                 </div>
@@ -237,30 +266,6 @@ export function EventDetailDialog({
               </div>
             )}
 
-            {/* 報名人數 */}
-            <div className="flex items-start gap-3">
-              <div className="p-2 rounded-full bg-primary/10 text-primary flex-shrink-0">
-                <Users className="size-4" />
-              </div>
-              <div className="flex-1">
-                <div className="text-sm ">
-                  {registrationCount > 0
-                    ? `已有 ${registrationCount} 人報名`
-                    : "尚未有人報名"}
-                </div>
-                {/* 已報名使用者頭像堆疊 */}
-                {registrationCount > 0 && (
-                  <div className="mt-2">
-                    <Suspense
-                      fallback={<EventRegisteredUsersAvatarsSkeleton />}
-                    >
-                      <EventRegisteredUsersAvatars eventId={event.id} />
-                    </Suspense>
-                  </div>
-                )}
-              </div>
-            </div>
-
             {/* 説明 */}
             {event.description && (
               <div className="col-span-2 space-y-2">
@@ -274,7 +279,7 @@ export function EventDetailDialog({
               </div>
             )}
 
-            {/* 報名ボタン */}
+            {/* 報名按鈕 */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -288,7 +293,12 @@ export function EventDetailDialog({
               )}
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button size="icon" className="rounded-full" asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="rounded-full"
+                    asChild
+                  >
                     <Link href={`/event/${event.id}`}>
                       <Eye className="size-4" />
                     </Link>

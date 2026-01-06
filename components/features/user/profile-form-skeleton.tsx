@@ -7,9 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
@@ -19,12 +17,12 @@ export function ProfileFormSkeleton() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="space-y-2">
-            <CardTitle>
+            <div>
               <Skeleton className="h-6 w-32" />
-            </CardTitle>
-            <CardDescription>
+            </div>
+            <div>
               <Skeleton className="h-4 w-64" />
-            </CardDescription>
+            </div>
           </div>
           <div className="flex gap-2">
             <Skeleton className="h-10 w-16" /> {/* 編輯按鈕 */}

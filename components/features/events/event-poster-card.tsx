@@ -58,7 +58,7 @@ export function EventPosterCard({
             </Badge>
           )}
           {/* 標題 - 中央垂直 */}
-          <p className="self-center text-sm md:text-md lg:text-xl font-semibold font-noto-serif leading-tight line-clamp-2 text-white tracking-widest [writing-mode:vertical-rl] text-shadow-lg text-shadow-black">
+          <p className="h-full self-center text-sm md:text-md lg:text-xl font-semibold font-noto-serif leading-tight line-clamp-2 text-white tracking-widest [writing-mode:vertical-rl] text-shadow-md text-shadow-black/50">
             {event.title}
           </p>
           {/* 活動日期 - 左下角 */}

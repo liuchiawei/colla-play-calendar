@@ -6,7 +6,11 @@
 import { useEffect, useState } from "react";
 import UserAvatar from "@/components/features/user/user-avatar";
 import { EventRegisteredUsersAvatarsSkeleton } from "./event-registered-users-avatars-skeleton";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import type { UserWithAdmin } from "@/lib/types";
@@ -90,7 +94,11 @@ export function EventRegisteredUsersAvatars({
   return (
     <div className={cn("flex items-center -space-x-2", className)}>
       {displayUsers.map((user) => (
-        <UserAvatar key={user.id} user={user} />
+        <UserAvatar
+          key={user.id}
+          user={user}
+          className="size-6 xl:size-8"
+        />
       ))}
 
       {/* 顯示剩餘數量 */}
@@ -98,7 +106,7 @@ export function EventRegisteredUsersAvatars({
         <Tooltip>
           <TooltipTrigger asChild>
             <div className="relative cursor-pointer" style={{ zIndex: 0 }}>
-              <Avatar className="size-8 md:size-10 border-2 border-background bg-muted hover:scale-110 transition-transform">
+              <Avatar className="size-6 xl:size-8 border-2 border-background bg-muted hover:scale-110 transition-transform">
                 <AvatarFallback className="text-xs font-semibold">
                   +{remainingCount}
                 </AvatarFallback>
