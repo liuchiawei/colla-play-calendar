@@ -1,0 +1,162 @@
+# CollaPlay Calendar - Cursor Rules
+
+Next.js 16.1.1 (App Router), React 19.2.3, TypeScript 5 (strict), Prisma 7.2.0 + PostgreSQL, Better Auth 1.4.9
+
+## Tech Stack
+- **UI**: shadcn/ui (priority), Radix UI, Lucide React, Tailwind CSS 4
+- **Forms**: React Hook Form 7.69.0 + Zod 4.2.1
+- **State**: Zustand 5.0.9, SWR 2.3.8
+- **Utils**: date-fns 4.1.0, clsx, tailwind-merge, motion 12.23.26
+
+## Code Standards
+
+### Naming
+- Components: `kebab-case` (e.g., `event-card.tsx`)
+- Utils: `kebab-case` (e.g., `date-utils.ts`)
+- Types: `types.ts`
+- API routes: `route.ts`
+
+### Structure
+```
+app/api/          # API routes (delegate to services)
+components/
+  features/        # Feature components
+  ui/             # shadcn/ui components
+lib/
+  services/       # Business logic layer
+  hooks/          # Custom hooks
+  stores/         # Zustand stores
+  utils/          # Utilities
+```
+
+### TypeScript
+- Strict mode, explicit types
+- `type` for types, `interface` for extensible objects
+- API routes: `Promise<Response>`
+- Use `async/await`
+
+### React Components
+- **Priority**: Use shadcn/ui components, avoid custom implementations
+- **Default**: Server Components (data fetching, DB queries)
+- **Client**: Only when interactivity needed (`"use client"`)
+- Add purpose comments at file top
+
+### API Routes
+- Location: `app/api/`
+- **Separation of concerns**: Routes handle requests/responses only, delegate business logic to `lib/services/`
+- Return `Response` with proper status codes
+- Use try-catch for errors
+
+```tsx
+// app/api/example/route.ts
+import { exampleService } from "@/lib/services/example/example.service";
+
+export async function GET() {
+  try {
+    const data = await exampleService.getData();
+    return Response.json({ data }, { status: 200 });
+  } catch (error) {
+    return Response.json({ error: "Error" }, { status: 500 });
+  }
+}
+```
+
+### Prisma & Performance
+- **Performance first**: Minimize DB queries, use batch/relation queries (`include`/`select`) to avoid N+1
+- All DB ops via Prisma Client
+- Business logic in `lib/services/` (separation from API routes)
+- Use `unstable_cache` for query caching
+- **Next.js 16**: `revalidateTag(tagName, 'max')` - second param required
+- Transactions: `prisma.$transaction`
+
+```tsx
+import { unstable_cache } from "next/cache";
+import { revalidateTag } from "next/cache";
+
+const cachedQuery = unstable_cache(
+  async (id: string) => prisma.model.findUnique({ 
+    where: { id },
+    include: { related: true }
+  }),
+  ["cache-key"],
+  { tags: ["tag-name"] }
+);
+
+revalidateTag("tag-name", "max");
+```
+
+### Forms
+- React Hook Form + Zod
+- Client Components
+- Error messages in Traditional Chinese
+
+### Styling
+- Tailwind CSS, `cn()` for class merging
+- CSS Variables for theming
+- Responsive: `sm:`, `md:`, `lg:`, `xl:`
+- Motion for animations
+
+### Data Fetching
+- Server Components: Direct Prisma queries
+- Client Components: SWR
+- API routes: JSON responses
+
+### Auth
+- Better Auth
+- Server Components: `auth()` for session
+- API routes: Verify user identity
+- Anonymous users: session ID
+
+### Comments
+- Traditional Chinese comments
+- JSDoc for functions
+- Purpose comment at file top
+
+### Error Handling
+- try-catch, proper HTTP status codes
+- User-friendly messages (Traditional Chinese)
+- Log errors in dev
+
+### Performance
+- **Priority**: Minimize DB queries, optimize with caching
+- Use `unstable_cache`, batch queries, `include`/`select`
+- Code splitting: `Suspense`, dynamic imports
+- Next.js Image component
+- `generateMetadata` for SEO
+- **Next.js 16**: `revalidateTag` requires second param
+
+### Import Order
+1. React, 2. Next.js, 3. Third-party, 4. Internal components, 5. Utils/types, 6. Styles
+
+## Best Practices
+1. Prefer Server Components, Client only for interactivity
+2. **Separation**: API routes delegate to services (`lib/services/`)
+3. **UI Priority**: Use shadcn/ui components, follow industry standards
+4. **Performance**: Minimize DB queries, optimize caching
+5. **DRY**: Extract repeated logic to shared functions/hooks/utils
+6. Type safety: Leverage TypeScript
+7. Accessibility: Radix UI components
+8. Error handling: All async operations
+9. Code reuse: Extract to hooks/utils/services
+10. Consistency: Follow project patterns, industry standards
+
+## Don'ts
+- ❌ Browser APIs in Server Components
+- ❌ Direct DB ops in frontend components
+- ❌ Business logic in API routes (delegate to services)
+- ❌ Ignore TypeScript errors
+- ❌ Use `any` (unless absolutely necessary)
+- ❌ Complex business logic in components
+- ❌ Skip error handling
+- ❌ Inline styles (except CSS Variables)
+- ❌ Reimplement existing shadcn/ui components
+- ❌ Code duplication (extract to shared modules)
+- ❌ `revalidateTag` without second param (Next.js 16)
+
+## Commands
+- `pnpm dev` - Dev server
+- `pnpm build` - Production build
+- `pnpm lint` - ESLint
+- `pnpm db:migrate` - DB migration
+- `pnpm db:seed` - Seed data
+- `pnpm db:studio` - Prisma Studio
