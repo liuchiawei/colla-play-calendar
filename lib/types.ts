@@ -6,6 +6,8 @@ import type {
   Category,
   Profile,
   EventRegistration,
+  Comment,
+  CommentLike,
 } from "@/lib/generated/prisma/client";
 
 // カテゴリ型（Prismaから生成）
@@ -191,4 +193,66 @@ export type RegisteredUser = {
   name: string | null;
   email?: string; // 可選，因為某些 API 可能不返回 email
   image: string | null;
+};
+
+// ============================================
+// 活動留言相關型別定義
+// ============================================
+
+// 留言型別（由 Prisma 生成）
+export type { Comment, CommentLike };
+
+// 留言作者資訊
+export type CommentAuthor = {
+  id: string;
+  name: string | null;
+  email: string;
+  image: string | null;
+} | {
+  type: "anonymous";
+  displayNumber: number;
+  displayName: string; // "匿名用戶 #123"
+};
+
+// 留言（包含關聯資料）
+export type CommentWithRelations = Comment & {
+  user: {
+    id: string;
+    name: string | null;
+    email: string;
+    image: string | null;
+  } | null;
+  likes: CommentLike[];
+  _count: {
+    likes: number;
+    replies: number;
+  };
+  replies?: CommentWithRelations[]; // 巢狀回覆
+  isLiked?: boolean; // 當前用戶是否已按讚
+};
+
+// 留言輸入型別
+export type CommentInput = {
+  content: string;
+  parentId?: string | null; // 用於回覆
+};
+
+// 留言更新輸入型別
+export type CommentUpdateInput = {
+  content: string;
+};
+
+// 留言列表響應型別（包含分頁資訊）
+export type CommentListResponse = {
+  comments: CommentWithRelations[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+};
+
+// 留言按讚響應型別
+export type CommentLikeResponse = {
+  isLiked: boolean;
+  likeCount: number;
 };

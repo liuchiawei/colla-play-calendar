@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { EventRegistrationButton } from "@/components/features/events/event-registration-button";
 import { EventRegisteredUsersAvatars } from "@/components/features/events/event-registered-users-avatars";
+import { EventInteractions } from "@/components/features/events/event-interactions";
 import { Suspense } from "react";
 import { EventRegisteredUsersAvatarsSkeleton } from "@/components/features/events/event-registered-users-avatars-skeleton";
 import SectionContainer from "@/components/layout/section-container";
@@ -136,9 +137,9 @@ export default async function EventDetailPage({ params }: PageProps) {
 
     return (
       <SectionContainer>
-        {/* 主內容 */}
+        <div className="w-full flex flex-col gap-6">
         {/* 圖片區塊 */}
-        <div className="relative w-full h-64 md:h-96 rounded-2xl overflow-hidden mb-6 shadow-lg">
+        <div className="relative w-full h-64 md:h-96 rounded-2xl overflow-hidden shadow-lg">
           {eventWithCount.imageBlobUrl || eventWithCount.imageUrl ? (
             <img
               src={eventWithCount.imageBlobUrl || eventWithCount.imageUrl || ""}
@@ -170,7 +171,7 @@ export default async function EventDetailPage({ params }: PageProps) {
         </div>
 
         {/* 內容區塊 */}
-        <div className="w-full bg-card/80 backdrop-blur-sm rounded-2xl border border-border/50 shadow-xl p-6 md:p-8">
+        <div className="w-full bg-card rounded-2xl border border-border/50 shadow-xl p-6 md:p-8">
           {/* 標題 */}
           <h1 className="text-3xl md:text-4xl font-bold text-foreground leading-tight mb-6 font-[var(--font-outfit)]">
             {eventWithCount.title}
@@ -282,6 +283,14 @@ export default async function EventDetailPage({ params }: PageProps) {
               initialRegistrationCount={eventWithCount.registrationCount || 0}
             />
           </div>
+        </div>
+
+        {/* 留言討論區 */}
+        <EventInteractions
+          eventId={eventWithCount.id}
+          currentUserId={userId}
+          currentAnonymousSessionId={anonymousSessionId}
+        />
         </div>
       </SectionContainer>
     );

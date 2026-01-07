@@ -32,6 +32,10 @@ model User {
   profile       Profile?
   // 報名關係
   eventRegistrations EventRegistration[]
+  // 留言關係
+  comments      Comment[]
+  // 按讚關係
+  commentLikes  CommentLike[]
 
   @@map("user")
 }
@@ -156,6 +160,8 @@ model Event {
   updatedAt         DateTime  @updatedAt
   // 報名關係
   registrations     EventRegistration[]
+  // 留言關係
+  comments         Comment[]
 
   // 日時検索の最適化
   // カテゴリ検索の最適化
@@ -188,4 +194,56 @@ model EventRegistration {
   @@unique([eventId, userId]) // 登入用戶不能重複報名同一活動
   @@unique([eventId, anonymousSessionId]) // 匿名用戶不能重複報名同一活動
   @@map("event_registration")
+}
+
+// ============================================
+// 活動留言モデル
+// ============================================
+
+// 活動留言記錄モデル
+model Comment {
+  id                   String    @id @default(cuid())
+  eventId              String    // 活動ID
+  parentId             String?   // 父留言ID（用於巢狀回覆）
+  content              String    // 留言內容
+  userId               String?   // 登入用戶ID（可選）
+  anonymousSessionId   String?   // 匿名用戶session identifier（可選）
+  anonymousDisplayNumber Int?     // 匿名用戶編號（用於顯示「匿名用戶 #123」）
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  // 關係
+  event                Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user                 User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent               Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies              Comment[] @relation("CommentReplies")
+  likes                CommentLike[]
+
+  // 索引和約束
+  @@index([eventId])
+  @@index([parentId])
+  @@index([userId])
+  @@index([anonymousSessionId])
+  @@map("comment")
+}
+
+// 留言按讚記錄モデル
+model CommentLike {
+  id                 String   @id @default(cuid())
+  commentId          String   // 留言ID
+  userId             String?  // 登入用戶ID（可選）
+  anonymousSessionId String? // 匿名用戶session identifier（可選）
+  createdAt          DateTime @default(now())
+
+  // 關係
+  comment            Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user               User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // 索引和約束
+  @@index([commentId])
+  @@index([userId])
+  @@index([anonymousSessionId])
+  @@unique([commentId, userId]) // 登入用戶不能重複按讚同一留言
+  @@unique([commentId, anonymousSessionId]) // 匿名用戶不能重複按讚同一留言
+  @@map("comment_like")
 }
