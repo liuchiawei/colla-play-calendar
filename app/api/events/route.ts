@@ -3,7 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { getAnonymousSessionId } from "@/lib/utils/registration";
-import type { ApiResponse, EventWithCategory, EventInput } from "@/lib/types";
+import { requireAuth } from "@/lib/services/auth/auth-server.service";
+import { createEvent } from "@/lib/services/events/event.service";
+import type { ApiResponse, EventWithCategory, EventInput, EventStatus } from "@/lib/types";
 
 // GET /api/events - イベント一覧を取得
 // クエリパラメータ: start（開始日）、end（終了日）でフィルタリング可能
@@ -20,6 +22,7 @@ export async function GET(request: NextRequest) {
         startTime?: { lte?: Date };
         endTime?: { gte?: Date };
       }>;
+      status?: EventStatus;
     } = {};
 
     if (start && end) {
@@ -46,6 +49,16 @@ export async function GET(request: NextRequest) {
     if (!userId) {
       anonymousSessionId = await getAnonymousSessionId();
     }
+
+    // 狀態過濾（如果提供）
+    const status = searchParams.get("status") as EventStatus | null;
+    if (status && status !== "all") {
+      where.status = status;
+    } else if (!status) {
+      // 預設只顯示已發布的活動（如果沒有指定狀態）
+      where.status = "published";
+    }
+    // 如果 status === "all"，不添加狀態過濾，顯示所有狀態的活動
 
     const events = await prisma.event.findMany({
       where,
@@ -96,8 +109,17 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/events - 新しいイベントを作成
+// 要求登入驗證，設置 status: "pending"，記錄 createdBy
 export async function POST(request: NextRequest) {
   try {
+    // 檢查登入狀態
+    const authResult = await requireAuth(request);
+    if (authResult instanceof NextResponse) {
+      return authResult;
+    }
+
+    const { userId } = authResult;
+
     const body: EventInput = await request.json();
 
     // バリデーション
@@ -105,45 +127,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json<ApiResponse<null>>(
         {
           success: false,
-          error: "タイトル、開始日時、終了日時は必須です",
+          error: "標題、開始時間、結束時間為必填",
         },
         { status: 400 }
       );
     }
 
-    // 日時の検証
-    const startTime = new Date(body.startTime);
-    const endTime = new Date(body.endTime);
-
-    if (endTime <= startTime) {
-      return NextResponse.json<ApiResponse<null>>(
-        {
-          success: false,
-          error: "終了日時は開始日時より後である必要があります",
-        },
-        { status: 400 }
-      );
-    }
-
-    const event = await prisma.event.create({
-      data: {
-        title: body.title,
-        description: body.description || null,
-        startTime,
-        endTime,
-        location: body.location || null,
-        organizer: body.organizer || null,
-        imageUrl: body.imageUrl || null,
-        imageBlobUrl: body.imageBlobUrl || null,
-        imageBlobPathname: body.imageBlobPathname || null,
-        registrationUrl: body.registrationUrl || null,
-        price: body.price || null,
-        categoryId: body.categoryId || null,
-      } as any,
-      include: {
-        category: true,
-      },
-    });
+    // 使用 event service 創建活動
+    // 如果用戶指定了 status（例如 draft），使用該狀態；否則設為 pending
+    const event = await createEvent(userId, body);
 
     return NextResponse.json<ApiResponse<EventWithCategory>>(
       {
@@ -154,10 +146,12 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     console.error("Failed to create event:", error);
+    const errorMessage =
+      error instanceof Error ? error.message : "活動創建失敗";
     return NextResponse.json<ApiResponse<null>>(
       {
         success: false,
-        error: "イベントの作成に失敗しました",
+        error: errorMessage,
       },
       { status: 500 }
     );

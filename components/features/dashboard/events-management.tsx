@@ -36,11 +36,20 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate, formatTime } from "@/lib/date-utils";
+import { EventStatusBadge } from "@/components/features/events/event-status-badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import type {
   EventWithCategory,
   EventInput,
   Category,
   EventRegistrationWithUser,
+  EventStatus,
 } from "@/lib/types";
 
 interface EventsManagementProps {
@@ -55,6 +64,7 @@ interface EventsManagementProps {
   onEdit: (event: EventWithCategory) => void;
   onDelete: (eventId: string) => void;
   onViewRegistrations: (eventId: string) => void;
+  onReview?: (eventId: string, status: EventStatus) => Promise<void>;
 }
 
 export function EventsManagement({
@@ -69,7 +79,13 @@ export function EventsManagement({
   onEdit,
   onDelete,
   onViewRegistrations,
+  onReview,
 }: EventsManagementProps) {
+  const [statusFilter, setStatusFilter] = React.useState<EventStatus | "all">("all");
+  const [reviewEventId, setReviewEventId] = React.useState<string | null>(null);
+  const [reviewStatus, setReviewStatus] = React.useState<EventStatus>("published");
+  const [isReviewing, setIsReviewing] = React.useState(false);
+
   // 過濾活動
   const filteredEvents = events.filter((event) => {
     const matchesSearch =
@@ -81,8 +97,27 @@ export function EventsManagement({
       (filterCategory === "none"
         ? !event.categoryId
         : event.categoryId === filterCategory);
-    return matchesSearch && matchesCategory;
+    const matchesStatus =
+      statusFilter === "all" || event.status === statusFilter;
+    return matchesSearch && matchesCategory && matchesStatus;
   });
+
+  // 處理審核
+  const handleReview = async () => {
+    if (!reviewEventId || !onReview) return;
+
+    setIsReviewing(true);
+    try {
+      await onReview(reviewEventId, reviewStatus);
+      setReviewEventId(null);
+      setReviewStatus("published");
+    } catch (error) {
+      console.error("Failed to review event:", error);
+      alert("審核失敗");
+    } finally {
+      setIsReviewing(false);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -122,6 +157,19 @@ export function EventsManagement({
             ))}
           </SelectContent>
         </Select>
+        <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as EventStatus | "all")}>
+          <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectValue placeholder="篩選狀態" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">全部狀態</SelectItem>
+            <SelectItem value="draft">草稿</SelectItem>
+            <SelectItem value="pending">待審核</SelectItem>
+            <SelectItem value="published">已發布</SelectItem>
+            <SelectItem value="rejected">已拒絕</SelectItem>
+            <SelectItem value="archived">已歸檔</SelectItem>
+          </SelectContent>
+        </Select>
         <Button
           variant="outline"
           size="icon"
@@ -147,6 +195,7 @@ export function EventsManagement({
               <TableHead className="w-[250px]">活動名稱</TableHead>
               <TableHead>日期時間</TableHead>
               <TableHead>類型</TableHead>
+              <TableHead>狀態</TableHead>
               <TableHead>地點</TableHead>
               <TableHead>報名人數</TableHead>
               <TableHead className="text-right">操作</TableHead>
@@ -180,7 +229,7 @@ export function EventsManagement({
             ) : filteredEvents.length === 0 ? (
               // 空狀態
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-12">
+                <TableCell colSpan={7} className="text-center py-12">
                   <div className="text-muted-foreground">
                     <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
                     <p className="text-lg font-medium">目前沒有活動</p>
@@ -243,6 +292,9 @@ export function EventsManagement({
                       </span>
                     )}
                   </TableCell>
+                  <TableCell>
+                    <EventStatusBadge status={event.status || "pending"} />
+                  </TableCell>
                   <TableCell className="text-muted-foreground">
                     {event.location || "-"}
                   </TableCell>
@@ -256,6 +308,20 @@ export function EventsManagement({
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {event.status === "pending" && onReview && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-primary"
+                          onClick={() => {
+                            setReviewEventId(event.id);
+                            setReviewStatus("published");
+                          }}
+                          title="審核活動"
+                        >
+                          <Filter className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="icon"
@@ -298,9 +364,48 @@ export function EventsManagement({
             ` (全部 ${events.length} 個)`}
         </div>
       )}
+
+      {/* 審核對話框 */}
+      <Dialog open={!!reviewEventId} onOpenChange={(open) => !open && setReviewEventId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>審核活動</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">選擇審核結果</label>
+              <Select value={reviewStatus} onValueChange={(value) => setReviewStatus(value as EventStatus)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="published">通過（發布）</SelectItem>
+                  <SelectItem value="rejected">拒絕</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setReviewEventId(null)}
+              disabled={isReviewing}
+            >
+              取消
+            </Button>
+            <Button
+              onClick={handleReview}
+              disabled={isReviewing}
+            >
+              {isReviewing ? "處理中..." : "確認審核"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
 
 
 

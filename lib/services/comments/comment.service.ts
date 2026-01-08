@@ -3,7 +3,6 @@
  *
  * 提供留言相關的業務邏輯處理，包括取得、建立、更新、刪除留言和按讚功能
  * 使用 Next.js unstable_cache 優化性能，減少資料庫查詢
- * 遵循單一職責原則，統一管理留言邏輯
  */
 
 import { unstable_cache } from "next/cache";
@@ -34,7 +33,7 @@ function generateAnonymousDisplayNumber(
     .update(`${anonymousSessionId}-${eventId}`)
     .digest("hex");
   // 將 hash 的前 4 個字符轉換為數字，範圍 1-9999
-  const number = parseInt(hash.substring(0, 4), 16) % 9999 + 1;
+  const number = (parseInt(hash.substring(0, 4), 16) % 9999) + 1;
   return number;
 }
 
@@ -245,7 +244,11 @@ export async function getCommentsByEventId(
           currentUserId,
           currentAnonymousSessionId
         ),
-      [`event-comments-${eventId}-${page}-${pageSize}-${currentUserId || currentAnonymousSessionId || "anon"}`], // 快取 key
+      [
+        `event-comments-${eventId}-${page}-${pageSize}-${
+          currentUserId || currentAnonymousSessionId || "anon"
+        }`,
+      ], // 快取 key
       {
         tags: [`event-comments-${eventId}`, "event-comments"], // 快取標籤
         revalidate: 300, // 5 分鐘 TTL
@@ -641,4 +644,3 @@ export async function getCommentReplies(
     totalPages: Math.ceil(total / pageSize),
   };
 }
-
