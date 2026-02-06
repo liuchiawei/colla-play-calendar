@@ -113,12 +113,6 @@ export function AdminSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
-        <div className="mt-3 text-xs text-center text-muted-foreground">
-          <p className="font-display font-semibold bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">
-            CollaPlay Admin
-          </p>
-          <p className="mt-1">v2.0</p>
-        </div>
       </SidebarFooter>
 
       <SidebarRail />
