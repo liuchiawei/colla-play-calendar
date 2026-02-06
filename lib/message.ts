@@ -116,6 +116,27 @@ export const DASHBOARD_OVERVIEW = {
   statsTodayReservationsDescription: "今日場域使用",
 } as const;
 
+// Projects Page (專案管理頁)
+export const PROJECTS_PAGE = {
+  title: "專案管理",
+  description: "管理與追蹤所有專案進度",
+  createNewProject: "建立專案",
+  createNewProjectAria: "建立新專案",
+  searchPlaceholder: "搜尋客戶、活動名稱、場域、接洽人…",
+  searchAriaLabel: "搜尋專案",
+  tableCaption: "專案列表",
+  columnCustomer: "客戶",
+  columnEventOrVenueUse: "活動名稱或場地用途",
+  columnSpace: "場域",
+  columnDate: "日期",
+  columnContact: "接洽人",
+  columnAmount: "金額",
+  columnStatus: "狀態",
+  statusNegotiating: "洽談中",
+  statusDepositPaid: "已付訂",
+  emptyProjects: "尚無專案或搜尋無結果",
+} as const;
+
 // Type exports for type safety
 export type StoreMessages = typeof STORE_MESSAGES;
 export type NavLabels = typeof NAV_LABELS;
@@ -125,3 +146,4 @@ export type DashboardNewLabels = typeof DASHBOARD_NEW_LABELS;
 export type SpacesPageMessages = typeof SPACES_PAGE;
 export type SpaceMessages = typeof SPACE_MESSAGES;
 export type DashboardOverviewMessages = typeof DASHBOARD_OVERVIEW;
+export type ProjectsPageMessages = typeof PROJECTS_PAGE;

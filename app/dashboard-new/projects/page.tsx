@@ -3,24 +3,20 @@
 
 import { DashboardShell } from "../components/dashboard-shell.client";
 import { PageHeader } from "../components/page-header.client";
-import { PlaceholderContent } from "@/components/features/admin-dashboard/placeholder-content";
+import { ProjectsContent } from "./projects-content.client";
+import { PROJECTS_PAGE } from "@/lib/message";
+import { MOCK_PROJECTS } from "@/lib/types/project";
 
 export default function ProjectsPage() {
   return (
     <DashboardShell>
       <PageHeader
-        title="專案管理"
-        description="管理與追蹤所有專案進度"
+        title={PROJECTS_PAGE.title}
+        description={PROJECTS_PAGE.description}
         iconName="FolderKanban"
       />
 
-      <div className="flex-1 p-6">
-        <PlaceholderContent
-          iconName="FolderKanban"
-          title="專案管理"
-          description="專案管理功能即將推出，您將能夠建立、追蹤和管理各項專案"
-        />
-      </div>
+      <ProjectsContent projects={MOCK_PROJECTS} />
     </DashboardShell>
   );
 }
