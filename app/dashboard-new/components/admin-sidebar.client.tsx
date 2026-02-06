@@ -17,6 +17,7 @@ import {
   SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { ThemeToggle } from "@/components/widget/theme-toggle";
 import { dashboardNewNavigation } from "@/lib/config-dashboard-new";
 import { STORE_MESSAGES } from "@/lib/message";
 
@@ -27,18 +28,21 @@ export function AdminSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
       <SidebarHeader className="bg-primary py-6">
-        <div className="space-y-2">
+        <div className="space-y-2 min-w-0">
           <h2 className="font-display font-bold text-lg text-white">
             {state === "expanded"
               ? STORE_MESSAGES.name
               : STORE_MESSAGES.name.charAt(0)}
           </h2>
           {state === "expanded" && (
-            <p className="text-xs text-muted">
+            <p className="text-xs text-primary-foreground/80">
               {STORE_MESSAGES.subtitle}
             </p>
           )}
         </div>
+        {state === "expanded" && (
+          <ThemeToggle className="absolute top-3 right-3 shrink-0 text-primary-foreground hover:bg-primary-foreground/20 focus-visible:ring-primary-foreground" />
+        )}
       </SidebarHeader>
 
       <SidebarContent className="px-2 py-4">
