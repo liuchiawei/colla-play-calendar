@@ -17,6 +17,16 @@ interface EventListItemProps {
   onClick: () => void;
 }
 
+function handleItemKeyDown(
+  e: React.KeyboardEvent,
+  onClick: () => void
+) {
+  if (e.key === "Enter" || e.key === " ") {
+    e.preventDefault();
+    onClick();
+  }
+}
+
 export const EventListItem = React.memo(function EventListItem({
   event,
   onClick,
@@ -31,11 +41,15 @@ export const EventListItem = React.memo(function EventListItem({
       whileTap={{ scale: 0.99 }}
     >
       <Card
+        role="button"
+        tabIndex={0}
         className={cn(
           "cursor-pointer transition-all hover:shadow-md",
-          "hover:border-primary/50"
+          "hover:border-primary/50",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         )}
         onClick={onClick}
+        onKeyDown={(e) => handleItemKeyDown(e, onClick)}
       >
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-4">
