@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import {
   ALL_SPACES,
   SPACES_BY_FLOOR,
@@ -25,7 +26,18 @@ function SpaceCard({ space }: { space: Space }) {
     <li className="min-w-0 list-none">
       <Card className="transition-[box-shadow] hover:shadow-md motion-reduce:transition-none">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base line-clamp-2">{space.name}</CardTitle>
+          <div className="flex items-start justify-between gap-3">
+            <CardTitle className="text-base line-clamp-2 min-w-0 flex-1">
+              {space.name}
+            </CardTitle>
+            <Label
+              asChild
+              className="shrink-0 text-xs font-medium text-muted-foreground"
+              aria-label="樓層"
+            >
+              <span>{space.floor}</span>
+            </Label>
+          </div>
         </CardHeader>
         {space.description ? (
           <CardContent className="pt-0">
