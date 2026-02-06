@@ -17,6 +17,7 @@ import {
   SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Home } from "lucide-react";
 import { ThemeToggle } from "@/components/widget/theme-toggle";
 import { dashboardNewNavigation } from "@/lib/config-dashboard-new";
 import { STORE_MESSAGES } from "@/lib/message";
@@ -99,7 +100,20 @@ export function AdminSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border p-3">
-        <div className="text-xs text-center text-muted-foreground">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild tooltip="返回首頁">
+              <Link
+                href="/"
+                className="gap-2 text-muted-foreground hover:text-foreground"
+              >
+                <Home className="h-4 w-4" />
+                <span>返回首頁</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+        <div className="mt-3 text-xs text-center text-muted-foreground">
           <p className="font-display font-semibold bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">
             CollaPlay Admin
           </p>
