@@ -3,7 +3,7 @@
 
 import { DashboardShell } from "../components/dashboard-shell.client";
 import { PageHeader } from "../components/page-header.client";
-import { PlaceholderContent } from "@/components/features/admin-dashboard/placeholder-content";
+import { SpacesTabs } from "./spaces-tabs.client";
 
 export default function SpacesPage() {
   return (
@@ -14,13 +14,7 @@ export default function SpacesPage() {
         iconName="Building2"
       />
 
-      <div className="flex-1 p-6">
-        <PlaceholderContent
-          iconName="Building2"
-          title="場域列表"
-          description="場域管理功能即將推出，您將能夠新增、編輯和管理所有活動場域"
-        />
-      </div>
+      <SpacesTabs />
     </DashboardShell>
   );
 }
