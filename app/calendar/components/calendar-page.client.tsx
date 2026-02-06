@@ -4,7 +4,7 @@
 // 管理選中的活動狀態，並渲染行事曆和詳細資訊面板
 
 import * as React from "react";
-import { WeeklyCalendar } from "@/components/features/calendar/weekly-calendar";
+import { ListCalendar } from "@/components/features/calendar/list-calendar";
 import { EventDetailPanel } from "@/components/features/events/event-detail-panel";
 import { EventDetailDialog } from "@/components/features/events/event-detail-dialog";
 import type { EventWithCategory } from "@/lib/types";
@@ -30,9 +30,9 @@ export default function CalendarPageClient() {
 
   return (
     <>
-      {/* 上半部：週間行事曆 */}
+      {/* 上半部：週間活動列表 */}
       <div className="flex-1 bg-card/80 rounded-2xl shadow-xl overflow-hidden">
-        <WeeklyCalendar
+        <ListCalendar
           className="scrollbar-thin"
           onEventSelect={handleEventSelect}
           enableInternalDialog={true}

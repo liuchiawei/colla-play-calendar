@@ -36,6 +36,8 @@ model User {
   comments      Comment[]
   // 按讚關係
   commentLikes  CommentLike[]
+  // 創建活動關係
+  createdEvents Event[]
 
   @@map("user")
 }
@@ -139,10 +141,19 @@ model Category {
   events    Event[] // このカテゴリに属するイベント
 }
 
+// 活動狀態枚舉
+enum EventStatus {
+  draft      // 草稿
+  pending    // 待審核
+  published  // 已發布
+  rejected   // 已拒絕
+  archived   // 已歸檔
+}
+
 // 活動/イベントモデル
 
 model Event {
-  id                String    @id @default(cuid())
+  id                String      @id @default(cuid())
   title             String // イベントタイトル
   description       String? // イベント説明（オプション）
   startTime         DateTime // 開始日時
@@ -156,6 +167,9 @@ model Event {
   price             String? // 料金情報（オプション、文字列で柔軟に対応）
   categoryId        String? // カテゴリID（オプション）
   category          Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  status            EventStatus @default(pending) // 活動狀態
+  createdBy         String? // 創建者ID（可選，管理員創建的活動可能為 null）
+  creator           User? @relation(fields: [createdBy], references: [id], onDelete: SetNull)
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   // 報名關係
@@ -165,8 +179,12 @@ model Event {
 
   // 日時検索の最適化
   // カテゴリ検索の最適化
+  // 狀態検索の最適化
+  // 創建者検索の最適化
   @@index([startTime])
   @@index([categoryId])
+  @@index([status])
+  @@index([createdBy])
 }
 
 // ============================================

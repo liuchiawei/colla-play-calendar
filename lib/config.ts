@@ -9,20 +9,19 @@ import {
   Facebook,
   Info,
 } from "lucide-react";
+import {
+  STORE_MESSAGES,
+  NAV_LABELS,
+  SOCIAL_LABELS,
+  DASHBOARD_LABELS,
+} from "./message";
 
 // 商店基本設定
 // CollaPlay の店舗情報を一元管理
 
 // 商店基本配置
 export const STORE_CONFIG = {
-  name: "CollaPlay",
-  subtitle: "可能存在的遊樂園",
-  catchphrase: "一座專為大人打造的遊樂園。",
-  description: [
-    "Collaboration + Play = CollaPlay",
-    "一座專為大人打造的遊樂園",
-    "咖啡館｜工作空間｜多功能教室｜社群活動｜場地租借",
-  ],
+  ...STORE_MESSAGES,
   since: 2025,
   phone: "02 6627 0836",
   email: "hello@collaplay.com",
@@ -41,9 +40,9 @@ export const STORE_CONFIG = {
 
 // クイックリンク設定
 export const PAGE_LINKS = [
-  { label: "首頁", href: "/", icon: Home },
-  { label: "關於我們", href: "/about", icon: Info },
-  { label: "活動行事曆", href: "/calendar", icon: Calendar },
+  { label: NAV_LABELS.home, href: "/", icon: Home },
+  { label: NAV_LABELS.about, href: "/about", icon: Info },
+  { label: NAV_LABELS.calendar, href: "/calendar", icon: Calendar },
 ];
 
 // ソーシャルリンク設定
@@ -51,12 +50,12 @@ export const PAGE_LINKS = [
 export const SOCIAL_LINKS = [
   {
     icon: Instagram,
-    label: "Instagram",
+    label: SOCIAL_LABELS.instagram,
     href: "https://www.instagram.com/colla_play/",
   },
   {
     icon: Facebook,
-    label: "Facebook",
+    label: SOCIAL_LABELS.facebook,
     href: "https://www.facebook.com/collaplay",
   },
 ];
@@ -70,17 +69,17 @@ export const dashboardNavigationItems: Array<{
 }> = [
   {
     id: "events",
-    label: "活動管理",
+    label: DASHBOARD_LABELS.events,
     icon: Calendar,
   },
   {
     id: "categories",
-    label: "類型管理",
+    label: DASHBOARD_LABELS.categories,
     icon: Tag,
   },
   {
     id: "users",
-    label: "會員管理",
+    label: DASHBOARD_LABELS.users,
     icon: Users,
   },
 ];

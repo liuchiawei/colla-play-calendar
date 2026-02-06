@@ -25,7 +25,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { formatForDateTimeInput } from "@/lib/date-utils";
-import type { EventWithCategory, EventInput, Category } from "@/lib/types";
+import type { EventWithCategory, EventInput, Category, EventStatus } from "@/lib/types";
 
 interface EventFormProps {
   event?: EventWithCategory | null;
@@ -34,6 +34,7 @@ interface EventFormProps {
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: EventInput) => Promise<void>;
   isLoading?: boolean;
+  allowDraft?: boolean; // 允許保存為草稿
 }
 
 export function EventForm({
@@ -43,6 +44,7 @@ export function EventForm({
   onOpenChange,
   onSubmit,
   isLoading,
+  allowDraft = false,
 }: EventFormProps) {
   const isEditing = !!event;
 
@@ -60,6 +62,7 @@ export function EventForm({
     registrationUrl: "",
     price: "",
     categoryId: "",
+    status: undefined,
   });
 
   // 檔案上傳相關狀態
@@ -83,6 +86,7 @@ export function EventForm({
         registrationUrl: event.registrationUrl || "",
         price: event.price || "",
         categoryId: event.categoryId || "",
+        status: (event.status as EventStatus) || undefined,
       });
       // 設定預覽（優先使用 blob URL）
       if (event.imageBlobUrl) {
@@ -109,6 +113,7 @@ export function EventForm({
         registrationUrl: "",
         price: "",
         categoryId: "",
+        status: undefined,
       });
       setPreviewUrl(null);
     }
@@ -217,7 +222,7 @@ export function EventForm({
   // 入力変更ハンドラ
   const handleChange = (
     field: keyof EventInput,
-    value: string | null
+    value: string | null | EventStatus
   ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
@@ -308,6 +313,32 @@ export function EventForm({
               </SelectContent>
             </Select>
           </div>
+
+          {/* 狀態選擇（僅在允許草稿時顯示） */}
+          {allowDraft && (
+            <div className="space-y-2">
+              <Label htmlFor="status" className="flex items-center gap-2">
+                活動狀態
+              </Label>
+              <Select
+                value={formData.status || "pending"}
+                onValueChange={(value) =>
+                  handleChange("status", value as EventStatus)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="選擇活動狀態" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="draft">草稿</SelectItem>
+                  <SelectItem value="pending">待審核</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                選擇「草稿」可稍後再提交審核，選擇「待審核」將立即提交給管理員審核
+              </p>
+            </div>
+          )}
 
           {/* 場所・主催者 */}
           <div className="grid grid-cols-2 gap-4">
@@ -461,12 +492,19 @@ export function EventForm({
             >
               取消
             </Button>
+            {allowDraft && formData.status === "draft" ? (
+              <Button type="submit" variant="secondary" disabled={isLoading || isUploading}>
+                {isLoading || isUploading ? "處理中..." : "儲存草稿"}
+              </Button>
+            ) : null}
             <Button type="submit" disabled={isLoading || isUploading}>
               {isLoading || isUploading
                 ? "處理中..."
+                : allowDraft && formData.status === "draft"
+                ? "儲存草稿"
                 : isEditing
                 ? "儲存變更"
-                : "新增活動"}
+                : "提交審核"}
             </Button>
           </DialogFooter>
         </form>

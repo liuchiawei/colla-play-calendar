@@ -13,11 +13,16 @@ import type {
 // カテゴリ型（Prismaから生成）
 export type { Category };
 
+// 活動狀態型別
+export type EventStatus = "draft" | "pending" | "published" | "rejected" | "archived";
+
 // イベント型（カテゴリ情報を含む）
 export type EventWithCategory = Event & {
   category: Category | null;
   registrationCount?: number;
   isRegistered?: boolean;
+  status?: EventStatus;
+  createdBy?: string | null;
 };
 
 // APIレスポンス用の型
@@ -41,6 +46,12 @@ export type EventInput = {
   registrationUrl?: string | null;
   price?: string | null;
   categoryId?: string | null;
+  status?: EventStatus; // 活動狀態（可選，用於草稿功能）
+};
+
+// 活動審核輸入型別
+export type EventReviewInput = {
+  status: EventStatus; // 審核後的狀態（published 或 rejected）
 };
 
 // カテゴリ作成・更新用の入力型

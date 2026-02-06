@@ -34,6 +34,7 @@ import type {
   Category,
   CategoryInput,
   EventRegistrationWithUser,
+  EventStatus,
 } from "@/lib/types";
 import type { DashboardTab } from "@/lib/config";
 
@@ -70,8 +71,9 @@ export default function DashboardClient() {
   const fetchData = React.useCallback(async () => {
     setIsLoading(true);
     try {
+      // Dashboard 需要獲取所有狀態的活動（不過濾狀態）
       const [eventsRes, categoriesRes] = await Promise.all([
-        fetch("/api/events"),
+        fetch("/api/events?status=all"),
         fetch("/api/categories"),
       ]);
       const eventsData = await eventsRes.json();
@@ -179,6 +181,32 @@ export default function DashboardClient() {
     }
   }, []);
 
+  // 審核活動
+  const handleEventReview = React.useCallback(async (eventId: string, status: EventStatus) => {
+    setIsSubmitting(true);
+    try {
+      const response = await fetch(`/api/events/${eventId}/review`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "審核失敗");
+      }
+
+      // 重新獲取數據
+      await fetchData();
+    } catch (error) {
+      console.error("Failed to review event:", error);
+      throw error;
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [fetchData]);
+
   // 開啟報名列表
   const handleViewRegistrations = (eventId: string) => {
     setRegistrationsEventId(eventId);
@@ -254,6 +282,7 @@ export default function DashboardClient() {
             onEdit={startEditing}
             onDelete={setDeleteId}
             onViewRegistrations={handleViewRegistrations}
+            onReview={handleEventReview}
             onCategoryAdd={handleCategoryAdd}
             onCategoryUpdate={handleCategoryUpdate}
             onCategoryDelete={handleCategoryDelete}
