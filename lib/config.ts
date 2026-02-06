@@ -14,6 +14,7 @@ import {
   NAV_LABELS,
   SOCIAL_LABELS,
   DASHBOARD_LABELS,
+  SPACE_MESSAGES,
 } from "./message";
 
 // 商店基本設定
@@ -93,39 +94,53 @@ export type SocialLink = (typeof SOCIAL_LINKS)[number];
 // 場域靜態資料 - 依樓層分組，供 SpacesTabs 使用
 export type FloorKey = "3F" | "4F" | "5F";
 
+export interface SpaceOpeningHours {
+  open: number; // 開門時刻（0–24）
+  close: number; // 關門時刻（0–24）
+}
+
 export interface Space {
   id: string;
   floor: FloorKey;
   name: string;
   description: string;
+  openingHours: SpaceOpeningHours;
 }
 
-function parseNameDesc(floor: FloorKey, label: string, idSuffix: string): Space {
-  const [name = "", description = ""] = label.split("／");
+function spaceFromSlug(
+  floor: FloorKey,
+  slug: string,
+  idSuffix?: string
+): Space {
+  const msg = SPACE_MESSAGES[slug];
+  if (!msg) throw new Error(`Unknown space slug: ${slug}`);
+  const id = idSuffix
+    ? `${floor.toLowerCase()}-${slug}-${idSuffix}`
+    : `${floor.toLowerCase()}-${slug}`;
   return {
-    id: `${floor.toLowerCase()}-${idSuffix}`,
+    id,
     floor,
-    name: name.trim(),
-    description: description.trim(),
+    name: msg.name,
+    description: msg.description,
+    openingHours: { open: 10, close: 22 },
   };
 }
 
 export const SPACES_3F: Space[] = [
-  parseNameDesc("3F", "頻率交流道／社群咖啡廳", "frequency"),
-  parseNameDesc("3F", "背對世界的時間／專注工作區", "focus"),
+  spaceFromSlug("3F", "community-cafe"),
+  spaceFromSlug("3F", "focus-area"),
 ];
 
 export const SPACES_4F: Space[] = [
-  parseNameDesc("4F", "空白分頁／多功能教室", "multipurpose-1"),
-  parseNameDesc("4F", "空白分頁／多功能教室", "multipurpose-2"),
-  parseNameDesc("4F", "艾莉緹的相機／小物攝影間", "arriety"),
-  parseNameDesc("4F", "WUCOLIN／活動交誼廳", "wucolin"),
-  parseNameDesc("4F", "第三人稱／播映室", "third-person"),
+  spaceFromSlug("4F", "multipurpose-room", "1"),
+  spaceFromSlug("4F", "multipurpose-room", "2"),
+  spaceFromSlug("4F", "podcast-studio"),
+  spaceFromSlug("4F", "product-photo"),
+  spaceFromSlug("4F", "event-lounge"),
+  spaceFromSlug("4F", "screening-room"),
 ];
 
-export const SPACES_5F: Space[] = [
-  parseNameDesc("5F", "大氣層／展演廳", "atmosphere"),
-];
+export const SPACES_5F: Space[] = [spaceFromSlug("5F", "exhibition-hall")];
 
 export const SPACES_BY_FLOOR: Record<FloorKey, Space[]> = {
   "3F": SPACES_3F,
