@@ -137,6 +137,74 @@ export const PROJECTS_PAGE = {
   emptyProjects: "尚無專案或搜尋無結果",
 } as const;
 
+// Create Project Page (建立新專案表單)
+export const CREATE_PROJECT_PAGE = {
+  pageTitle: "建立專案",
+  pageDescription: "填寫客戶與專案資訊以建立新專案",
+
+  sectionCustomer: "客戶資訊",
+  sectionProject: "專案資訊",
+  sectionNotes: "專案備註",
+  sectionRentals: "租借項目",
+
+  labelContactName: "客戶聯絡人",
+  labelContactNameRequired: "客戶聯絡人 *",
+  placeholderContactName: "請輸入姓名…",
+  labelPhone: "聯絡電話",
+  labelPhoneRequired: "聯絡電話 *",
+  placeholderPhone: "0912-345-678",
+  labelCompany: "公司行號",
+  optional: "選填",
+  labelTaxId: "統一編號",
+
+  labelEventOrVenueUse: "活動名稱或場地用途",
+  labelEventOrVenueUseRequired: "活動名稱或場地用途 *",
+  placeholderEventOrVenueUse:
+    "例如：產品發表會、工作坊、Podcast 錄製…",
+  labelTotalAttendees: "活動總人數",
+  placeholderAttendees: "預估參與人數",
+  labelTables: "桌子需求",
+  labelChairs: "椅子需求",
+  labelFnb: "餐飲品項",
+  labelProjectNotes: "備註",
+  labelCollaPlayContact: "CollaPlay 接洽人",
+  labelCollaPlayContactRequired: "CollaPlay 接洽人 *",
+  placeholderSelectContact: "選擇接洽人…",
+
+  labelInternalNotes: "內部備註",
+  placeholderInternalNotes: "內部備註，例如特殊需求、注意事項…",
+
+  addRental: "新增場域",
+  labelSpaces: "場域",
+  labelSpacesRequired: "場域 *",
+  placeholderSelectSpaces: "選擇場域…",
+  labelDate: "日期",
+  labelDateRequired: "日期 *",
+  dateFormat: "年 / 月 / 日",
+  labelStartTime: "開始時間",
+  labelStartTimeRequired: "開始時間 *",
+  placeholderSelectTime: "選擇時間…",
+  labelEndTime: "結束時間",
+  labelEndTimeRequired: "結束時間 *",
+  labelSetupTime: "場佈時間",
+  setupDefault: "預設：開始前 30 分鐘",
+  labelTeardownTime: "場復時間",
+  teardownDefault: "預設：結束後 30 分鐘",
+  labelRentalAmount: "場租金額 (NT$)",
+  labelFnbAmount: "餐飲金額 (NT$)",
+  labelPaidAmount: "已付款項 (NT$)",
+  labelPendingAmount: "待付金額 (NT$)",
+
+  submit: "建立專案",
+  submitting: "儲存中…",
+  removeRental: "移除",
+  removeRentalAria: "移除此筆租借",
+
+  errorRequired: "此欄位為必填",
+  errorPhoneInvalid: "請輸入有效的聯絡電話",
+  errorEndBeforeStart: "結束時間須晚於開始時間",
+} as const;
+
 // Type exports for type safety
 export type StoreMessages = typeof STORE_MESSAGES;
 export type NavLabels = typeof NAV_LABELS;
@@ -147,3 +215,4 @@ export type SpacesPageMessages = typeof SPACES_PAGE;
 export type SpaceMessages = typeof SPACE_MESSAGES;
 export type DashboardOverviewMessages = typeof DASHBOARD_OVERVIEW;
 export type ProjectsPageMessages = typeof PROJECTS_PAGE;
+export type CreateProjectPageMessages = typeof CREATE_PROJECT_PAGE;

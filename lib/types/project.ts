@@ -14,6 +14,36 @@ export interface Project {
   status: ProjectStatus;
 }
 
+// Create project form: single rental item (場域可多選)
+export interface RentalItem {
+  spaceIds: string[];
+  date: string; // ISO date YYYY-MM-DD
+  startTime: string; // HH:mm 24h
+  endTime: string; // HH:mm 24h
+  setupMinutesBefore?: number; // 場佈提前分鐘數，預設 30
+  teardownMinutesAfter?: number; // 場復延後分鐘數，預設 30
+  rentalAmount: number;
+  fnbAmount: number;
+  paidAmount: number;
+  pendingAmount: number;
+}
+
+export interface CreateProjectInput {
+  contactName: string;
+  contactPhone: string;
+  company?: string;
+  taxId?: string;
+  eventOrVenueUse: string;
+  totalAttendees?: number;
+  tables?: string;
+  chairs?: number;
+  fnbItems?: string;
+  projectNotes?: string;
+  collaPlayContactId: string;
+  internalNotes?: string;
+  rentals: RentalItem[];
+}
+
 // Mock data for projects page (replace with API later)
 export const MOCK_PROJECTS: Project[] = [
   {
@@ -46,4 +76,11 @@ export const MOCK_PROJECTS: Project[] = [
     amount: 15000,
     status: "deposit_paid",
   },
+];
+
+// Mock options for create project form - 場域請使用 @/lib/config ALL_SPACES（來源為 message SPACE_MESSAGES）
+export const MOCK_CONTACT_OPTIONS: { id: string; name: string }[] = [
+  { id: "contact-1", name: "王小明" },
+  { id: "contact-2", name: "陳小姐" },
+  { id: "contact-3", name: "李經理" },
 ];
