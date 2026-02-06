@@ -77,10 +77,10 @@ export function EventDetailPanel({
             <ScrollArea className="flex-1">
               <div className="p-6 space-y-4">
                 {/* ヘッダー画像またはカラーバナー */}
-                {((event as any).imageBlobUrl || event.imageUrl) && (
+                {(event.imageBlobUrl || event.imageUrl) && (
                   <div className="relative h-48 rounded-lg overflow-hidden mb-4">
                     <img
-                      src={(event as any).imageBlobUrl || event.imageUrl || ""}
+                      src={event.imageBlobUrl || event.imageUrl || ""}
                       alt={event.title}
                       className="w-full h-full object-cover"
                     />

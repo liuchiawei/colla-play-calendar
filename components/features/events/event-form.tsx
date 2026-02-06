@@ -180,7 +180,7 @@ export function EventForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    let finalFormData = { ...formData };
+    const finalFormData = { ...formData };
 
     // 如果有選中檔案，先上傳
     if (selectedFile) {

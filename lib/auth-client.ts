@@ -12,7 +12,7 @@ function getBaseURL(): string | undefined {
   }
   
   // 不合法な URL パターンをチェック（雙協定など）
-  let trimmedUrl = envUrl.trim();
+  const trimmedUrl = envUrl.trim();
   const hasDoubleProtocol =
     trimmedUrl.includes("http://https://") ||
     trimmedUrl.includes("https://http://") ||

@@ -5,6 +5,7 @@
 
 import { motion } from "motion/react";
 import * as Icons from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 interface PlaceholderContentProps {
   iconName: string;
@@ -17,7 +18,7 @@ export function PlaceholderContent({
   title,
   description = "此功能正在開發中，敬請期待",
 }: PlaceholderContentProps) {
-  const Icon = Icons[iconName as keyof typeof Icons] as any;
+  const Icon = Icons[iconName as keyof typeof Icons] as LucideIcon | undefined;
   const containerVariants = {
     hidden: { opacity: 0 },
     show: {
@@ -48,7 +49,7 @@ export function PlaceholderContent({
             transition={{ duration: 0.6 }}
             className="inline-flex rounded-3xl bg-gradient-to-br from-accent to-primary p-8 shadow-2xl shadow-accent/30"
           >
-            <Icon className="h-16 w-16 text-white" strokeWidth={1.5} />
+            {Icon && <Icon className="h-16 w-16 text-white" strokeWidth={1.5} />}
           </motion.div>
         </motion.div>
 

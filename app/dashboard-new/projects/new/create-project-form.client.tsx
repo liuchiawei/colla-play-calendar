@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
@@ -96,7 +96,7 @@ export function CreateProjectForm() {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const form = useForm<CreateProjectFormValues>({
-    resolver: zodResolver(createProjectSchema),
+    resolver: zodResolver(createProjectSchema) as Resolver<CreateProjectFormValues>,
     defaultValues: {
       contactName: "",
       contactPhone: "",

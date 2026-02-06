@@ -9,6 +9,7 @@
 import { unstable_cache } from "next/cache";
 import { revalidateTag } from "next/cache";
 import prisma from "@/lib/prisma";
+import type { Prisma } from "@/lib/generated/prisma/client";
 import type {
   Profile,
   ProfileUpdateInput,
@@ -123,10 +124,10 @@ export async function updateProfile(
       gender: data.gender ?? null,
       occupation: data.occupation ?? null,
       education: data.education ?? null,
-      skills: data.skills ? (data.skills as any) : null,
+      skills: data.skills ? (data.skills as Prisma.JsonValue) : null,
       bio: data.bio ?? null,
-      extra: data.extra ? (data.extra as any) : null,
-      visibility: data.visibility ? (data.visibility as any) : null,
+      extra: data.extra ? (data.extra as Prisma.JsonValue) : null,
+      visibility: data.visibility ? (data.visibility as Prisma.JsonValue) : null,
     },
     update: {
       displayName:
@@ -135,11 +136,11 @@ export async function updateProfile(
       gender: data.gender !== undefined ? data.gender : undefined,
       occupation: data.occupation !== undefined ? data.occupation : undefined,
       education: data.education !== undefined ? data.education : undefined,
-      skills: data.skills !== undefined ? (data.skills as any) : undefined,
+      skills: data.skills !== undefined ? (data.skills as Prisma.JsonValue) : undefined,
       bio: data.bio !== undefined ? data.bio : undefined,
-      extra: data.extra !== undefined ? (data.extra as any) : undefined,
+      extra: data.extra !== undefined ? (data.extra as Prisma.JsonValue) : undefined,
       visibility:
-        data.visibility !== undefined ? (data.visibility as any) : undefined,
+        data.visibility !== undefined ? (data.visibility as Prisma.JsonValue) : undefined,
     },
   });
 

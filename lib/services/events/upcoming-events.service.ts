@@ -4,7 +4,7 @@ import { unstable_cache } from "next/cache";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { getAnonymousSessionId } from "@/lib/utils/registration";
-import type { EventWithCategory, Category } from "@/lib/types";
+import type { EventWithCategory, Category, EventStatus } from "@/lib/types";
 import { headers } from "next/headers";
 
 // 內部查詢函數（不帶快取）
@@ -24,6 +24,8 @@ async function fetchUpcomingEventsFromDB(): Promise<
     registrationUrl: string | null;
     price: string | null;
     categoryId: string | null;
+    status: EventStatus | null;
+    createdBy: string | null;
     createdAt: Date;
     updatedAt: Date;
     category: Category | null;
@@ -127,7 +129,7 @@ export async function getUpcomingEvents(
         ...eventData,
         category,
         isRegistered: eventIdsWithRegistrations.has(event.id),
-      };
+      } as EventWithCategory;
     });
 
     return eventsWithCount;

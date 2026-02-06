@@ -132,7 +132,7 @@ export type ProfileUpdateInput = {
   education?: string | null;
   skills?: string[] | null; // 技能陣列（前端以字串處理）
   bio?: string | null;
-  extra?: Record<string, any> | null;
+  extra?: Record<string, unknown> | null;
   visibility?: ProfileVisibility | null;
 };
 

@@ -6,6 +6,7 @@
 import { motion } from "motion/react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import * as Icons from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 interface PageHeaderProps {
   title: string;
@@ -14,7 +15,7 @@ interface PageHeaderProps {
 }
 
 export function PageHeader({ title, description, iconName }: PageHeaderProps) {
-  const Icon = iconName ? (Icons[iconName as keyof typeof Icons] as any) : null;
+  const Icon = iconName ? (Icons[iconName as keyof typeof Icons] as LucideIcon | undefined) : null;
   return (
     <motion.div
       initial={{ opacity: 0, y: -20 }}
