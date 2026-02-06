@@ -1,95 +1,160 @@
 "use client";
 
 // Overview Stats Component
-// 總覽統計組件 - 統計卡片網格與動畫
+// 總覽統計組件 - 當月場租、洽談中/已確認專案、今日預定
 
-import { motion } from "motion/react";
-import { TrendingUp, Users, Calendar, Activity } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
+import { Banknote, MessageCircle, CheckCircle, CalendarDays } from "lucide-react";
 import { AnimatedCard } from "./animated-card";
+import { DASHBOARD_OVERVIEW } from "@/lib/message";
 
-const stats = [
+export type OverviewStatsData = {
+  monthlyRentalIncome: number;
+  negotiatingCount: number;
+  confirmedCount: number;
+  todayReservations: number;
+};
+
+const CURRENCY_FORMATTER = new Intl.NumberFormat("zh-TW", {
+  style: "currency",
+  currency: "TWD",
+});
+
+const INTEGER_FORMATTER = new Intl.NumberFormat("zh-TW", {
+  maximumFractionDigits: 0,
+});
+
+const STATS_CONFIG = [
   {
-    icon: TrendingUp,
-    label: "總活動數",
-    value: "128",
-    change: "+12%",
+    id: "monthly-rental",
+    labelKey: "statsMonthlyRentalLabel" as const,
+    descriptionKey: "statsMonthlyRentalDescription" as const,
+    format: "currency" as const,
+    valueKey: "monthlyRentalIncome" as const,
+    icon: Banknote,
     color: "from-accent to-primary",
   },
   {
-    icon: Users,
-    label: "活躍用戶",
-    value: "1,842",
-    change: "+8%",
+    id: "negotiating",
+    labelKey: "statsNegotiatingLabel" as const,
+    descriptionKey: "statsNegotiatingDescription" as const,
+    format: "number" as const,
+    valueKey: "negotiatingCount" as const,
+    icon: MessageCircle,
     color: "from-chart-2 to-chart-3",
   },
   {
-    icon: Calendar,
-    label: "本月活動",
-    value: "24",
-    change: "+16%",
+    id: "confirmed",
+    labelKey: "statsConfirmedLabel" as const,
+    descriptionKey: "statsConfirmedDescription" as const,
+    format: "number" as const,
+    valueKey: "confirmedCount" as const,
+    icon: CheckCircle,
     color: "from-chart-5 to-accent",
   },
   {
-    icon: Activity,
-    label: "參與率",
-    value: "87%",
-    change: "+5%",
+    id: "today-reservations",
+    labelKey: "statsTodayReservationsLabel" as const,
+    descriptionKey: "statsTodayReservationsDescription" as const,
+    format: "number" as const,
+    valueKey: "todayReservations" as const,
+    icon: CalendarDays,
     color: "from-chart-4 to-chart-2",
   },
-];
+] as const;
 
-export function OverviewStats() {
+const MOCK_STATS: OverviewStatsData = {
+  monthlyRentalIncome: 0,
+  negotiatingCount: 2,
+  confirmedCount: 4,
+  todayReservations: 0,
+};
+
+function formatStatValue(
+  data: OverviewStatsData,
+  valueKey: keyof OverviewStatsData,
+  format: "currency" | "number"
+): string {
+  const value = data[valueKey];
+  if (format === "currency") return CURRENCY_FORMATTER.format(value);
+  return INTEGER_FORMATTER.format(value);
+}
+
+export function OverviewStats({ data = MOCK_STATS }: { data?: OverviewStatsData }) {
+  const shouldReduceMotion = useReducedMotion();
+
   const containerVariants = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
-      transition: {
-        staggerChildren: 0.08,
-        delayChildren: 0.1,
-      },
+      transition: shouldReduceMotion
+        ? { duration: 0 }
+        : { staggerChildren: 0.08, delayChildren: 0.1 },
     },
   };
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
+    hidden: { opacity: 0, y: shouldReduceMotion ? 0 : 20 },
     show: { opacity: 1, y: 0 },
   };
 
+  const valueTransition = shouldReduceMotion
+    ? { duration: 0 }
+    : { delay: 0.2, duration: 0.5, ease: "backOut" as const };
+
   return (
-    <motion.div
+    <motion.section
+      aria-label="總覽統計"
       variants={containerVariants}
       initial="hidden"
       animate="show"
       className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
     >
-      {stats.map((stat) => (
-        <motion.div key={stat.label} variants={itemVariants}>
-          <AnimatedCard gradient>
-            <div className="flex items-start justify-between mb-4">
-              <div
-                className={`rounded-xl bg-gradient-to-br ${stat.color} p-3 shadow-lg`}
-              >
-                <stat.icon className="h-6 w-6 text-white" strokeWidth={2} />
-              </div>
-              <span className="text-xs font-semibold text-green-600 dark:text-green-400 bg-green-100/50 dark:bg-green-900/30 px-2 py-1 rounded-full">
-                {stat.change}
-              </span>
-            </div>
+      {STATS_CONFIG.map((stat) => {
+        const labelId = `overview-stat-${stat.id}-label`;
+        const descId = `overview-stat-${stat.id}-desc`;
+        const value = formatStatValue(data, stat.valueKey, stat.format);
+        const label = DASHBOARD_OVERVIEW[stat.labelKey];
+        const description = DASHBOARD_OVERVIEW[stat.descriptionKey];
+        const Icon = stat.icon;
 
-            <div>
-              <p className="text-sm text-muted-foreground mb-1">{stat.label}</p>
-              <motion.p
-                initial={{ scale: 0.5, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.2, duration: 0.5, ease: "backOut" }}
-                className={`font-display font-black text-4xl bg-gradient-to-br ${stat.color} bg-clip-text text-transparent`}
-              >
-                {stat.value}
-              </motion.p>
-            </div>
-          </AnimatedCard>
-        </motion.div>
-      ))}
-    </motion.div>
+        return (
+          <motion.article
+            key={stat.id}
+            variants={itemVariants}
+            aria-labelledby={labelId}
+            aria-describedby={descId}
+          >
+            <AnimatedCard gradient>
+              <div className="flex items-start justify-between mb-4">
+                <div
+                  className={`rounded-xl bg-gradient-to-br ${stat.color} p-3 shadow-lg`}
+                  aria-hidden
+                >
+                  <Icon className="h-6 w-6 text-white" strokeWidth={2} aria-hidden />
+                </div>
+              </div>
+
+              <div className="min-w-0">
+                <p id={labelId} className="text-sm text-muted-foreground mb-1 text-balance">
+                  {label}
+                </p>
+                <motion.p
+                  initial={shouldReduceMotion ? false : { scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={valueTransition}
+                  className={`font-display font-black text-4xl tabular-nums bg-gradient-to-br ${stat.color} bg-clip-text text-transparent`}
+                >
+                  {value}
+                </motion.p>
+                <p id={descId} className="text-xs text-muted-foreground mt-1">
+                  {description}
+                </p>
+              </div>
+            </AnimatedCard>
+          </motion.article>
+        );
+      })}
+    </motion.section>
   );
 }

@@ -105,6 +105,15 @@ export const DASHBOARD_OVERVIEW = {
   seeAllSpacesAria: "查看全部場域",
   seeAllProjectsAria: "查看全部專案",
   noProjectsYet: "尚無專案",
+  // 總覽統計四項
+  statsMonthlyRentalLabel: "當月場租收入",
+  statsMonthlyRentalDescription: "僅計算已付訂專案",
+  statsNegotiatingLabel: "洽談中專案",
+  statsNegotiatingDescription: "待確認訂金",
+  statsConfirmedLabel: "已確認專案",
+  statsConfirmedDescription: "已收取訂金",
+  statsTodayReservationsLabel: "今日預定",
+  statsTodayReservationsDescription: "今日場域使用",
 } as const;
 
 // Type exports for type safety
