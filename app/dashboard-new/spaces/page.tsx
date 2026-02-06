@@ -4,13 +4,14 @@
 import { DashboardShell } from "../components/dashboard-shell.client";
 import { PageHeader } from "../components/page-header.client";
 import { SpacesTabs } from "./spaces-tabs.client";
+import { SPACES_PAGE } from "@/lib/message";
 
 export default function SpacesPage() {
   return (
     <DashboardShell>
       <PageHeader
-        title="場域列表"
-        description="管理與檢視所有場域空間"
+        title={SPACES_PAGE.title}
+        description={SPACES_PAGE.description}
         iconName="Building2"
       />
 

@@ -9,6 +9,7 @@ import {
   type Space,
   type FloorKey,
 } from "./spaces-data";
+import { SPACES_PAGE } from "@/lib/message";
 import { LayoutGrid, Building2 } from "lucide-react";
 
 const TAB_VALUES = ["all", "3F", "4F", "5F"] as const;
@@ -52,7 +53,7 @@ function SpaceList({
       <section aria-label={ariaLabel}>
         <h2 className="text-lg font-semibold mb-4 text-balance">{sectionHeading}</h2>
         <p className="text-muted-foreground text-sm py-8 text-center">
-          此樓層尚無場域
+          {SPACES_PAGE.emptyFloor}
         </p>
       </section>
     );
@@ -70,17 +71,17 @@ function SpaceList({
 }
 
 const TAB_LABELS: Record<TabValue, string> = {
-  all: "全部",
-  "3F": "3F",
-  "4F": "4F",
-  "5F": "5F",
+  all: SPACES_PAGE.tabAll,
+  "3F": SPACES_PAGE.tab3F,
+  "4F": SPACES_PAGE.tab4F,
+  "5F": SPACES_PAGE.tab5F,
 };
 
 const TAB_ARIA_LABELS: Record<TabValue, string> = {
-  all: "全部場域",
-  "3F": "3F 場域",
-  "4F": "4F 場域",
-  "5F": "5F 場域",
+  all: SPACES_PAGE.sectionAll,
+  "3F": SPACES_PAGE.section3F,
+  "4F": SPACES_PAGE.section4F,
+  "5F": SPACES_PAGE.section5F,
 };
 
 export function SpacesTabs() {
@@ -95,7 +96,7 @@ export function SpacesTabs() {
       >
         <TabsList
           className="grid w-full max-w-md grid-cols-4"
-          aria-label="依樓層篩選場域"
+          aria-label={SPACES_PAGE.tabsFilterAriaLabel}
         >
           <TabsTrigger value="all" className="flex items-center gap-1.5">
             <LayoutGrid className="size-4 shrink-0" aria-hidden />
@@ -125,21 +126,21 @@ export function SpacesTabs() {
           <SpaceList
             spaces={getSpacesForTab("3F")}
             ariaLabel={TAB_ARIA_LABELS["3F"]}
-            sectionHeading="3F"
+            sectionHeading={SPACES_PAGE.tab3F}
           />
         </TabsContent>
         <TabsContent value="4F" className="mt-6">
           <SpaceList
             spaces={getSpacesForTab("4F")}
             ariaLabel={TAB_ARIA_LABELS["4F"]}
-            sectionHeading="4F"
+            sectionHeading={SPACES_PAGE.tab4F}
           />
         </TabsContent>
         <TabsContent value="5F" className="mt-6">
           <SpaceList
             spaces={getSpacesForTab("5F")}
             ariaLabel={TAB_ARIA_LABELS["5F"]}
-            sectionHeading="5F"
+            sectionHeading={SPACES_PAGE.tab5F}
           />
         </TabsContent>
       </Tabs>
