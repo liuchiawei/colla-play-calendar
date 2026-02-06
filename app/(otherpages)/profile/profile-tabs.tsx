@@ -5,10 +5,10 @@
 
 import * as React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import ProfileForm from "../../components/features/user/profile-form";
-import { EventsTab } from "../../components/features/events/events-tab";
-import { MyEventsTab } from "../../components/features/events/my-events-tab";
-import { OAuthCallbackHandler } from "../../components/features/user/oauth-callback-handler";
+import ProfileForm from "../../../components/features/user/profile-form";
+import { EventsTab } from "../../../components/features/events/events-tab";
+import { MyEventsTab } from "../../../components/features/events/my-events-tab";
+import { OAuthCallbackHandler } from "../../../components/features/user/oauth-callback-handler";
 import type { Profile } from "@/lib/types";
 import { User, Calendar, FileText } from "lucide-react";
 
