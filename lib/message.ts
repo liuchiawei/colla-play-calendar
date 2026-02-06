@@ -97,6 +97,16 @@ export const SPACES_PAGE = {
   emptyFloor: "此樓層尚無場域",
 } as const;
 
+// Dashboard Overview (總覽頁區塊)
+export const DASHBOARD_OVERVIEW = {
+  spacesSectionTitle: "場域列表",
+  recentProjectsTitle: "最近專案",
+  seeAll: "查看全部",
+  seeAllSpacesAria: "查看全部場域",
+  seeAllProjectsAria: "查看全部專案",
+  noProjectsYet: "尚無專案",
+} as const;
+
 // Type exports for type safety
 export type StoreMessages = typeof STORE_MESSAGES;
 export type NavLabels = typeof NAV_LABELS;
@@ -105,3 +115,4 @@ export type DashboardLabels = typeof DASHBOARD_LABELS;
 export type DashboardNewLabels = typeof DASHBOARD_NEW_LABELS;
 export type SpacesPageMessages = typeof SPACES_PAGE;
 export type SpaceMessages = typeof SPACE_MESSAGES;
+export type DashboardOverviewMessages = typeof DASHBOARD_OVERVIEW;
