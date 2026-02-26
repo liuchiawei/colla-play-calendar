@@ -123,6 +123,27 @@ async function getProjectByIdImpl(id: string): Promise<ProjectWithRentals | null
 export const getProjectById = cache(getProjectByIdImpl);
 
 /**
+ * 取得某場域下的專案列表（project_rental.spaceIds 包含該場域 id 的專案）
+ * 使用 React.cache 做 per-request 去重
+ */
+async function getProjectsBySpaceIdImpl(spaceId: string): Promise<Project[]> {
+  const rentals = await prisma.projectRental.findMany({
+    where: { spaceIds: { has: spaceId } },
+    select: { projectId: true },
+  });
+  const projectIds = [...new Set(rentals.map((r) => r.projectId))];
+  if (projectIds.length === 0) return [];
+  const rows = await prisma.project.findMany({
+    where: { id: { in: projectIds } },
+    include: { rentals: true },
+    orderBy: { createdAt: "desc" },
+  });
+  return rows.map(mapRowToProject);
+}
+
+export const getProjectsBySpaceId = cache(getProjectsBySpaceIdImpl);
+
+/**
  * 更新專案（主檔 + 租借項目）
  * 策略：主檔 update；rentals 先刪除該專案下全部再依 input.rentals 建立（簡化實作）
  */

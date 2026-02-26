@@ -97,6 +97,14 @@ export const SPACES_PAGE = {
   emptyFloor: "此樓層尚無場域",
 } as const;
 
+// Space Detail Page (單一場域專案列表，動態路由 /spaces/[slug])
+export const SPACE_DETAIL_PAGE = {
+  description: "此場域下的專案列表",
+  buttonBackToList: "返回場域列表",
+  emptyProjects: "此場域尚無專案",
+  tableCaption: "專案列表",
+} as const;
+
 // Dashboard Overview (總覽頁區塊)
 export const DASHBOARD_OVERVIEW = {
   spacesSectionTitle: "場域列表",
