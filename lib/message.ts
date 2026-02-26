@@ -107,6 +107,10 @@ export const SPACE_DETAIL_PAGE = {
   buttonBackToList: "返回場域列表",
   emptyProjects: "此場域尚無專案",
   tableCaption: "專案列表",
+  tabCalendarView: "月曆",
+  tabListView: "列表",
+  tabsAriaLabel: "專案檢視方式",
+  emptyDayProjects: "當日無專案",
 } as const;
 
 // Dashboard Overview (總覽頁區塊)
