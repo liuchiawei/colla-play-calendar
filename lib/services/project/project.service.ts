@@ -5,7 +5,47 @@
  */
 
 import prisma from "@/lib/prisma";
-import type { CreateProjectInput, ProjectWithRentals } from "@/lib/types/project";
+import { getSpaceNameById } from "@/lib/config";
+import type { CreateProjectInput, ProjectWithRentals, Project } from "@/lib/types/project";
+
+/**
+ * 取得專案列表（供 dashboard 列表頁使用）
+ *
+ * 查詢 Project 含 rentals，依 createdAt 降序，並 map 成列表用 Project 型別。
+ *
+ * @returns Promise<Project[]>
+ */
+export async function getProjectsForList(): Promise<Project[]> {
+  const rows = await prisma.project.findMany({
+    include: { rentals: true },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return rows.map((row) => {
+    const firstRental = row.rentals[0];
+    const space = firstRental
+      ? firstRental.spaceIds
+          .map((id) => getSpaceNameById(id))
+          .join("／")
+      : "";
+    const date = firstRental?.date ?? "";
+    const amount = row.rentals.reduce(
+      (sum, r) => sum + r.rentalAmount + r.fnbAmount,
+      0
+    );
+
+    return {
+      id: row.id,
+      customer: row.contactName,
+      eventOrVenueUse: row.eventOrVenueUse,
+      space,
+      date,
+      contactPerson: row.collaPlayContactId,
+      amount,
+      status: row.status as Project["status"],
+    };
+  });
+}
 
 /**
  * 建立專案（含多筆租借項目）

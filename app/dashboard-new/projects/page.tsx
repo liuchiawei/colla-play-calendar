@@ -5,9 +5,11 @@ import { DashboardShell } from "../components/dashboard-shell.client";
 import { PageHeader } from "../components/page-header.client";
 import { ProjectsContent } from "./projects-content.client";
 import { PROJECTS_PAGE } from "@/lib/message";
-import { MOCK_PROJECTS } from "@/lib/types/project";
+import { getProjectsForList } from "@/lib/services/project/project.service";
 
-export default function ProjectsPage() {
+export default async function ProjectsPage() {
+  const projects = await getProjectsForList();
+
   return (
     <DashboardShell>
       <PageHeader
@@ -16,7 +18,7 @@ export default function ProjectsPage() {
         iconName="FolderKanban"
       />
 
-      <ProjectsContent projects={MOCK_PROJECTS} />
+      <ProjectsContent projects={projects} />
     </DashboardShell>
   );
 }

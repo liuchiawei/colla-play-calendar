@@ -1,9 +1,11 @@
 // POST /api/projects - 建立新專案（create-new-project）
+// GET /api/projects - 專案列表
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/services/auth/auth-server.service";
-import { createProject } from "@/lib/services/project/project.service";
+import { createProject, getProjectsForList } from "@/lib/services/project/project.service";
 import type { ApiResponse } from "@/lib/types";
 import type { CreateProjectInput, ProjectWithRentals } from "@/lib/types/project";
+import type { Project } from "@/lib/types/project";
 
 function validateCreateProjectInput(
   body: unknown
@@ -44,6 +46,30 @@ function validateCreateProjectInput(
   }
   const data = body as CreateProjectInput;
   return { ok: true, data };
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const authResult = await requireAuth(request);
+    if (authResult instanceof NextResponse) {
+      return authResult;
+    }
+
+    const projects = await getProjectsForList();
+
+    return NextResponse.json<ApiResponse<Project[]>>(
+      { success: true, data: projects },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Failed to fetch projects:", error);
+    const message =
+      error instanceof Error ? error.message : "專案列表取得失敗";
+    return NextResponse.json<ApiResponse<null>>(
+      { success: false, error: message },
+      { status: 500 }
+    );
+  }
 }
 
 export async function POST(request: NextRequest) {
