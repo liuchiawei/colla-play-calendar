@@ -9,20 +9,20 @@ import {
   Facebook,
   Info,
 } from "lucide-react";
+import {
+  STORE_MESSAGES,
+  NAV_LABELS,
+  SOCIAL_LABELS,
+  DASHBOARD_LABELS,
+  SPACE_MESSAGES,
+} from "./message";
 
 // 商店基本設定
 // CollaPlay の店舗情報を一元管理
 
 // 商店基本配置
 export const STORE_CONFIG = {
-  name: "CollaPlay",
-  subtitle: "可能存在的遊樂園",
-  catchphrase: "一座專為大人打造的遊樂園。",
-  description: [
-    "Collaboration + Play = CollaPlay",
-    "一座專為大人打造的遊樂園",
-    "咖啡館｜工作空間｜多功能教室｜社群活動｜場地租借",
-  ],
+  ...STORE_MESSAGES,
   since: 2025,
   phone: "02 6627 0836",
   email: "hello@collaplay.com",
@@ -41,9 +41,9 @@ export const STORE_CONFIG = {
 
 // クイックリンク設定
 export const PAGE_LINKS = [
-  { label: "首頁", href: "/", icon: Home },
-  { label: "關於我們", href: "/about", icon: Info },
-  { label: "活動行事曆", href: "/calendar", icon: Calendar },
+  { label: NAV_LABELS.home, href: "/", icon: Home },
+  { label: NAV_LABELS.about, href: "/about", icon: Info },
+  { label: NAV_LABELS.calendar, href: "/calendar", icon: Calendar },
 ];
 
 // ソーシャルリンク設定
@@ -51,12 +51,12 @@ export const PAGE_LINKS = [
 export const SOCIAL_LINKS = [
   {
     icon: Instagram,
-    label: "Instagram",
+    label: SOCIAL_LABELS.instagram,
     href: "https://www.instagram.com/colla_play/",
   },
   {
     icon: Facebook,
-    label: "Facebook",
+    label: SOCIAL_LABELS.facebook,
     href: "https://www.facebook.com/collaplay",
   },
 ];
@@ -70,17 +70,17 @@ export const dashboardNavigationItems: Array<{
 }> = [
   {
     id: "events",
-    label: "活動管理",
+    label: DASHBOARD_LABELS.events,
     icon: Calendar,
   },
   {
     id: "categories",
-    label: "類型管理",
+    label: DASHBOARD_LABELS.categories,
     icon: Tag,
   },
   {
     id: "users",
-    label: "會員管理",
+    label: DASHBOARD_LABELS.users,
     icon: Users,
   },
 ];
@@ -90,3 +90,77 @@ export type StoreConfig = typeof STORE_CONFIG;
 export type BusinessHours = typeof STORE_CONFIG.businessHours;
 export type PageLink = (typeof PAGE_LINKS)[number];
 export type SocialLink = (typeof SOCIAL_LINKS)[number];
+
+// 場域靜態資料 - 依樓層分組，供 SpacesTabs 使用
+export type FloorKey = "3F" | "4F" | "5F";
+
+export interface SpaceOpeningHours {
+  open: number; // 開門時刻（0–24）
+  close: number; // 關門時刻（0–24）
+}
+
+export interface Space {
+  id: string;
+  floor: FloorKey;
+  name: string;
+  description: string;
+  openingHours: SpaceOpeningHours;
+}
+
+function spaceFromSlug(
+  floor: FloorKey,
+  slug: string,
+  idSuffix?: string
+): Space {
+  const msg = SPACE_MESSAGES[slug];
+  if (!msg) throw new Error(`Unknown space slug: ${slug}`);
+  const id = idSuffix
+    ? `${floor.toLowerCase()}-${slug}-${idSuffix}`
+    : `${floor.toLowerCase()}-${slug}`;
+  return {
+    id,
+    floor,
+    name: msg.name,
+    description: msg.description,
+    openingHours: { open: 10, close: 22 },
+  };
+}
+
+export const SPACES_3F: Space[] = [
+  spaceFromSlug("3F", "community-cafe"),
+  spaceFromSlug("3F", "focus-area"),
+];
+
+export const SPACES_4F: Space[] = [
+  spaceFromSlug("4F", "multipurpose-room", "1"),
+  spaceFromSlug("4F", "multipurpose-room", "2"),
+  spaceFromSlug("4F", "podcast-studio"),
+  spaceFromSlug("4F", "product-photo"),
+  spaceFromSlug("4F", "event-lounge"),
+  spaceFromSlug("4F", "screening-room"),
+];
+
+export const SPACES_5F: Space[] = [spaceFromSlug("5F", "exhibition-hall")];
+
+export const SPACES_BY_FLOOR: Record<FloorKey, Space[]> = {
+  "3F": SPACES_3F,
+  "4F": SPACES_4F,
+  "5F": SPACES_5F,
+};
+
+export const ALL_SPACES: Space[] = [
+  ...SPACES_3F,
+  ...SPACES_4F,
+  ...SPACES_5F,
+];
+
+/** 依場域 id（如 4f-podcast-studio）回傳顯示名稱，供專案列表等使用 */
+export function getSpaceNameById(id: string): string {
+  const space = ALL_SPACES.find((s) => s.id === id);
+  return space?.name ?? id;
+}
+
+/** 依場域 id 回傳 Space，找不到回傳 undefined（供動態路由驗證與標題使用） */
+export function getSpaceById(id: string): Space | undefined {
+  return ALL_SPACES.find((s) => s.id === id);
+}

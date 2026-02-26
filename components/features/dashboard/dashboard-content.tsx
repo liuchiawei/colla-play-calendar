@@ -12,6 +12,7 @@ import type {
   EventWithCategory,
   Category,
   CategoryInput,
+  EventStatus,
 } from "@/lib/types";
 
 interface DashboardContentProps {
@@ -28,6 +29,7 @@ interface DashboardContentProps {
   onEdit: (event: EventWithCategory) => void;
   onDelete: (eventId: string) => void;
   onViewRegistrations: (eventId: string) => void;
+  onReview?: (eventId: string, status: EventStatus) => Promise<void>;
   // Categories management props
   onCategoryAdd: (data: CategoryInput) => Promise<void>;
   onCategoryUpdate: (id: string, data: CategoryInput) => Promise<void>;
@@ -47,6 +49,7 @@ export function DashboardContent({
   onEdit,
   onDelete,
   onViewRegistrations,
+  onReview,
   onCategoryAdd,
   onCategoryUpdate,
   onCategoryDelete,
@@ -66,6 +69,7 @@ export function DashboardContent({
           onEdit={onEdit}
           onDelete={onDelete}
           onViewRegistrations={onViewRegistrations}
+          onReview={onReview}
         />
       );
     case "categories":

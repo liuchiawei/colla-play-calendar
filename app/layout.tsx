@@ -2,9 +2,6 @@ import type { Metadata } from "next";
 import { Roboto, Roboto_Mono, Noto_Sans_TC, Noto_Serif_TC } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "next-themes";
-import Navbar from "@/components/layout/navbar";
-import Footer from "@/components/layout/footer";
-import BackgroundDecoration from "@/components/layout/background-decoration";
 import { AuthProvider } from "@/components/providers/auth-provider";
 
 // フォント設定
@@ -62,10 +59,7 @@ export default function RootLayout({
       >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider />
-          <BackgroundDecoration />
-          <Navbar />
           {children}
-          <Footer />
         </ThemeProvider>
       </body>
     </html>

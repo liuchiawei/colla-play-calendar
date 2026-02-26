@@ -132,10 +132,11 @@ export const BackgroundGradientAnimation = ({
     };
   }, [interactive]);
 
-  const [isSafari, setIsSafari] = useState(false);
-  useEffect(() => {
-    setIsSafari(/^((?!chrome|android).)*safari/i.test(navigator.userAgent));
-  }, []);
+  const [isSafari, setIsSafari] = useState(() =>
+    typeof navigator !== "undefined"
+      ? /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+      : false
+  );
 
   return (
     <div

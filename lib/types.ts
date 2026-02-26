@@ -6,16 +6,23 @@ import type {
   Category,
   Profile,
   EventRegistration,
+  Comment,
+  CommentLike,
 } from "@/lib/generated/prisma/client";
 
 // カテゴリ型（Prismaから生成）
 export type { Category };
+
+// 活動狀態型別
+export type EventStatus = "draft" | "pending" | "published" | "rejected" | "archived";
 
 // イベント型（カテゴリ情報を含む）
 export type EventWithCategory = Event & {
   category: Category | null;
   registrationCount?: number;
   isRegistered?: boolean;
+  status?: EventStatus;
+  createdBy?: string | null;
 };
 
 // APIレスポンス用の型
@@ -39,6 +46,12 @@ export type EventInput = {
   registrationUrl?: string | null;
   price?: string | null;
   categoryId?: string | null;
+  status?: EventStatus; // 活動狀態（可選，用於草稿功能）
+};
+
+// 活動審核輸入型別
+export type EventReviewInput = {
+  status: EventStatus; // 審核後的狀態（published 或 rejected）
 };
 
 // カテゴリ作成・更新用の入力型
@@ -119,7 +132,7 @@ export type ProfileUpdateInput = {
   education?: string | null;
   skills?: string[] | null; // 技能陣列（前端以字串處理）
   bio?: string | null;
-  extra?: Record<string, any> | null;
+  extra?: Record<string, unknown> | null;
   visibility?: ProfileVisibility | null;
 };
 
@@ -191,4 +204,66 @@ export type RegisteredUser = {
   name: string | null;
   email?: string; // 可選，因為某些 API 可能不返回 email
   image: string | null;
+};
+
+// ============================================
+// 活動留言相關型別定義
+// ============================================
+
+// 留言型別（由 Prisma 生成）
+export type { Comment, CommentLike };
+
+// 留言作者資訊
+export type CommentAuthor = {
+  id: string;
+  name: string | null;
+  email: string;
+  image: string | null;
+} | {
+  type: "anonymous";
+  displayNumber: number;
+  displayName: string; // "匿名用戶 #123"
+};
+
+// 留言（包含關聯資料）
+export type CommentWithRelations = Comment & {
+  user: {
+    id: string;
+    name: string | null;
+    email: string;
+    image: string | null;
+  } | null;
+  likes: CommentLike[];
+  _count: {
+    likes: number;
+    replies: number;
+  };
+  replies?: CommentWithRelations[]; // 巢狀回覆
+  isLiked?: boolean; // 當前用戶是否已按讚
+};
+
+// 留言輸入型別
+export type CommentInput = {
+  content: string;
+  parentId?: string | null; // 用於回覆
+};
+
+// 留言更新輸入型別
+export type CommentUpdateInput = {
+  content: string;
+};
+
+// 留言列表響應型別（包含分頁資訊）
+export type CommentListResponse = {
+  comments: CommentWithRelations[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+};
+
+// 留言按讚響應型別
+export type CommentLikeResponse = {
+  isLiked: boolean;
+  likeCount: number;
 };

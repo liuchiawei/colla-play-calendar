@@ -1,0 +1,61 @@
+// 場域專案列表動態頁：Suspense + async 取數 + notFound
+// 依 Vercel React 最佳實踐：server-cache-react、async-suspense-boundaries、server-serialization
+
+import { Suspense } from "react";
+import { notFound } from "next/navigation";
+import { DashboardShell } from "../../components/dashboard-shell.client";
+import { PageHeader } from "../../components/page-header.client";
+import { getSpaceById } from "@/lib/config";
+import { getProjectsBySpaceId } from "@/lib/services/project/project.service";
+import { SPACE_DETAIL_PAGE } from "@/lib/message";
+import { SpaceProjectsContent } from "./space-projects-content.client";
+
+function SpaceProjectsSkeleton() {
+  return (
+    <div className="flex-1 p-6 flex flex-col gap-6">
+      <div className="h-9 w-32 rounded-lg bg-muted animate-pulse" />
+      <div className="h-10 max-w-md rounded-lg bg-muted animate-pulse" />
+      <div className="h-64 rounded-xl bg-muted animate-pulse" />
+    </div>
+  );
+}
+
+async function SpaceProjects({
+  spaceId,
+  spaceName,
+}: {
+  spaceId: string;
+  spaceName: string;
+}) {
+  const projects = await getProjectsBySpaceId(spaceId);
+  return (
+    <SpaceProjectsContent spaceName={spaceName} projects={projects} />
+  );
+}
+
+interface PageProps {
+  params: Promise<{ slug: string }>;
+}
+
+export default async function SpaceDetailPage({ params }: PageProps) {
+  const { slug } = await params;
+  const space = getSpaceById(slug);
+
+  if (!space) {
+    notFound();
+  }
+
+  return (
+    <DashboardShell>
+      <PageHeader
+        title={space.name}
+        description={SPACE_DETAIL_PAGE.description}
+        iconName="Building2"
+      />
+
+      <Suspense fallback={<SpaceProjectsSkeleton />}>
+        <SpaceProjects spaceId={slug} spaceName={space.name} />
+      </Suspense>
+    </DashboardShell>
+  );
+}
