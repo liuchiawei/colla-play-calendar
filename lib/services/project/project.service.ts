@@ -4,9 +4,46 @@
  * 提供專案建立等業務邏輯，與 create-new-project 表單／API 對接
  */
 
+import { cache } from "react";
 import prisma from "@/lib/prisma";
 import { getSpaceNameById } from "@/lib/config";
-import type { CreateProjectInput, ProjectWithRentals, Project } from "@/lib/types/project";
+import type {
+  CreateProjectInput,
+  ProjectWithRentals,
+  Project,
+  OverviewStatsData,
+} from "@/lib/types/project";
+
+function mapRowToProject(
+  row: {
+    id: string;
+    customerName: string;
+    eventOrVenueUse: string;
+    collaPlayContactId: string;
+    status: string;
+    rentals: Array<{ spaceIds: string[]; date: string; rentalAmount: number; fnbAmount: number }>;
+  }
+): Project {
+  const firstRental = row.rentals[0];
+  const space = firstRental
+    ? firstRental.spaceIds.map((id) => getSpaceNameById(id)).join("／")
+    : "";
+  const date = firstRental?.date ?? "";
+  const amount = row.rentals.reduce(
+    (sum, r) => sum + r.rentalAmount + r.fnbAmount,
+    0
+  );
+  return {
+    id: row.id,
+    customer: row.customerName,
+    eventOrVenueUse: row.eventOrVenueUse,
+    space,
+    date,
+    contactPerson: row.collaPlayContactId,
+    amount,
+    status: row.status as Project["status"],
+  };
+}
 
 /**
  * 取得專案列表（供 dashboard 列表頁使用）
@@ -20,32 +57,56 @@ export async function getProjectsForList(): Promise<Project[]> {
     include: { rentals: true },
     orderBy: { createdAt: "desc" },
   });
-
-  return rows.map((row) => {
-    const firstRental = row.rentals[0];
-    const space = firstRental
-      ? firstRental.spaceIds
-          .map((id) => getSpaceNameById(id))
-          .join("／")
-      : "";
-    const date = firstRental?.date ?? "";
-    const amount = row.rentals.reduce(
-      (sum, r) => sum + r.rentalAmount + r.fnbAmount,
-      0
-    );
-
-    return {
-      id: row.id,
-      customer: row.customerName,
-      eventOrVenueUse: row.eventOrVenueUse,
-      space,
-      date,
-      contactPerson: row.collaPlayContactId,
-      amount,
-      status: row.status as Project["status"],
-    };
-  });
+  return rows.map(mapRowToProject);
 }
+
+/**
+ * 取得最近 N 筆專案（供總覽頁使用，以 React.cache 去重）
+ */
+export const getRecentProjects = cache(async (limit: number): Promise<Project[]> => {
+  const rows = await prisma.project.findMany({
+    take: limit,
+    orderBy: { createdAt: "desc" },
+    include: { rentals: true },
+  });
+  return rows.map(mapRowToProject);
+});
+
+/**
+ * 取得總覽統計（當月場租、洽談中/已確認筆數、今日預定數，以 React.cache 去重）
+ */
+export const getOverviewStats = cache(async (): Promise<OverviewStatsData> => {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const start = `${y}-${m}-01`;
+  const lastDay = new Date(y, now.getMonth() + 1, 0).getDate();
+  const end = `${y}-${m}-${String(lastDay).padStart(2, "0")}`;
+  const todayStr = `${y}-${m}-${String(now.getDate()).padStart(2, "0")}`;
+
+  const [monthlySum, negotiatingCount, confirmedCount, todayReservations] =
+    await Promise.all([
+      prisma.projectRental
+        .aggregate({
+          where: {
+            date: { gte: start, lte: end },
+            project: { status: "deposit_paid" },
+          },
+          _sum: { rentalAmount: true, fnbAmount: true },
+        })
+        .then((r) => (r._sum.rentalAmount ?? 0) + (r._sum.fnbAmount ?? 0)),
+      prisma.project.count({ where: { status: "negotiating" } }),
+      prisma.project.count({ where: { status: "deposit_paid" } }),
+      prisma.projectRental.count({ where: { date: todayStr } }),
+    ]);
+
+  return {
+    monthlyRentalIncome: monthlySum,
+    negotiatingCount,
+    confirmedCount,
+    todayReservations,
+  };
+});
 
 /**
  * 建立專案（含多筆租借項目）

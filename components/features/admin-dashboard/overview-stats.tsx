@@ -7,13 +7,9 @@ import { motion, useReducedMotion } from "motion/react";
 import { Banknote, MessageCircle, CheckCircle, CalendarDays } from "lucide-react";
 import { AnimatedCard } from "./animated-card";
 import { DASHBOARD_OVERVIEW } from "@/lib/message";
+import type { OverviewStatsData } from "@/lib/types/project";
 
-export type OverviewStatsData = {
-  monthlyRentalIncome: number;
-  negotiatingCount: number;
-  confirmedCount: number;
-  todayReservations: number;
-};
+export type { OverviewStatsData };
 
 const CURRENCY_FORMATTER = new Intl.NumberFormat("zh-TW", {
   style: "currency",

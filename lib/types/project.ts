@@ -51,6 +51,14 @@ export type ProjectWithRentals = import("@/lib/generated/prisma/client").Project
   rentals: import("@/lib/generated/prisma/client").ProjectRental[];
 };
 
+/** 總覽統計資料（與 overview-stats 的 data prop 一致） */
+export interface OverviewStatsData {
+  monthlyRentalIncome: number;
+  negotiatingCount: number;
+  confirmedCount: number;
+  todayReservations: number;
+}
+
 // Mock options for create project form - 場域請使用 @/lib/config ALL_SPACES（來源為 message SPACE_MESSAGES）
 export const MOCK_CONTACT_OPTIONS: { id: string; name: string }[] = [
   { id: "contact-1", name: "王小明" },
