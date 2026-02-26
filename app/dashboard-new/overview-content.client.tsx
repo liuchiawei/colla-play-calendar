@@ -25,7 +25,8 @@ function SpacePreviewItem({ space }: { space: Space }) {
     <li className="min-w-0 list-none">
       <Link
         href={`/dashboard-new/spaces/${space.id}`}
-        className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border/50 last:border-0 min-w-0 hover:bg-accent/20 rounded-xs"
+        className="flex items-center justify-between gap-3 px-3 p
+        y-2 border-b border-border/50 last:border-0 min-w-0 hover:bg-accent/20 rounded-xs"
       >
         <span className="text-sm font-medium truncate">{space.name}</span>
         <span className="text-xs text-muted-foreground shrink-0" aria-hidden>
