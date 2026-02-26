@@ -11,8 +11,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { getDefaultClassNames, type DayButton } from "react-day-picker";
-import { SPACE_DETAIL_PAGE } from "@/lib/message";
-import type { Project } from "@/lib/types/project";
+import { SPACE_DETAIL_PAGE, PROJECTS_PAGE } from "@/lib/message";
+import type { Project, ProjectStatus } from "@/lib/types/project";
 import { cn } from "@/lib/utils";
 
 const DATE_FORMATTER = new Intl.DateTimeFormat("zh-TW", {
@@ -30,6 +30,12 @@ function projectDateKey(project: Project): string {
   return project.date.slice(0, 10);
 }
 
+function badgeVariantByStatus(
+  status: ProjectStatus,
+): "outline" | "default" {
+  return status === "deposit_paid" ? "default" : "outline";
+}
+
 function ProjectBadgeLink({
   project,
   className,
@@ -37,8 +43,9 @@ function ProjectBadgeLink({
   project: Project;
   className?: string;
 }) {
+  const variant = badgeVariantByStatus(project.status);
   return (
-    <Badge asChild variant="secondary" className={className}>
+    <Badge asChild variant={variant} className={className}>
       <Link href={`/dashboard-new/projects/${project.id}`}>
         {project.eventOrVenueUse}
       </Link>
@@ -212,6 +219,20 @@ export function SpaceProjectsCalendar({
           {SPACE_DETAIL_PAGE.emptyProjects}
         </p>
       )}
+      {hasAnyProjects ? (
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1.5">
+            <Badge variant="outline" className="text-[10px] font-medium">
+              {PROJECTS_PAGE.statusNegotiating}
+            </Badge>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <Badge variant="default" className="text-[10px] font-medium">
+              {PROJECTS_PAGE.statusDepositPaid}
+            </Badge>
+          </span>
+        </div>
+      ) : null}
     </section>
   );
 }
