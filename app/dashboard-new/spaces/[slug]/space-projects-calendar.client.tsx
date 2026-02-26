@@ -30,9 +30,7 @@ function projectDateKey(project: Project): string {
   return project.date.slice(0, 10);
 }
 
-function badgeVariantByStatus(
-  status: ProjectStatus,
-): "outline" | "default" {
+function badgeVariantByStatus(status: ProjectStatus): "outline" | "default" {
   return status === "deposit_paid" ? "default" : "outline";
 }
 
@@ -46,7 +44,7 @@ function ProjectBadgeLink({
   const variant = badgeVariantByStatus(project.status);
   return (
     <Badge asChild variant={variant} className={className}>
-      <Link href={`/dashboard-new/projects/${project.id}`}>
+      <Link href={`/dashboard-new/projects/${project.id}`} className="truncate">
         {project.eventOrVenueUse}
       </Link>
     </Badge>
@@ -58,6 +56,21 @@ function DayNumber({ date }: { date: Date }) {
 }
 
 const DAY_CELL_MAX_VISIBLE = 2;
+
+function StatusDot({ status }: { status: ProjectStatus }) {
+  const isDepositPaid = status === "deposit_paid";
+  return (
+    <span
+      className={cn(
+        "shrink-0 rounded-full",
+        isDepositPaid
+          ? "size-1.5 bg-primary"
+          : "size-1.5 border-2 border-current bg-transparent",
+      )}
+      aria-hidden
+    />
+  );
+}
 
 function DayCellProjectBadges({
   projects,
@@ -73,23 +86,37 @@ function DayCellProjectBadges({
   return (
     <span
       className={cn(
-        "flex flex-wrap items-center justify-end gap-0.5 overflow-hidden",
+        "flex min-w-0 w-full flex items-center justify-center gap-0.5 overflow-hidden",
         className,
       )}
       aria-label={projects.length > 0 ? `${projects.length} 個專案` : undefined}
     >
-      {visible.map((project) => (
-        <ProjectBadgeLink
-          key={project.id}
-          project={project}
-          className="min-w-0 max-w-full truncate text-[10px]"
-        />
-      ))}
-      {restCount > 0 ? (
-        <span className="text-[10px] font-medium text-muted-foreground shrink-0">
-          +{restCount}
-        </span>
-      ) : null}
+      {/* 手機：圓點（依 status） */}
+      <span className="min-w-0 flex items-center gap-0.5 justify-center md:hidden">
+        {visible.map((project) => (
+          <StatusDot key={project.id} status={project.status} />
+        ))}
+        {restCount > 0 ? (
+          <span className="text-[10px] font-medium text-muted-foreground shrink-0">
+            +{restCount}
+          </span>
+        ) : null}
+      </span>
+      {/* 平板以上：專案名稱 Badge */}
+      <span className="hidden min-w-0 flex-1 flex-wrap items-center justify-center gap-0.5 overflow-hidden md:flex">
+        {visible.map((project) => (
+          <ProjectBadgeLink
+            key={project.id}
+            project={project}
+            className="min-w-0 truncate text-[10px]"
+          />
+        ))}
+        {restCount > 0 ? (
+          <span className="text-[10px] font-medium text-muted-foreground shrink-0">
+            +{restCount}
+          </span>
+        ) : null}
+      </span>
     </span>
   );
 }
@@ -102,12 +129,12 @@ function DayCellContent({
   projects: Project[];
 }) {
   return (
-    <>
+    <div className="flex flex-col items-center justify-center gap-1.5">
       <DayNumber date={date} />
       {projects.length > 0 ? (
         <DayCellProjectBadges projects={projects} />
       ) : null}
-    </>
+    </div>
   );
 }
 
@@ -221,12 +248,28 @@ export function SpaceProjectsCalendar({
       )}
       {hasAnyProjects ? (
         <div className="mt-3 flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1.5">
+          {/* 手機：圓點圖例 */}
+          <span
+            className="flex items-center gap-1.5 md:hidden"
+            aria-label={PROJECTS_PAGE.statusNegotiating}
+          >
+            <span className="size-2 rounded-full border-2 border-current bg-transparent" />
+            <span>{PROJECTS_PAGE.statusNegotiating}</span>
+          </span>
+          <span
+            className="flex items-center gap-1.5 md:hidden"
+            aria-label={PROJECTS_PAGE.statusDepositPaid}
+          >
+            <span className="size-2 rounded-full bg-primary" />
+            <span>{PROJECTS_PAGE.statusDepositPaid}</span>
+          </span>
+          {/* 平板以上：Status Badge */}
+          <span className="hidden items-center gap-1.5 md:flex">
             <Badge variant="outline" className="text-[10px] font-medium">
               {PROJECTS_PAGE.statusNegotiating}
             </Badge>
           </span>
-          <span className="flex items-center gap-1.5">
+          <span className="hidden items-center gap-1.5 md:flex">
             <Badge variant="default" className="text-[10px] font-medium">
               {PROJECTS_PAGE.statusDepositPaid}
             </Badge>
