@@ -7,13 +7,9 @@ import { motion, useReducedMotion } from "motion/react";
 import { Banknote, MessageCircle, CheckCircle, CalendarDays } from "lucide-react";
 import { AnimatedCard } from "./animated-card";
 import { DASHBOARD_OVERVIEW } from "@/lib/message";
+import type { OverviewStatsData } from "@/lib/types/project";
 
-export type OverviewStatsData = {
-  monthlyRentalIncome: number;
-  negotiatingCount: number;
-  confirmedCount: number;
-  todayReservations: number;
-};
+export type { OverviewStatsData };
 
 const CURRENCY_FORMATTER = new Intl.NumberFormat("zh-TW", {
   style: "currency",
@@ -128,7 +124,7 @@ export function OverviewStats({ data = MOCK_STATS }: { data?: OverviewStatsData 
             <AnimatedCard gradient>
               <div className="flex items-start justify-between mb-4">
                 <div
-                  className={`rounded-xl bg-gradient-to-br ${stat.color} p-3 shadow-lg`}
+                  className={`rounded-xl bg-primary p-3 shadow-lg`}
                   aria-hidden
                 >
                   <Icon className="h-6 w-6 text-white" strokeWidth={2} aria-hidden />
@@ -143,7 +139,7 @@ export function OverviewStats({ data = MOCK_STATS }: { data?: OverviewStatsData 
                   initial={shouldReduceMotion ? false : { scale: 0.5, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={valueTransition}
-                  className={`font-display font-black text-4xl tabular-nums bg-gradient-to-br ${stat.color} bg-clip-text text-transparent`}
+                  className="font-display font-black text-4xl tabular-nums text-primary"
                 >
                   {value}
                 </motion.p>

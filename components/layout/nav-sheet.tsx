@@ -19,7 +19,7 @@ import { useAuthStore } from "@/lib/stores/auth-store";
 import { signOut } from "@/lib/services/auth/auth.service";
 import { cn } from "@/lib/utils";
 import { PAGE_LINKS } from "@/lib/config";
-import { LogIn, LogOut } from "lucide-react";
+import { LogIn, LogOut, LayoutDashboard, Layout } from "lucide-react";
 import { useIsMobile } from "@/lib/hooks/use-mobile";
 
 interface NavSheetProps {
@@ -122,6 +122,45 @@ export function NavSheet({ children }: NavSheetProps) {
                 </Button>
               );
             })}
+            {isAdmin && (
+              <>
+                <Separator className="my-3" />
+                {[
+                  { href: "/dashboard", label: "儀表板", icon: LayoutDashboard },
+                  { href: "/dashboard-new", label: "管理後台", icon: Layout },
+                ].map((link) => {
+                  const Icon = link.icon;
+                  const isActive =
+                    pathname === link.href ||
+                    (link.href !== "/dashboard" &&
+                      pathname.startsWith(link.href + "/"));
+                  return (
+                    <Button
+                      key={link.href}
+                      asChild
+                      size="lg"
+                      variant={isActive ? "secondary" : "ghost"}
+                      className={cn(
+                        "w-full justify-start gap-3 text-xl",
+                        isActive && "bg-secondary"
+                      )}
+                    >
+                      <Link
+                        href={link.href}
+                        onClick={() => {
+                          if (isMobile) {
+                            setOpen(false);
+                          }
+                        }}
+                      >
+                        <Icon className="size-4" />
+                        {link.label}
+                      </Link>
+                    </Button>
+                  );
+                })}
+              </>
+            )}
           </div>
           {/* SheetFooter */}
           <SheetFooter>

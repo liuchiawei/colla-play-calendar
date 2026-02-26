@@ -93,11 +93,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
       },
       { status: 201 }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Failed to register event:", error);
 
     // 處理唯一約束違規（重複報名）
-    if (error.code === "P2002") {
+    if (error && typeof error === "object" && "code" in error && error.code === "P2002") {
       return NextResponse.json<ApiResponse<null>>(
         {
           success: false,

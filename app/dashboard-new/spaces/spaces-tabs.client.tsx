@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -24,29 +25,31 @@ function getSpacesForTab(value: TabValue): Space[] {
 function SpaceCard({ space }: { space: Space }) {
   return (
     <li className="min-w-0 list-none">
-      <Card className="transition-[box-shadow] hover:shadow-md motion-reduce:transition-none">
-        <CardHeader className="pb-2">
-          <div className="flex items-start justify-between gap-3">
-            <CardTitle className="text-base line-clamp-2 min-w-0 flex-1">
-              {space.name}
-            </CardTitle>
-            <Label
-              asChild
-              className="shrink-0 text-xs font-medium text-muted-foreground"
-              aria-label="樓層"
-            >
-              <span>{space.floor}</span>
-            </Label>
-          </div>
-        </CardHeader>
-        {space.description ? (
-          <CardContent className="pt-0">
-            <p className="text-sm text-muted-foreground line-clamp-2">
-              {space.description}
-            </p>
-          </CardContent>
-        ) : null}
-      </Card>
+      <Link href={`/dashboard-new/spaces/${space.name}`}>
+        <Card className="transition-[box-shadow] hover:shadow-md motion-reduce:transition-none">
+          <CardHeader className="pb-2">
+            <div className="flex items-start justify-between gap-3">
+              <CardTitle className="text-base line-clamp-2 min-w-0 flex-1">
+                {space.name}
+              </CardTitle>
+              <Label
+                asChild
+                className="shrink-0 text-xs font-medium text-muted-foreground"
+                aria-label="樓層"
+              >
+                <span>{space.floor}</span>
+              </Label>
+            </div>
+          </CardHeader>
+          {space.description ? (
+            <CardContent className="pt-0">
+              <p className="text-sm text-muted-foreground line-clamp-2">
+                {space.description}
+              </p>
+            </CardContent>
+          ) : null}
+        </Card>
+      </Link>
     </li>
   );
 }
@@ -63,7 +66,9 @@ function SpaceList({
   if (spaces.length === 0) {
     return (
       <section aria-label={ariaLabel}>
-        <h2 className="text-lg font-semibold mb-4 text-balance">{sectionHeading}</h2>
+        <h2 className="text-lg font-semibold mb-4 text-balance">
+          {sectionHeading}
+        </h2>
         <p className="text-muted-foreground text-sm py-8 text-center">
           {SPACES_PAGE.emptyFloor}
         </p>
@@ -72,8 +77,13 @@ function SpaceList({
   }
   return (
     <section aria-label={ariaLabel}>
-      <h2 className="text-lg font-semibold mb-4 text-balance">{sectionHeading}</h2>
-      <ul className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" role="list">
+      <h2 className="text-lg font-semibold mb-4 text-balance">
+        {sectionHeading}
+      </h2>
+      <ul
+        className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+        role="list"
+      >
         {spaces.map((space) => (
           <SpaceCard key={space.id} space={space} />
         ))}

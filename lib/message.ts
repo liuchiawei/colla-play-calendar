@@ -97,6 +97,14 @@ export const SPACES_PAGE = {
   emptyFloor: "此樓層尚無場域",
 } as const;
 
+// Space Detail Page (單一場域專案列表，動態路由 /spaces/[slug])
+export const SPACE_DETAIL_PAGE = {
+  description: "此場域下的專案列表",
+  buttonBackToList: "返回場域列表",
+  emptyProjects: "此場域尚無專案",
+  tableCaption: "專案列表",
+} as const;
+
 // Dashboard Overview (總覽頁區塊)
 export const DASHBOARD_OVERVIEW = {
   spacesSectionTitle: "場域列表",
@@ -116,6 +124,148 @@ export const DASHBOARD_OVERVIEW = {
   statsTodayReservationsDescription: "今日場域使用",
 } as const;
 
+// Projects Page (專案管理頁)
+export const PROJECTS_PAGE = {
+  title: "專案管理",
+  description: "管理與追蹤所有專案進度",
+  createNewProject: "建立專案",
+  createNewProjectAria: "建立新專案",
+  searchPlaceholder: "搜尋客戶、活動名稱、場域、接洽人…",
+  searchAriaLabel: "搜尋專案",
+  searchNoResults: "搜尋無結果",
+  tableCaption: "專案列表",
+  columnCustomer: "客戶",
+  columnEventOrVenueUse: "活動名稱或場地用途",
+  columnSpace: "場域",
+  columnDate: "日期",
+  columnContact: "接洽人",
+  columnAmount: "金額",
+  columnStatus: "狀態",
+  statusNegotiating: "洽談中",
+  statusDepositPaid: "已付訂",
+  emptyProjects: "尚無專案或搜尋無結果",
+} as const;
+
+// Create Project Page (建立新專案表單)
+export const CREATE_PROJECT_PAGE = {
+  pageTitle: "建立專案",
+  pageDescription: "填寫客戶與專案資訊以建立新專案",
+
+  sectionCustomer: "客戶資訊",
+  sectionProject: "專案資訊",
+  sectionNotes: "專案備註",
+  sectionRentals: "租借項目",
+
+  labelCustomerName: "客戶名稱",
+  labelCustomerNameRequired: "客戶名稱 *",
+  placeholderCustomerName: "請輸入姓名…",
+  labelPhone: "聯絡電話",
+  labelPhoneRequired: "聯絡電話 *",
+  placeholderPhone: "0912-345-678",
+  labelCompany: "公司行號",
+  optional: "選填",
+  labelTaxId: "統一編號",
+
+  labelEventOrVenueUse: "活動名稱或場地用途",
+  labelEventOrVenueUseRequired: "活動名稱或場地用途 *",
+  placeholderEventOrVenueUse:
+    "例如：產品發表會、工作坊、Podcast 錄製…",
+  labelTotalAttendees: "活動總人數",
+  placeholderAttendees: "預估參與人數",
+  labelTables: "桌子需求",
+  labelChairs: "椅子需求",
+  labelFnb: "餐飲品項",
+  labelProjectNotes: "備註",
+  labelCollaPlayContact: "CollaPlay 接洽人",
+  labelCollaPlayContactRequired: "CollaPlay 接洽人 *",
+  placeholderSelectContact: "選擇接洽人…",
+
+  labelInternalNotes: "內部備註",
+  placeholderInternalNotes: "內部備註，例如特殊需求、注意事項…",
+
+  addRental: "新增場域",
+  labelSpaces: "場域",
+  labelSpacesRequired: "場域 *",
+  placeholderSelectSpaces: "選擇場域…",
+  labelDate: "日期",
+  labelDateRequired: "日期 *",
+  dateFormat: "年 / 月 / 日",
+  labelStartTime: "開始時間",
+  labelStartTimeRequired: "開始時間 *",
+  placeholderSelectTime: "選擇時間…",
+  labelEndTime: "結束時間",
+  labelEndTimeRequired: "結束時間 *",
+  labelSetupTime: "場佈時間",
+  setupDefault: "預設：開始前 30 分鐘",
+  labelTeardownTime: "場復時間",
+  teardownDefault: "預設：結束後 30 分鐘",
+  labelRentalAmount: "場租金額 (NT$)",
+  labelFnbAmount: "餐飲金額 (NT$)",
+  labelPaidAmount: "已付款項 (NT$)",
+  labelPendingAmount: "待付金額 (NT$)",
+
+  submit: "建立專案",
+  submitting: "儲存中…",
+  removeRental: "移除",
+  removeRentalAria: "移除此筆租借",
+
+  errorRequired: "此欄位為必填",
+  errorPhoneInvalid: "請輸入有效的聯絡電話",
+  errorEndBeforeStart: "結束時間須晚於開始時間",
+} as const;
+
+// Project Detail Page (專案詳情頁)
+export const PROJECT_DETAIL_PAGE = {
+  title: "專案詳情",
+  description: "檢視與編輯專案資訊",
+
+  sectionCustomer: "客戶資訊",
+  sectionProject: "專案資訊",
+  sectionNotes: "備註",
+  sectionRentals: "租借項目",
+
+  labelCustomerName: "客戶名稱",
+  labelPhone: "聯絡電話",
+  labelCompany: "公司行號",
+  labelTaxId: "統一編號",
+  labelEventOrVenueUse: "活動名稱或場地用途",
+  labelTotalAttendees: "活動總人數",
+  labelTables: "桌子需求",
+  labelChairs: "椅子需求",
+  labelFnb: "餐飲品項",
+  labelProjectNotes: "專案備註",
+  labelCollaPlayContact: "CollaPlay 接洽人",
+  labelInternalNotes: "內部備註",
+  labelStatus: "狀態",
+  labelCreatedAt: "建立時間",
+  labelUpdatedAt: "更新時間",
+
+  labelDate: "日期",
+  labelTimeRange: "時段",
+  labelSpaces: "場域",
+  labelRentalAmount: "場租",
+  labelFnbAmount: "餐飲",
+  labelPaidAmount: "已付",
+  labelPendingAmount: "待付",
+  totalAmount: "總金額",
+
+  buttonEdit: "編輯",
+  buttonDelete: "刪除",
+  buttonSave: "儲存",
+  buttonCancel: "取消",
+  buttonBackToList: "返回列表",
+
+  deleteConfirmTitle: "確認刪除專案",
+  deleteConfirmDescription: "刪除後無法復原，確定要刪除此專案嗎？",
+  deleteConfirmConfirm: "刪除",
+  deleteConfirmCancel: "取消",
+
+  updateSuccess: "已儲存",
+  updateError: "更新失敗",
+  deleteError: "刪除失敗",
+  notFound: "找不到此專案",
+} as const;
+
 // Type exports for type safety
 export type StoreMessages = typeof STORE_MESSAGES;
 export type NavLabels = typeof NAV_LABELS;
@@ -125,3 +275,6 @@ export type DashboardNewLabels = typeof DASHBOARD_NEW_LABELS;
 export type SpacesPageMessages = typeof SPACES_PAGE;
 export type SpaceMessages = typeof SPACE_MESSAGES;
 export type DashboardOverviewMessages = typeof DASHBOARD_OVERVIEW;
+export type ProjectsPageMessages = typeof PROJECTS_PAGE;
+export type CreateProjectPageMessages = typeof CREATE_PROJECT_PAGE;
+export type ProjectDetailPageMessages = typeof PROJECT_DETAIL_PAGE;

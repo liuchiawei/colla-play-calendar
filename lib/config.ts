@@ -153,3 +153,14 @@ export const ALL_SPACES: Space[] = [
   ...SPACES_4F,
   ...SPACES_5F,
 ];
+
+/** 依場域 id（如 4f-podcast-studio）回傳顯示名稱，供專案列表等使用 */
+export function getSpaceNameById(id: string): string {
+  const space = ALL_SPACES.find((s) => s.id === id);
+  return space?.name ?? id;
+}
+
+/** 依場域 id 回傳 Space，找不到回傳 undefined（供動態路由驗證與標題使用） */
+export function getSpaceById(id: string): Space | undefined {
+  return ALL_SPACES.find((s) => s.id === id);
+}

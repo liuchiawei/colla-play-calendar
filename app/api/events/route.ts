@@ -51,9 +51,9 @@ export async function GET(request: NextRequest) {
     }
 
     // 狀態過濾（如果提供）
-    const status = searchParams.get("status") as EventStatus | null;
+    const status = searchParams.get("status");
     if (status && status !== "all") {
-      where.status = status;
+      where.status = status as EventStatus;
     } else if (!status) {
       // 預設只顯示已發布的活動（如果沒有指定狀態）
       where.status = "published";
