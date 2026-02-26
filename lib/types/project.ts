@@ -44,6 +44,11 @@ export interface CreateProjectInput {
   rentals: RentalItem[];
 }
 
+// API / service 回傳：建立後的專案含租借項目
+export type ProjectWithRentals = import("@/lib/generated/prisma/client").Project & {
+  rentals: import("@/lib/generated/prisma/client").ProjectRental[];
+};
+
 // Mock data for projects page (replace with API later)
 export const MOCK_PROJECTS: Project[] = [
   {

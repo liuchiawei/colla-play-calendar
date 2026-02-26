@@ -265,3 +265,57 @@ model CommentLike {
   @@unique([commentId, anonymousSessionId]) // 匿名用戶不能重複按讚同一留言
   @@map("comment_like")
 }
+
+// ============================================
+// 專案／租借モデル（dashboard-new create project）
+// ============================================
+
+// 專案狀態枚舉
+enum ProjectStatus {
+  negotiating  // 洽談中
+  deposit_paid // 已付訂金
+}
+
+// 專案主檔（客戶＋專案資訊）
+model Project {
+  id                  String         @id @default(cuid())
+  contactName         String // 聯絡人姓名
+  contactPhone        String // 聯絡電話
+  company             String? // 公司（選填）
+  taxId               String? // 統編（選填）
+  eventOrVenueUse     String // 活動或場地用途
+  totalAttendees      Int? // 預計人數
+  tables              String? // 桌數等
+  chairs              Int? // 椅子數
+  fnbItems            String? // 餐飲項目
+  projectNotes        String? // 專案備註
+  collaPlayContactId  String // CollaPlay 窗口 ID（目前字串，未來可改 FK）
+  internalNotes       String? // 內部備註
+  status              ProjectStatus  @default(negotiating)
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  rentals             ProjectRental[]
+
+  @@map("project")
+}
+
+// 專案租借項目（一專案多筆）
+model ProjectRental {
+  id                    String   @id @default(cuid())
+  projectId             String
+  date                  String   @db.VarChar(10) // YYYY-MM-DD
+  startTime             String   @db.VarChar(5) // HH:mm
+  endTime               String   @db.VarChar(5) // HH:mm
+  setupMinutesBefore   Int      @default(30)
+  teardownMinutesAfter Int      @default(30)
+  rentalAmount         Int      @default(0) // 場地費
+  fnbAmount            Int      @default(0) // 餐飲費
+  paidAmount           Int      @default(0) // 已付
+  pendingAmount        Int      @default(0) // 待付
+  spaceIds             String[] // 場域 ID 陣列（PostgreSQL）
+  project              Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([date])
+  @@map("project_rental")
+}

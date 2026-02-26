@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, useFieldArray, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -93,7 +94,7 @@ const defaultRental: CreateProjectFormValues["rentals"][0] = {
 
 export function CreateProjectForm() {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [isPending, startTransition] = useTransition();
 
   const form = useForm<CreateProjectFormValues>({
     resolver: zodResolver(createProjectSchema) as Resolver<CreateProjectFormValues>,
@@ -119,23 +120,32 @@ export function CreateProjectForm() {
     name: "rentals",
   });
 
-  const onSubmit = form.handleSubmit(async (data: CreateProjectFormValues) => {
-    setIsSubmitting(true);
-    try {
-      const payload: CreateProjectInput = {
-        ...data,
-        rentals: data.rentals.map((r) => ({
-          ...r,
-          setupMinutesBefore: r.setupMinutesBefore ?? 30,
-          teardownMinutesAfter: r.teardownMinutesAfter ?? 30,
-        })),
-      };
-      // TODO: replace with API call
-      console.log("CreateProject payload", payload);
-      router.push("/dashboard-new/projects");
-    } finally {
-      setIsSubmitting(false);
-    }
+  const onSubmit = form.handleSubmit((data: CreateProjectFormValues) => {
+    const payload: CreateProjectInput = {
+      ...data,
+      rentals: data.rentals.map((r) => ({
+        ...r,
+        setupMinutesBefore: r.setupMinutesBefore ?? 30,
+        teardownMinutesAfter: r.teardownMinutesAfter ?? 30,
+      })),
+    };
+    startTransition(async () => {
+      try {
+        const response = await fetch("/api/projects", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const json = await response.json().catch(() => ({})) as { success?: boolean; error?: string };
+        if (!response.ok) {
+          form.setError("root", { message: json?.error ?? "提交失敗，請稍後再試" });
+          return;
+        }
+        router.push("/dashboard-new/projects");
+      } catch {
+        form.setError("root", { message: "網路錯誤，請稍後再試" });
+      }
+    });
   });
 
   const onError = React.useCallback(() => {
@@ -822,9 +832,14 @@ export function CreateProjectForm() {
           </CardContent>
         </Card>
 
+        {form.formState.errors.root?.message && (
+          <p className="text-sm text-destructive" role="alert">
+            {form.formState.errors.root.message}
+          </p>
+        )}
         <div className="flex justify-end">
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting
+          <Button type="submit" disabled={isPending}>
+            {isPending
               ? CREATE_PROJECT_PAGE.submitting
               : CREATE_PROJECT_PAGE.submit}
           </Button>
