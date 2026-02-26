@@ -96,22 +96,24 @@ export function OverviewContent({
         ) : (
           <ul className="flex-1 list-none p-0 m-0" role="list">
             {recentProjects.map((project) => (
-              <li
-                key={project.id}
-                className="flex items-center justify-between gap-3 py-2 border-b border-border/50 last:border-0 min-w-0"
-              >
-                <div className="min-w-0 flex-1">
-                  <span className="text-sm font-medium truncate block">
-                    {project.customer}
+              <li key={project.id}>
+                <Link
+                  href={`/dashboard-new/projects/${project.id}`}
+                  className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border/50 last:border-0 min-w-0 hover:bg-accent/20 rounded-xs"
+                >
+                  <div className="min-w-0 flex-1">
+                    <span className="text-sm font-medium truncate block">
+                      {project.customer}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {DATE_FORMATTER.format(new Date(project.date))} ·{" "}
+                      {getStatusLabel(project.status)}
+                    </span>
+                  </div>
+                  <span className="text-sm tabular-nums shrink-0">
+                    {CURRENCY_FORMATTER.format(project.amount)}
                   </span>
-                  <span className="text-xs text-muted-foreground">
-                    {DATE_FORMATTER.format(new Date(project.date))} ·{" "}
-                    {getStatusLabel(project.status)}
-                  </span>
-                </div>
-                <span className="text-sm tabular-nums shrink-0">
-                  {CURRENCY_FORMATTER.format(project.amount)}
-                </span>
+                </Link>
               </li>
             ))}
           </ul>

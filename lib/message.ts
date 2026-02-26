@@ -205,6 +205,58 @@ export const CREATE_PROJECT_PAGE = {
   errorEndBeforeStart: "結束時間須晚於開始時間",
 } as const;
 
+// Project Detail Page (專案詳情頁)
+export const PROJECT_DETAIL_PAGE = {
+  title: "專案詳情",
+  description: "檢視與編輯專案資訊",
+
+  sectionCustomer: "客戶資訊",
+  sectionProject: "專案資訊",
+  sectionNotes: "備註",
+  sectionRentals: "租借項目",
+
+  labelCustomerName: "客戶名稱",
+  labelPhone: "聯絡電話",
+  labelCompany: "公司行號",
+  labelTaxId: "統一編號",
+  labelEventOrVenueUse: "活動名稱或場地用途",
+  labelTotalAttendees: "活動總人數",
+  labelTables: "桌子需求",
+  labelChairs: "椅子需求",
+  labelFnb: "餐飲品項",
+  labelProjectNotes: "專案備註",
+  labelCollaPlayContact: "CollaPlay 接洽人",
+  labelInternalNotes: "內部備註",
+  labelStatus: "狀態",
+  labelCreatedAt: "建立時間",
+  labelUpdatedAt: "更新時間",
+
+  labelDate: "日期",
+  labelTimeRange: "時段",
+  labelSpaces: "場域",
+  labelRentalAmount: "場租",
+  labelFnbAmount: "餐飲",
+  labelPaidAmount: "已付",
+  labelPendingAmount: "待付",
+  totalAmount: "總金額",
+
+  buttonEdit: "編輯",
+  buttonDelete: "刪除",
+  buttonSave: "儲存",
+  buttonCancel: "取消",
+  buttonBackToList: "返回列表",
+
+  deleteConfirmTitle: "確認刪除專案",
+  deleteConfirmDescription: "刪除後無法復原，確定要刪除此專案嗎？",
+  deleteConfirmConfirm: "刪除",
+  deleteConfirmCancel: "取消",
+
+  updateSuccess: "已儲存",
+  updateError: "更新失敗",
+  deleteError: "刪除失敗",
+  notFound: "找不到此專案",
+} as const;
+
 // Type exports for type safety
 export type StoreMessages = typeof STORE_MESSAGES;
 export type NavLabels = typeof NAV_LABELS;
@@ -216,3 +268,4 @@ export type SpaceMessages = typeof SPACE_MESSAGES;
 export type DashboardOverviewMessages = typeof DASHBOARD_OVERVIEW;
 export type ProjectsPageMessages = typeof PROJECTS_PAGE;
 export type CreateProjectPageMessages = typeof CREATE_PROJECT_PAGE;
+export type ProjectDetailPageMessages = typeof PROJECT_DETAIL_PAGE;

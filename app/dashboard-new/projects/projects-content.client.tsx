@@ -35,7 +35,7 @@ function filterProjects(projects: Project[], query: string): Project[] {
       p.customer.toLowerCase().includes(q) ||
       p.eventOrVenueUse.toLowerCase().includes(q) ||
       p.space.toLowerCase().includes(q) ||
-      p.contactPerson.toLowerCase().includes(q)
+      p.contactPerson.toLowerCase().includes(q),
   );
 }
 
@@ -54,7 +54,7 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
 
   const filteredProjects = React.useMemo(
     () => filterProjects(projects, searchQuery),
-    [projects, searchQuery]
+    [projects, searchQuery],
   );
 
   const searchInputId = "projects-search";
@@ -109,7 +109,9 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
             </TableCaption>
             <TableHeader>
               <TableRow>
-                <TableHead scope="col">{PROJECTS_PAGE.columnCustomer}</TableHead>
+                <TableHead scope="col">
+                  {PROJECTS_PAGE.columnCustomer}
+                </TableHead>
                 <TableHead scope="col">
                   {PROJECTS_PAGE.columnEventOrVenueUse}
                 </TableHead>
@@ -129,7 +131,12 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
                     {project.customer}
                   </TableCell>
                   <TableCell className="min-w-0 max-w-[180px] truncate">
-                    {project.eventOrVenueUse}
+                    <Link
+                      href={`/dashboard-new/projects/${project.id}`}
+                      className="font-medium text-primary hover:underline focus:outline-none focus:underline"
+                    >
+                      {project.eventOrVenueUse}
+                    </Link>
                   </TableCell>
                   <TableCell className="min-w-0 max-w-[160px] truncate">
                     {project.space}

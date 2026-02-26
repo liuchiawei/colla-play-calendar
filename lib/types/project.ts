@@ -46,6 +46,24 @@ export interface CreateProjectInput {
   rentals: RentalItem[];
 }
 
+/** 更新專案用，與 Create 相同欄位；RentalItem 可帶 id 表示更新既有，無 id 表示新增；未在列表中的既有 rental 會被刪除 */
+export interface UpdateProjectInput {
+  customerName: string;
+  customerPhone: string;
+  company?: string;
+  taxId?: string;
+  eventOrVenueUse: string;
+  totalAttendees?: number;
+  tables?: string;
+  chairs?: number;
+  fnbItems?: string;
+  projectNotes?: string;
+  collaPlayContactId: string;
+  internalNotes?: string;
+  status?: ProjectStatus;
+  rentals: (RentalItem & { id?: string })[];
+}
+
 // API / service 回傳：建立後的專案含租借項目
 export type ProjectWithRentals = import("@/lib/generated/prisma/client").Project & {
   rentals: import("@/lib/generated/prisma/client").ProjectRental[];

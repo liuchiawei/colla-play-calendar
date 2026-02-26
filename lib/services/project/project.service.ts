@@ -9,6 +9,7 @@ import prisma from "@/lib/prisma";
 import { getSpaceNameById } from "@/lib/config";
 import type {
   CreateProjectInput,
+  UpdateProjectInput,
   ProjectWithRentals,
   Project,
   OverviewStatsData,
@@ -107,6 +108,93 @@ export const getOverviewStats = cache(async (): Promise<OverviewStatsData> => {
     todayReservations,
   };
 });
+
+/**
+ * 取得單一專案（含 rentals），以 React.cache 做 per-request 去重
+ */
+async function getProjectByIdImpl(id: string): Promise<ProjectWithRentals | null> {
+  const project = await prisma.project.findUnique({
+    where: { id },
+    include: { rentals: true },
+  });
+  return project as ProjectWithRentals | null;
+}
+
+export const getProjectById = cache(getProjectByIdImpl);
+
+/**
+ * 更新專案（主檔 + 租借項目）
+ * 策略：主檔 update；rentals 先刪除該專案下全部再依 input.rentals 建立（簡化實作）
+ */
+export async function updateProject(
+  id: string,
+  input: UpdateProjectInput
+): Promise<ProjectWithRentals> {
+  if (!input.rentals?.length) {
+    throw new Error("至少需一筆租借項目");
+  }
+  for (const r of input.rentals) {
+    if (!r.spaceIds?.length) {
+      throw new Error("每筆租借項目至少需選擇一個場域");
+    }
+    const startTime = typeof r.startTime === "string" ? r.startTime : "";
+    const endTime = typeof r.endTime === "string" ? r.endTime : "";
+    if (!startTime || !endTime || endTime <= startTime) {
+      throw new Error("結束時間必須晚於開始時間");
+    }
+  }
+
+  const updated = await prisma.$transaction(async (tx) => {
+    await tx.projectRental.deleteMany({ where: { projectId: id } });
+    await tx.project.update({
+      where: { id },
+      data: {
+        customerName: input.customerName,
+        customerPhone: input.customerPhone,
+        company: input.company ?? null,
+        taxId: input.taxId ?? null,
+        eventOrVenueUse: input.eventOrVenueUse,
+        totalAttendees: input.totalAttendees ?? null,
+        tables: input.tables ?? null,
+        chairs: input.chairs ?? null,
+        fnbItems: input.fnbItems ?? null,
+        projectNotes: input.projectNotes ?? null,
+        collaPlayContactId: input.collaPlayContactId,
+        internalNotes: input.internalNotes ?? null,
+        ...(input.status != null && { status: input.status }),
+      },
+    });
+    for (const r of input.rentals) {
+      await tx.projectRental.create({
+        data: {
+          projectId: id,
+          date: r.date,
+          startTime: r.startTime,
+          endTime: r.endTime,
+          setupMinutesBefore: r.setupMinutesBefore ?? 30,
+          teardownMinutesAfter: r.teardownMinutesAfter ?? 30,
+          rentalAmount: Math.max(0, Math.round(r.rentalAmount)),
+          fnbAmount: Math.max(0, Math.round(r.fnbAmount)),
+          paidAmount: Math.max(0, Math.round(r.paidAmount)),
+          pendingAmount: Math.max(0, Math.round(r.pendingAmount)),
+          spaceIds: r.spaceIds,
+        },
+      });
+    }
+    return tx.project.findUniqueOrThrow({
+      where: { id },
+      include: { rentals: true },
+    });
+  });
+  return updated as ProjectWithRentals;
+}
+
+/**
+ * 刪除專案（rentals 依 schema onDelete: Cascade 一併刪除）
+ */
+export async function deleteProject(id: string): Promise<void> {
+  await prisma.project.delete({ where: { id } });
+}
 
 /**
  * 建立專案（含多筆租借項目）
