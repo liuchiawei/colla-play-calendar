@@ -4,6 +4,12 @@ import * as React from "react";
 import Link from "next/link";
 import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -27,16 +33,30 @@ const CURRENCY_FORMATTER = new Intl.NumberFormat("zh-TW", {
   currency: "TWD",
 });
 
-function filterProjects(projects: Project[], query: string): Project[] {
+/** Subsequence fuzzy match: query chars appear in order in text. */
+function fuzzyMatch(text: string, query: string): boolean {
+  const t = text.toLowerCase();
   const q = query.trim().toLowerCase();
+  if (!q) return true;
+  let j = 0;
+  for (let i = 0; i < t.length && j < q.length; i++) {
+    if (t[i] === q[j]) j++;
+  }
+  return j === q.length;
+}
+
+function filterProjectsFuzzy(projects: Project[], query: string): Project[] {
+  const q = query.trim();
   if (!q) return projects;
-  return projects.filter(
-    (p) =>
-      p.customer.toLowerCase().includes(q) ||
-      p.eventOrVenueUse.toLowerCase().includes(q) ||
-      p.space.toLowerCase().includes(q) ||
-      p.contactPerson.toLowerCase().includes(q),
-  );
+  return projects.filter((p) => {
+    const fields = [
+      p.customer,
+      p.eventOrVenueUse,
+      p.space,
+      p.contactPerson,
+    ].filter(Boolean);
+    return fields.some((field) => fuzzyMatch(field, q));
+  });
 }
 
 function getStatusLabel(status: Project["status"]): string {
@@ -51,13 +71,15 @@ interface ProjectsContentProps {
 
 export function ProjectsContent({ projects }: ProjectsContentProps) {
   const [searchQuery, setSearchQuery] = React.useState("");
+  const [searchOpen, setSearchOpen] = React.useState(false);
 
   const filteredProjects = React.useMemo(
-    () => filterProjects(projects, searchQuery),
+    () => filterProjectsFuzzy(projects, searchQuery),
     [projects, searchQuery],
   );
 
   const searchInputId = "projects-search";
+  const dropdownResultsLimit = 8;
 
   return (
     <div className="flex-1 p-6 flex flex-col gap-6">
@@ -73,25 +95,65 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
           </Button>
         </Link>
 
-        <div className="relative flex-1 sm:max-w-md">
-          <Label htmlFor={searchInputId} className="sr-only">
-            {PROJECTS_PAGE.searchAriaLabel}
-          </Label>
-          <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none"
-            aria-hidden
-          />
-          <Input
-            id={searchInputId}
-            type="search"
-            autoComplete="off"
-            placeholder={PROJECTS_PAGE.searchPlaceholder}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
-            aria-label={PROJECTS_PAGE.searchAriaLabel}
-          />
-        </div>
+        <DropdownMenu open={searchOpen} onOpenChange={setSearchOpen}>
+          <DropdownMenuTrigger asChild>
+            <div className="relative flex-1 sm:max-w-md">
+              <Label htmlFor={searchInputId} className="sr-only">
+                {PROJECTS_PAGE.searchAriaLabel}
+              </Label>
+              <Search
+                className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none"
+                aria-hidden
+              />
+              <Input
+                id={searchInputId}
+                type="search"
+                autoComplete="off"
+                placeholder={PROJECTS_PAGE.searchPlaceholder}
+                value={searchQuery}
+                onChange={(e) =>
+                  React.startTransition(() =>
+                    setSearchQuery(e.target.value),
+                  )
+                }
+                onFocus={() => setSearchOpen(true)}
+                className="pl-9"
+                aria-label={PROJECTS_PAGE.searchAriaLabel}
+              />
+            </div>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            className="max-h-[min(20rem,var(--radix-dropdown-menu-content-available-height))] w-[var(--radix-dropdown-menu-trigger-width)] overflow-y-auto"
+            align="start"
+            sideOffset={4}
+          >
+            {filteredProjects.length === 0 ? (
+              <div className="py-6 text-center text-sm text-muted-foreground px-2">
+                {searchQuery.trim()
+                  ? PROJECTS_PAGE.searchNoResults
+                  : PROJECTS_PAGE.emptyProjects}
+              </div>
+            ) : (
+              filteredProjects.slice(0, dropdownResultsLimit).map((project) => (
+                <DropdownMenuItem key={project.id} asChild>
+                  <Link
+                    href={`/dashboard-new/projects/${project.id}`}
+                    className="block cursor-pointer"
+                    onClick={() => setSearchOpen(false)}
+                  >
+                    <span className="font-medium truncate block">
+                      {project.eventOrVenueUse}
+                    </span>
+                    <span className="text-muted-foreground text-xs truncate block">
+                      {project.customer}
+                      {project.space ? ` · ${project.space}` : ""}
+                    </span>
+                  </Link>
+                </DropdownMenuItem>
+              ))
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <section

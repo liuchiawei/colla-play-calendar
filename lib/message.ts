@@ -132,6 +132,7 @@ export const PROJECTS_PAGE = {
   createNewProjectAria: "建立新專案",
   searchPlaceholder: "搜尋客戶、活動名稱、場域、接洽人…",
   searchAriaLabel: "搜尋專案",
+  searchNoResults: "搜尋無結果",
   tableCaption: "專案列表",
   columnCustomer: "客戶",
   columnEventOrVenueUse: "活動名稱或場地用途",
