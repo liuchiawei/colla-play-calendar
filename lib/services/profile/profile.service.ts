@@ -9,7 +9,7 @@
 import { unstable_cache } from "next/cache";
 import { revalidateTag } from "next/cache";
 import prisma from "@/lib/prisma";
-import type { Prisma } from "@/lib/generated/prisma/client";
+import { Prisma } from "@/lib/generated/prisma/client";
 import type {
   Profile,
   ProfileUpdateInput,
@@ -124,10 +124,10 @@ export async function updateProfile(
       gender: data.gender ?? null,
       occupation: data.occupation ?? null,
       education: data.education ?? null,
-      skills: data.skills ? (data.skills as Prisma.JsonValue) : null,
+      skills: (data.skills != null ? (data.skills as Prisma.InputJsonValue) : Prisma.JsonNull) as Prisma.NullableJsonNullValueInput | Prisma.InputJsonValue,
       bio: data.bio ?? null,
-      extra: data.extra ? (data.extra as Prisma.JsonValue) : null,
-      visibility: data.visibility ? (data.visibility as Prisma.JsonValue) : null,
+      extra: (data.extra != null ? (data.extra as Prisma.InputJsonValue) : Prisma.JsonNull) as Prisma.NullableJsonNullValueInput | Prisma.InputJsonValue,
+      visibility: (data.visibility != null ? (data.visibility as Prisma.InputJsonValue) : Prisma.JsonNull) as Prisma.NullableJsonNullValueInput | Prisma.InputJsonValue,
     },
     update: {
       displayName:
@@ -136,11 +136,19 @@ export async function updateProfile(
       gender: data.gender !== undefined ? data.gender : undefined,
       occupation: data.occupation !== undefined ? data.occupation : undefined,
       education: data.education !== undefined ? data.education : undefined,
-      skills: data.skills !== undefined ? (data.skills as Prisma.JsonValue) : undefined,
+      skills:
+        data.skills === undefined
+          ? undefined
+          : (data.skills === null ? Prisma.JsonNull : (data.skills as Prisma.InputJsonValue)) as Prisma.NullableJsonNullValueInput | Prisma.InputJsonValue,
       bio: data.bio !== undefined ? data.bio : undefined,
-      extra: data.extra !== undefined ? (data.extra as Prisma.JsonValue) : undefined,
+      extra:
+        data.extra === undefined
+          ? undefined
+          : (data.extra === null ? Prisma.JsonNull : (data.extra as Prisma.InputJsonValue)) as Prisma.NullableJsonNullValueInput | Prisma.InputJsonValue,
       visibility:
-        data.visibility !== undefined ? (data.visibility as Prisma.JsonValue) : undefined,
+        data.visibility === undefined
+          ? undefined
+          : (data.visibility === null ? Prisma.JsonNull : (data.visibility as Prisma.InputJsonValue)) as Prisma.NullableJsonNullValueInput | Prisma.InputJsonValue,
     },
   });
 
