@@ -279,8 +279,8 @@ enum ProjectStatus {
 // 專案主檔（客戶＋專案資訊）
 model Project {
   id                  String         @id @default(cuid())
-  contactName         String // 聯絡人姓名
-  contactPhone        String // 聯絡電話
+  customerName        String         @map("contactName") // 客戶姓名（DB 欄位名 contactName）
+  customerPhone       String         @map("contactPhone") // 聯絡電話（DB 欄位名 contactPhone）
   company             String? // 公司（選填）
   taxId               String? // 統編（選填）
   eventOrVenueUse     String // 活動或場地用途

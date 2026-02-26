@@ -5,7 +5,7 @@ export type ProjectStatus = "negotiating" | "deposit_paid";
 
 export interface Project {
   id: string;
-  /** 對應 DB contactName（聯絡人姓名） */
+  /** 對應 DB customerName（客戶姓名） */
   customer: string;
   eventOrVenueUse: string;
   space: string;
@@ -31,8 +31,8 @@ export interface RentalItem {
 }
 
 export interface CreateProjectInput {
-  contactName: string;
-  contactPhone: string;
+  customerName: string;
+  customerPhone: string;
   company?: string;
   taxId?: string;
   eventOrVenueUse: string;

@@ -59,8 +59,8 @@ const rentalItemSchema = z
   });
 
 const createProjectSchema = z.object({
-  contactName: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
-  contactPhone: z
+  customerName: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
+  customerPhone: z
     .string()
     .min(1, CREATE_PROJECT_PAGE.errorRequired)
     .regex(/^[\d\s\-]+$/, CREATE_PROJECT_PAGE.errorPhoneInvalid),
@@ -99,8 +99,8 @@ export function CreateProjectForm() {
   const form = useForm<CreateProjectFormValues>({
     resolver: zodResolver(createProjectSchema) as Resolver<CreateProjectFormValues>,
     defaultValues: {
-      contactName: "",
-      contactPhone: "",
+      customerName: "",
+      customerPhone: "",
       company: "",
       taxId: "",
       eventOrVenueUse: "",
@@ -193,18 +193,18 @@ export function CreateProjectForm() {
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <FormField
               control={form.control}
-              name="contactName"
+              name="customerName"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel aria-required>
-                    {CREATE_PROJECT_PAGE.labelContactNameRequired}
+                    {CREATE_PROJECT_PAGE.labelCustomerNameRequired}
                   </FormLabel>
                   <FormControl>
                     <Input
                       {...field}
                       autoComplete="name"
                       name={field.name}
-                      placeholder={CREATE_PROJECT_PAGE.placeholderContactName}
+                      placeholder={CREATE_PROJECT_PAGE.placeholderCustomerName}
                     />
                   </FormControl>
                   <FormMessage />
@@ -213,7 +213,7 @@ export function CreateProjectForm() {
             />
             <FormField
               control={form.control}
-              name="contactPhone"
+              name="customerPhone"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel aria-required>

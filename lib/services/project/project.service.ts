@@ -36,7 +36,7 @@ export async function getProjectsForList(): Promise<Project[]> {
 
     return {
       id: row.id,
-      customer: row.contactName,
+      customer: row.customerName,
       eventOrVenueUse: row.eventOrVenueUse,
       space,
       date,
@@ -75,8 +75,8 @@ export async function createProject(
   const project = await prisma.$transaction(async (tx) => {
     const created = await tx.project.create({
       data: {
-        contactName: input.contactName,
-        contactPhone: input.contactPhone,
+        customerName: input.customerName,
+        customerPhone: input.customerPhone,
         company: input.company ?? null,
         taxId: input.taxId ?? null,
         eventOrVenueUse: input.eventOrVenueUse,

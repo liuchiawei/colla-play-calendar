@@ -147,9 +147,9 @@ export const CREATE_PROJECT_PAGE = {
   sectionNotes: "專案備註",
   sectionRentals: "租借項目",
 
-  labelContactName: "客戶聯絡人",
-  labelContactNameRequired: "客戶聯絡人 *",
-  placeholderContactName: "請輸入姓名…",
+  labelCustomerName: "客戶名稱",
+  labelCustomerNameRequired: "客戶名稱 *",
+  placeholderCustomerName: "請輸入姓名…",
   labelPhone: "聯絡電話",
   labelPhoneRequired: "聯絡電話 *",
   placeholderPhone: "0912-345-678",

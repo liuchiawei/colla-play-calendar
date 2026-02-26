@@ -14,10 +14,10 @@ function validateCreateProjectInput(
     return { ok: false, error: "請提供專案資料" };
   }
   const b = body as Record<string, unknown>;
-  if (!b.contactName || typeof b.contactName !== "string" || !b.contactName.trim()) {
+  if (!b.customerName || typeof b.customerName !== "string" || !b.customerName.trim()) {
     return { ok: false, error: "聯絡人姓名為必填" };
   }
-  if (!b.contactPhone || typeof b.contactPhone !== "string" || !b.contactPhone.trim()) {
+  if (!b.customerPhone || typeof b.customerPhone !== "string" || !b.customerPhone.trim()) {
     return { ok: false, error: "聯絡電話為必填" };
   }
   if (!b.eventOrVenueUse || typeof b.eventOrVenueUse !== "string" || !b.eventOrVenueUse.trim()) {
