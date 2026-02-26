@@ -138,6 +138,7 @@ export const SPACES_4F: Space[] = [
   spaceFromSlug("4F", "product-photo"),
   spaceFromSlug("4F", "event-lounge"),
   spaceFromSlug("4F", "screening-room"),
+  spaceFromSlug("4F", "tik-&-sip"),
 ];
 
 export const SPACES_5F: Space[] = [spaceFromSlug("5F", "exhibition-hall")];
