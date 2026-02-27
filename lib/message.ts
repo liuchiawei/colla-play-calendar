@@ -39,6 +39,7 @@ export const DASHBOARD_NEW_LABELS = {
   overview: "總覽",
   spaces: "場域列表",
   projects: "專案管理",
+  users: "成員管理",
   reports: "報表下載",
 } as const;
 
@@ -58,6 +59,10 @@ export const SPACE_MESSAGES: Record<
   "multipurpose-room": {
     name: "空白分頁／多功能教室",
     description: "彈性時段制，適合課程、工作坊與團體活動",
+  },
+  "tik-&-sip": {
+    name: "Tik & Sip",
+    description: "自然酒酒吧，適合小酌與放鬆",
   },
   "podcast-studio": {
     name: "水下的聲音／Podcast 錄音室",
@@ -103,6 +108,10 @@ export const SPACE_DETAIL_PAGE = {
   buttonBackToList: "返回場域列表",
   emptyProjects: "此場域尚無專案",
   tableCaption: "專案列表",
+  tabCalendarView: "月曆",
+  tabListView: "列表",
+  tabsAriaLabel: "專案檢視方式",
+  emptyDayProjects: "當日無專案",
 } as const;
 
 // Dashboard Overview (總覽頁區塊)
@@ -254,6 +263,7 @@ export const PROJECT_DETAIL_PAGE = {
   buttonSave: "儲存",
   buttonCancel: "取消",
   buttonBackToList: "返回列表",
+  buttonDownloadCsv: "下載 CSV",
 
   deleteConfirmTitle: "確認刪除專案",
   deleteConfirmDescription: "刪除後無法復原，確定要刪除此專案嗎？",
@@ -264,6 +274,51 @@ export const PROJECT_DETAIL_PAGE = {
   updateError: "更新失敗",
   deleteError: "刪除失敗",
   notFound: "找不到此專案",
+} as const;
+
+// Users Page (成員管理頁 /dashboard-new/users)
+export const USERS_PAGE = {
+  title: "成員管理",
+  description: "檢視與管理所有成員",
+  searchPlaceholder: "搜尋姓名或 Email…",
+  searchAriaLabel: "搜尋成員",
+  filterLabel: "篩選",
+  filterAll: "全部用戶",
+  filterAdmin: "僅管理員",
+  filterUser: "僅一般用戶",
+  tableCaption: "成員列表",
+  columnName: "姓名",
+  columnEmail: "Email",
+  columnCreatedAt: "註冊時間",
+  columnVerified: "驗證狀態",
+  columnAdmin: "管理員",
+  columnActions: "操作",
+  verified: "已驗證",
+  unverified: "未驗證",
+  adminBadge: "管理員",
+  buttonEdit: "編輯",
+  buttonDelete: "刪除",
+  buttonSave: "儲存",
+  buttonCancel: "取消",
+  buttonRefresh: "重新整理",
+  buttonRefreshAria: "重新載入列表",
+  editDialogTitle: "編輯成員",
+  editDialogDescription: "修改成員姓名",
+  editLabelName: "姓名",
+  editPlaceholderName: "請輸入姓名…",
+  deleteConfirmTitle: "確認刪除成員",
+  deleteConfirmDescription: "刪除後無法復原，確定要刪除此成員嗎？",
+  deleteConfirmConfirm: "刪除",
+  deleteConfirmCancel: "取消",
+  emptyUsers: "尚無成員或搜尋無結果",
+  emptyHint: "嘗試調整搜尋條件",
+  paginationRange: "第 {from}–{to} 筆，共 {total} 筆",
+  paginationPrev: "上一頁",
+  paginationNext: "下一頁",
+  updateSuccess: "已儲存",
+  updateError: "更新失敗",
+  deleteError: "刪除失敗",
+  toggleAdminAria: "切換 {name} 的管理員狀態",
 } as const;
 
 // Type exports for type safety
@@ -278,3 +333,4 @@ export type DashboardOverviewMessages = typeof DASHBOARD_OVERVIEW;
 export type ProjectsPageMessages = typeof PROJECTS_PAGE;
 export type CreateProjectPageMessages = typeof CREATE_PROJECT_PAGE;
 export type ProjectDetailPageMessages = typeof PROJECT_DETAIL_PAGE;
+export type UsersPageMessages = typeof USERS_PAGE;

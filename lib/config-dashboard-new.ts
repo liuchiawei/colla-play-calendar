@@ -2,6 +2,7 @@ import {
   LayoutDashboard,
   Building2,
   FolderKanban,
+  Users,
   FileDown,
 } from "lucide-react";
 import { DASHBOARD_NEW_LABELS } from "./message";
@@ -32,9 +33,9 @@ export const dashboardNewNavigation: DashboardNewNavItem[] = [
     icon: FolderKanban,
   },
   {
-    href: "/dashboard-new/reports",
-    label: DASHBOARD_NEW_LABELS.reports,
-    icon: FileDown,
+    href: "/dashboard-new/users",
+    label: DASHBOARD_NEW_LABELS.users,
+    icon: Users,
   },
 ];
 

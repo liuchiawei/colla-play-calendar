@@ -3,7 +3,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/services/auth/auth-server.service";
 import prisma from "@/lib/prisma";
-import type { ApiResponse, UpdateUserInput, UserWithAdmin } from "@/lib/types";
+import type { ApiResponse, UserWithAdmin } from "@/lib/types";
 import { z } from "zod";
 
 type RouteContext = {
@@ -103,6 +103,65 @@ export async function PATCH(
       {
         success: false,
         error: "更新用戶信息失敗",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE /api/users/[userId] - 刪除用戶（僅管理員可訪問，不可刪除自己）
+export async function DELETE(
+  _request: NextRequest,
+  context: RouteContext
+) {
+  try {
+    const adminResult = await requireAdmin(_request);
+
+    if (adminResult instanceof NextResponse) {
+      return adminResult;
+    }
+
+    const { userId: currentUserId } = adminResult;
+    const { userId } = await context.params;
+
+    if (currentUserId === userId) {
+      return NextResponse.json<ApiResponse<null>>(
+        {
+          success: false,
+          error: "無法刪除自己的帳號",
+        },
+        { status: 400 }
+      );
+    }
+
+    const targetUser = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!targetUser) {
+      return NextResponse.json<ApiResponse<null>>(
+        {
+          success: false,
+          error: "用戶不存在",
+        },
+        { status: 404 }
+      );
+    }
+
+    await prisma.user.delete({
+      where: { id: userId },
+    });
+
+    return NextResponse.json<ApiResponse<null>>({
+      success: true,
+      data: null,
+    });
+  } catch (error) {
+    console.error("Failed to delete user:", error);
+    return NextResponse.json<ApiResponse<null>>(
+      {
+        success: false,
+        error: "刪除用戶失敗",
       },
       { status: 500 }
     );
