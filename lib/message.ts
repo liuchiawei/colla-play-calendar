@@ -59,6 +59,10 @@ export const SPACE_MESSAGES: Record<
     name: "空白分頁／多功能教室",
     description: "彈性時段制，適合課程、工作坊與團體活動",
   },
+  "tik-&-sip": {
+    name: "Tik & Sip",
+    description: "自然酒酒吧，適合小酌與放鬆",
+  },
   "podcast-studio": {
     name: "水下的聲音／Podcast 錄音室",
     description: "專業 Podcast 錄音空間，配備高品質錄音設備",
@@ -103,6 +107,10 @@ export const SPACE_DETAIL_PAGE = {
   buttonBackToList: "返回場域列表",
   emptyProjects: "此場域尚無專案",
   tableCaption: "專案列表",
+  tabCalendarView: "月曆",
+  tabListView: "列表",
+  tabsAriaLabel: "專案檢視方式",
+  emptyDayProjects: "當日無專案",
 } as const;
 
 // Dashboard Overview (總覽頁區塊)

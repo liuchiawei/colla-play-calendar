@@ -25,7 +25,7 @@ function getSpacesForTab(value: TabValue): Space[] {
 function SpaceCard({ space }: { space: Space }) {
   return (
     <li className="min-w-0 list-none">
-      <Link href={`/dashboard-new/spaces/${space.name}`}>
+      <Link href={`/dashboard-new/spaces/${space.id}`}>
         <Card className="transition-[box-shadow] hover:shadow-md motion-reduce:transition-none">
           <CardHeader className="pb-2">
             <div className="flex items-start justify-between gap-3">
