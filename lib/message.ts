@@ -262,6 +262,7 @@ export const PROJECT_DETAIL_PAGE = {
   buttonSave: "儲存",
   buttonCancel: "取消",
   buttonBackToList: "返回列表",
+  buttonDownloadCsv: "下載 CSV",
 
   deleteConfirmTitle: "確認刪除專案",
   deleteConfirmDescription: "刪除後無法復原，確定要刪除此專案嗎？",

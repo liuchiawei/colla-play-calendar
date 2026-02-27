@@ -31,11 +31,6 @@ export const dashboardNewNavigation: DashboardNewNavItem[] = [
     label: DASHBOARD_NEW_LABELS.projects,
     icon: FolderKanban,
   },
-  {
-    href: "/dashboard-new/reports",
-    label: DASHBOARD_NEW_LABELS.reports,
-    icon: FileDown,
-  },
 ];
 
 // Modern SaaS Color Palette
