@@ -104,7 +104,7 @@ export function OverviewStats({ data = MOCK_STATS }: { data?: OverviewStatsData 
       variants={containerVariants}
       initial="hidden"
       animate="show"
-      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+      className="grid grid-cols-2 lg:grid-cols-4 gap-6"
     >
       {STATS_CONFIG.map((stat) => {
         const labelId = `overview-stat-${stat.id}-label`;
@@ -139,7 +139,7 @@ export function OverviewStats({ data = MOCK_STATS }: { data?: OverviewStatsData 
                   initial={shouldReduceMotion ? false : { scale: 0.5, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={valueTransition}
-                  className="font-display font-black text-4xl tabular-nums text-primary"
+                  className="font-display font-bold text-xl tabular-nums text-primary"
                 >
                   {value}
                 </motion.p>
