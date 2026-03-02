@@ -53,6 +53,7 @@ function mapRowToProject(
     fnbItems: row.fnbItems ?? null,
     totalAttendees: row.totalAttendees ?? null,
     projectNotes: row.projectNotes ?? null,
+    rentals: row.rentals.map((r) => ({ date: r.date, spaceIds: r.spaceIds })),
   };
 }
 
