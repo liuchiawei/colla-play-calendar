@@ -61,6 +61,7 @@ function ProjectBadgeLink({
         {timeRange != null && (
           <span className="font-normal opacity-90">{timeRange}</span>
         )}
+        
       </Link>
     </Badge>
   );
