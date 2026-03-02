@@ -286,6 +286,16 @@ export const PROJECT_DETAIL_PAGE = {
   deleteConfirmConfirm: "刪除",
   deleteConfirmCancel: "取消",
 
+  deleteRentalConfirmTitle: "確認移除此筆租借",
+  deleteRentalConfirmDescription: "移除此筆租借後無法復原，確定要移除嗎？",
+  deleteRentalError: "移除失敗",
+
+  editRentalTitle: "編輯此筆租借",
+  editRentalSuccess: "已更新",
+  addRentalLabel: "新增租借",
+  addRentalDialogTitle: "新增租借項目",
+  labelOperations: "操作",
+
   updateSuccess: "已儲存",
   updateError: "更新失敗",
   deleteError: "刪除失敗",

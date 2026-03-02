@@ -54,6 +54,9 @@ export interface RentalItem {
   pendingAmount: number;
 }
 
+/** 單筆租借更新用（供 updateProjectRental / updateRental 使用） */
+export type UpdateRentalInput = RentalItem;
+
 export interface CreateProjectInput {
   customerName: string;
   customerPhone: string;

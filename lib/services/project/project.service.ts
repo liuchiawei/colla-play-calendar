@@ -11,6 +11,7 @@ import { getAdminContactOptions } from "@/lib/services/admin-contact.service";
 import type {
   CreateProjectInput,
   UpdateProjectInput,
+  UpdateRentalInput,
   ProjectWithRentals,
   Project,
   ProjectStatus,
@@ -262,6 +263,63 @@ export async function updateProject(
  */
 export async function deleteProject(id: string): Promise<void> {
   await prisma.project.delete({ where: { id } });
+}
+
+/**
+ * 單筆刪除租借項目；專案至少需保留一筆租借。
+ * @returns projectId 供 revalidate 使用
+ */
+export async function deleteProjectRental(
+  rentalId: string,
+): Promise<{ projectId: string }> {
+  const rental = await prisma.projectRental.findUnique({
+    where: { id: rentalId },
+    select: { projectId: true },
+  });
+  if (!rental) {
+    throw new Error("找不到此筆租借");
+  }
+  const count = await prisma.projectRental.count({
+    where: { projectId: rental.projectId },
+  });
+  if (count <= 1) {
+    throw new Error("至少需一筆租借項目");
+  }
+  await prisma.projectRental.delete({ where: { id: rentalId } });
+  return { projectId: rental.projectId };
+}
+
+/**
+ * 單筆更新租借項目
+ */
+export async function updateProjectRental(
+  rentalId: string,
+  input: UpdateRentalInput,
+): Promise<ProjectWithRentals["rentals"][0] & { projectId: string }> {
+  if (!input.spaceIds?.length) {
+    throw new Error("每筆租借項目至少需選擇一個場域");
+  }
+  const startTime = typeof input.startTime === "string" ? input.startTime : "";
+  const endTime = typeof input.endTime === "string" ? input.endTime : "";
+  if (!startTime || !endTime || endTime <= startTime) {
+    throw new Error("結束時間必須晚於開始時間");
+  }
+  const updated = await prisma.projectRental.update({
+    where: { id: rentalId },
+    data: {
+      date: input.date,
+      startTime: input.startTime,
+      endTime: input.endTime,
+      setupMinutesBefore: input.setupMinutesBefore ?? 30,
+      teardownMinutesAfter: input.teardownMinutesAfter ?? 30,
+      rentalAmount: Math.max(0, Math.round(input.rentalAmount)),
+      fnbAmount: Math.max(0, Math.round(input.fnbAmount)),
+      paidAmount: Math.max(0, Math.round(input.paidAmount)),
+      pendingAmount: Math.max(0, Math.round(input.pendingAmount)),
+      spaceIds: input.spaceIds,
+    },
+  });
+  return updated as ProjectWithRentals["rentals"][0] & { projectId: string };
 }
 
 /**
