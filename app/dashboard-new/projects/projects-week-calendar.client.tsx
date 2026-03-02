@@ -69,13 +69,7 @@ function StatusDot({ status }: { status: ProjectStatus }) {
   );
 }
 
-function DayColumnHeader({
-  day,
-  isToday,
-}: {
-  day: Date;
-  isToday: boolean;
-}) {
+function DayColumnHeader({ day, isToday }: { day: Date; isToday: boolean }) {
   return (
     <div
       className={cn(
@@ -156,11 +150,11 @@ export function ProjectsWeekCalendar({ projects }: ProjectsWeekCalendarProps) {
 
   return (
     <section
-      className="flex-1 min-w-0 rounded-xl border border-border bg-card/50 backdrop-blur-sm overflow-hidden flex flex-col"
+      className="flex-1 flex flex-col min-w-0 w-full rounded-xl border border-border bg-card/50 backdrop-blur-sm overflow-hidden"
       aria-label={PROJECTS_PAGE.tableCaption}
     >
       {/* 週導覽 */}
-      <div className="flex items-center justify-between gap-2 p-3 border-b border-border/50">
+      <div className="flex items-center justify-between gap-2 p-3 border-b border-border/50 w-full">
         <Button
           variant="outline"
           size="icon"

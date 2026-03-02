@@ -13,15 +13,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PROJECTS_PAGE } from "@/lib/message";
 import type { Project } from "@/lib/types/project";
@@ -32,14 +23,10 @@ const ProjectsWeekCalendar = dynamic(
   { ssr: false },
 );
 
-const DATE_FORMATTER = new Intl.DateTimeFormat("zh-TW", {
-  dateStyle: "short",
-});
-
-const CURRENCY_FORMATTER = new Intl.NumberFormat("zh-TW", {
-  style: "currency",
-  currency: "TWD",
-});
+const ProjectsList = dynamic(
+  () => import("./projects-list").then((m) => m.ProjectsList),
+  { ssr: false },
+);
 
 /** Subsequence fuzzy match: query chars appear in order in text. */
 function fuzzyMatch(text: string, query: string): boolean {
@@ -67,12 +54,6 @@ function filterProjectsFuzzy(projects: Project[], query: string): Project[] {
   });
 }
 
-function getStatusLabel(status: Project["status"]): string {
-  return status === "negotiating"
-    ? PROJECTS_PAGE.statusNegotiating
-    : PROJECTS_PAGE.statusDepositPaid;
-}
-
 interface ProjectsContentProps {
   projects: Project[];
 }
@@ -91,7 +72,8 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
 
   return (
     <div className="flex-1 p-6 flex flex-col gap-6">
-      <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+      <div className="flex flex-col md:flex-row gap-3 items-center justify-between">
+        {/* Create New Project Button */}
         <Link href="/dashboard-new/projects/new" className="shrink-0">
           <Button
             variant="default"
@@ -102,10 +84,10 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
             {PROJECTS_PAGE.createNewProject}
           </Button>
         </Link>
-
+        {/* Search Bar */}
         <DropdownMenu open={searchOpen} onOpenChange={setSearchOpen}>
           <DropdownMenuTrigger asChild>
-            <div className="relative flex-1 sm:max-w-md">
+            <div className="relative flex-1 max-w-xl w-full">
               <Label htmlFor={searchInputId} className="sr-only">
                 {PROJECTS_PAGE.searchAriaLabel}
               </Label>
@@ -166,83 +148,21 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
 
       <Tabs
         defaultValue="list"
-        className="flex-1 flex flex-col min-w-0"
+        className="flex-1 flex flex-col items-center min-w-0"
       >
         <TabsList
-          className="w-full max-w-[240px] grid grid-cols-2"
+          className="w-full md:max-w-md grid grid-cols-2"
           aria-label={PROJECTS_PAGE.tabsAriaLabel}
         >
           <TabsTrigger value="list">{PROJECTS_PAGE.tabListView}</TabsTrigger>
           <TabsTrigger value="week">{PROJECTS_PAGE.tabWeekView}</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="list" className="mt-6 flex-1 min-w-0">
-          <section
-            className="flex-1 min-w-0 rounded-xl border border-border bg-card/50 backdrop-blur-sm overflow-hidden [&_th]:p-4 [&_td]:p-4"
-            aria-label={PROJECTS_PAGE.tableCaption}
-          >
-            {filteredProjects.length === 0 ? (
-              <p className="text-muted-foreground text-sm py-12 text-center px-4">
-                {PROJECTS_PAGE.emptyProjects}
-              </p>
-            ) : (
-              <Table>
-                <TableCaption className="sr-only">
-                  {PROJECTS_PAGE.tableCaption}
-                </TableCaption>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead scope="col">
-                      {PROJECTS_PAGE.columnCustomer}
-                    </TableHead>
-                    <TableHead scope="col">
-                      {PROJECTS_PAGE.columnEventOrVenueUse}
-                    </TableHead>
-                    <TableHead scope="col">{PROJECTS_PAGE.columnSpace}</TableHead>
-                    <TableHead scope="col">{PROJECTS_PAGE.columnDate}</TableHead>
-                    <TableHead scope="col">{PROJECTS_PAGE.columnContact}</TableHead>
-                    <TableHead scope="col" className="text-right tabular-nums">
-                      {PROJECTS_PAGE.columnAmount}
-                    </TableHead>
-                    <TableHead scope="col">{PROJECTS_PAGE.columnStatus}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredProjects.map((project) => (
-                    <TableRow key={project.id}>
-                      <TableCell className="min-w-0 max-w-[120px] truncate">
-                        {project.customer}
-                      </TableCell>
-                      <TableCell className="min-w-0 max-w-[180px] truncate">
-                        <Link
-                          href={`/dashboard-new/projects/${project.id}`}
-                          className="font-medium text-primary hover:underline focus:outline-none focus:underline"
-                        >
-                          {project.eventOrVenueUse}
-                        </Link>
-                      </TableCell>
-                      <TableCell className="min-w-0 max-w-[160px] truncate">
-                        {project.space}
-                      </TableCell>
-                      <TableCell className="tabular-nums whitespace-nowrap">
-                        {DATE_FORMATTER.format(new Date(project.date))}
-                      </TableCell>
-                      <TableCell className="min-w-0 max-w-[100px] truncate">
-                        {project.contactPerson}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {CURRENCY_FORMATTER.format(project.amount)}
-                      </TableCell>
-                      <TableCell>{getStatusLabel(project.status)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </section>
+        <TabsContent value="list" className="flex-1 min-w-0">
+          <ProjectsList projects={filteredProjects} />
         </TabsContent>
 
-        <TabsContent value="week" className="mt-6 flex-1 min-w-0">
+        <TabsContent value="week" className="flex-1 min-w-0">
           <ProjectsWeekCalendar projects={projects} />
         </TabsContent>
       </Tabs>
