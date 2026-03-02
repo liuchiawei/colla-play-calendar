@@ -35,7 +35,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { CREATE_PROJECT_PAGE } from "@/lib/message";
-import { ALL_SPACES } from "@/lib/config";
+import { ALL_SPACES } from "@/lib/config/config";
 import type { CreateProjectInput } from "@/lib/types/project";
 import { cn } from "@/lib/utils";
 
@@ -100,7 +100,9 @@ export function CreateProjectForm({
   const [isPending, startTransition] = useTransition();
 
   const form = useForm<CreateProjectFormValues>({
-    resolver: zodResolver(createProjectSchema) as Resolver<CreateProjectFormValues>,
+    resolver: zodResolver(
+      createProjectSchema,
+    ) as Resolver<CreateProjectFormValues>,
     defaultValues: {
       customerName: "",
       customerPhone: "",
@@ -139,9 +141,14 @@ export function CreateProjectForm({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
-        const json = await response.json().catch(() => ({})) as { success?: boolean; error?: string };
+        const json = (await response.json().catch(() => ({}))) as {
+          success?: boolean;
+          error?: string;
+        };
         if (!response.ok) {
-          form.setError("root", { message: json?.error ?? "提交失敗，請稍後再試" });
+          form.setError("root", {
+            message: json?.error ?? "提交失敗，請稍後再試",
+          });
           return;
         }
         router.push("/dashboard-new/projects");
@@ -153,7 +160,10 @@ export function CreateProjectForm({
 
   const onError = React.useCallback(() => {
     const err = form.formState.errors as Record<string, unknown>;
-    const getFirstPath = (obj: Record<string, unknown>, prefix = ""): string | null => {
+    const getFirstPath = (
+      obj: Record<string, unknown>,
+      prefix = "",
+    ): string | null => {
       for (const k of Object.keys(obj)) {
         const v = obj[k];
         const path = prefix ? `${prefix}.${k}` : k;
@@ -164,7 +174,10 @@ export function CreateProjectForm({
           for (let i = 0; i < v.length; i++) {
             const el = v[i];
             if (el && typeof el === "object") {
-              const next = getFirstPath(el as Record<string, unknown>, `${path}.${i}`);
+              const next = getFirstPath(
+                el as Record<string, unknown>,
+                `${path}.${i}`,
+              );
               if (next) return next;
             }
           }
@@ -266,11 +279,7 @@ export function CreateProjectForm({
                     </span>
                   </FormLabel>
                   <FormControl>
-                    <Input
-                      {...field}
-                      inputMode="numeric"
-                      name={field.name}
-                    />
+                    <Input {...field} inputMode="numeric" name={field.name} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -313,7 +322,9 @@ export function CreateProjectForm({
               name="totalAttendees"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{CREATE_PROJECT_PAGE.labelTotalAttendees}</FormLabel>
+                  <FormLabel>
+                    {CREATE_PROJECT_PAGE.labelTotalAttendees}
+                  </FormLabel>
                   <FormControl>
                     <Input
                       {...field}
@@ -326,7 +337,7 @@ export function CreateProjectForm({
                         field.onChange(
                           e.target.value === ""
                             ? undefined
-                            : Number(e.target.value)
+                            : Number(e.target.value),
                         )
                       }
                     />
@@ -370,7 +381,7 @@ export function CreateProjectForm({
                         field.onChange(
                           e.target.value === ""
                             ? undefined
-                            : Number(e.target.value)
+                            : Number(e.target.value),
                         )
                       }
                     />
@@ -431,7 +442,9 @@ export function CreateProjectForm({
                     <FormControl>
                       <SelectTrigger
                         className="w-full"
-                        aria-label={CREATE_PROJECT_PAGE.labelCollaPlayContactRequired}
+                        aria-label={
+                          CREATE_PROJECT_PAGE.labelCollaPlayContactRequired
+                        }
                       >
                         <SelectValue
                           placeholder={
@@ -468,14 +481,14 @@ export function CreateProjectForm({
               name="internalNotes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{CREATE_PROJECT_PAGE.labelInternalNotes}</FormLabel>
+                  <FormLabel>
+                    {CREATE_PROJECT_PAGE.labelInternalNotes}
+                  </FormLabel>
                   <FormControl>
                     <Textarea
                       {...field}
                       name={field.name}
-                      placeholder={
-                        CREATE_PROJECT_PAGE.placeholderInternalNotes
-                      }
+                      placeholder={CREATE_PROJECT_PAGE.placeholderInternalNotes}
                       rows={3}
                       className="resize-none"
                     />
@@ -544,7 +557,9 @@ export function CreateProjectForm({
                                   checked={checked}
                                   onChange={() => {
                                     const next = checked
-                                      ? field.value.filter((id) => id !== space.id)
+                                      ? field.value.filter(
+                                          (id) => id !== space.id,
+                                        )
                                       : [...field.value, space.id];
                                     field.onChange(next);
                                   }}
@@ -583,7 +598,7 @@ export function CreateProjectForm({
                                 variant="outline"
                                 className={cn(
                                   "w-full justify-start text-left font-normal",
-                                  !field.value && "text-muted-foreground"
+                                  !field.value && "text-muted-foreground",
                                 )}
                                 type="button"
                                 aria-label={CREATE_PROJECT_PAGE.labelDate}
@@ -596,7 +611,7 @@ export function CreateProjectForm({
                                   ? format(
                                       new Date(field.value + "T00:00:00"),
                                       "yyyy / MM / dd",
-                                      { locale: zhTW }
+                                      { locale: zhTW },
                                     )
                                   : CREATE_PROJECT_PAGE.dateFormat}
                               </Button>
@@ -611,11 +626,7 @@ export function CreateProjectForm({
                                   : undefined
                               }
                               onSelect={(d) =>
-                                field.onChange(
-                                  d
-                                    ? format(d, "yyyy-MM-dd")
-                                    : ""
-                                )
+                                field.onChange(d ? format(d, "yyyy-MM-dd") : "")
                               }
                               locale={zhTW}
                             />
@@ -639,7 +650,9 @@ export function CreateProjectForm({
                             type="time"
                             step={900}
                             name={field.name}
-                            aria-label={CREATE_PROJECT_PAGE.labelStartTimeRequired}
+                            aria-label={
+                              CREATE_PROJECT_PAGE.labelStartTimeRequired
+                            }
                           />
                         </FormControl>
                         <FormMessage />
@@ -660,7 +673,9 @@ export function CreateProjectForm({
                             type="time"
                             step={900}
                             name={field.name}
-                            aria-label={CREATE_PROJECT_PAGE.labelEndTimeRequired}
+                            aria-label={
+                              CREATE_PROJECT_PAGE.labelEndTimeRequired
+                            }
                           />
                         </FormControl>
                         <FormMessage />
@@ -692,7 +707,7 @@ export function CreateProjectForm({
                               field.onChange(
                                 e.target.value === ""
                                   ? undefined
-                                  : Number(e.target.value)
+                                  : Number(e.target.value),
                               )
                             }
                           />
@@ -723,7 +738,7 @@ export function CreateProjectForm({
                               field.onChange(
                                 e.target.value === ""
                                   ? undefined
-                                  : Number(e.target.value)
+                                  : Number(e.target.value),
                               )
                             }
                           />

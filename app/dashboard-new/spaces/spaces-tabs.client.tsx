@@ -10,7 +10,7 @@ import {
   SPACES_BY_FLOOR,
   type Space,
   type FloorKey,
-} from "@/lib/config";
+} from "@/lib/config/config";
 import { SPACES_PAGE } from "@/lib/message";
 import { LayoutGrid, Building2 } from "lucide-react";
 

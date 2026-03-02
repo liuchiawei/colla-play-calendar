@@ -15,7 +15,7 @@ import {
   SOCIAL_LABELS,
   DASHBOARD_LABELS,
   SPACE_MESSAGES,
-} from "./message";
+} from "../message";
 
 // 商店基本設定
 // CollaPlay の店舗情報を一元管理
@@ -110,7 +110,7 @@ export interface Space {
 function spaceFromSlug(
   floor: FloorKey,
   slug: string,
-  idSuffix?: string
+  idSuffix?: string,
 ): Space {
   const msg = SPACE_MESSAGES[slug];
   if (!msg) throw new Error(`Unknown space slug: ${slug}`);
@@ -132,8 +132,7 @@ export const SPACES_3F: Space[] = [
 ];
 
 export const SPACES_4F: Space[] = [
-  spaceFromSlug("4F", "multipurpose-room", "1"),
-  spaceFromSlug("4F", "multipurpose-room", "2"),
+  spaceFromSlug("4F", "multipurpose-room"),
   spaceFromSlug("4F", "podcast-studio"),
   spaceFromSlug("4F", "product-photo"),
   spaceFromSlug("4F", "event-lounge"),
@@ -149,11 +148,7 @@ export const SPACES_BY_FLOOR: Record<FloorKey, Space[]> = {
   "5F": SPACES_5F,
 };
 
-export const ALL_SPACES: Space[] = [
-  ...SPACES_3F,
-  ...SPACES_4F,
-  ...SPACES_5F,
-];
+export const ALL_SPACES: Space[] = [...SPACES_3F, ...SPACES_4F, ...SPACES_5F];
 
 /** 依場域 id（如 4f-podcast-studio）回傳顯示名稱，供專案列表等使用 */
 export function getSpaceNameById(id: string): string {

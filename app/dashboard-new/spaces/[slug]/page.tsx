@@ -5,7 +5,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { DashboardShell } from "../../components/dashboard-shell.client";
 import { PageHeader } from "../../components/page-header.client";
-import { getSpaceById } from "@/lib/config";
+import { getSpaceById } from "@/lib/config/config";
 import { getProjectsBySpaceId } from "@/lib/services/project/project.service";
 import { SPACE_DETAIL_PAGE } from "@/lib/message";
 import { SpaceProjectsContent } from "./space-projects-content.client";
@@ -28,9 +28,7 @@ async function SpaceProjects({
   spaceName: string;
 }) {
   const projects = await getProjectsBySpaceId(spaceId);
-  return (
-    <SpaceProjectsContent spaceName={spaceName} projects={projects} />
-  );
+  return <SpaceProjectsContent spaceName={spaceName} projects={projects} />;
 }
 
 interface PageProps {

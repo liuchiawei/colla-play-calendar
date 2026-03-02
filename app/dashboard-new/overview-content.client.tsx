@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { DASHBOARD_OVERVIEW, PROJECTS_PAGE } from "@/lib/message";
 import type { Project } from "@/lib/types/project";
-import type { Space } from "@/lib/config";
+import type { Space } from "@/lib/config/config";
 
 const DATE_FORMATTER = new Intl.DateTimeFormat("zh-TW", {
   dateStyle: "short",

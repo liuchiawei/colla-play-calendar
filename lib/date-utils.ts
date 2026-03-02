@@ -15,7 +15,7 @@ import {
 import { zhTW, enUS } from "date-fns/locale";
 import type { WeekRange, TimeSlot, EventPosition } from "./types";
 import type { EventWithCategory } from "./types";
-import { STORE_CONFIG } from "./config";
+import { STORE_CONFIG } from "./config/config";
 
 // 週の開始日を月曜日に設定
 const WEEK_OPTIONS = { weekStartsOn: 1 as const };
@@ -110,7 +110,7 @@ export function isEventOnDay(event: EventWithCategory, day: Date): boolean {
 // イベントのカレンダー表示位置を計算
 export function calculateEventPosition(
   event: EventWithCategory,
-  day: Date
+  day: Date,
 ): EventPosition {
   const eventStart = new Date(event.startTime);
   const eventEnd = new Date(event.endTime);
@@ -137,7 +137,7 @@ export function calculateEventPosition(
   const top = Math.max(0, (startMinutes / totalMinutes) * 100);
   const height = Math.min(
     100 - top,
-    ((endMinutes - startMinutes) / totalMinutes) * 100
+    ((endMinutes - startMinutes) / totalMinutes) * 100,
   );
 
   return {

@@ -16,14 +16,17 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { dashboardNavigationItems, DashboardTab } from "@/lib/config";
+import { dashboardNavigationItems, DashboardTab } from "@/lib/config/config";
 
 interface DashboardSidebarProps {
   activeTab: DashboardTab;
   onTabChange: (tab: DashboardTab) => void;
 }
 
-export function DashboardSidebar({ activeTab, onTabChange }: DashboardSidebarProps) {
+export function DashboardSidebar({
+  activeTab,
+  onTabChange,
+}: DashboardSidebarProps) {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>

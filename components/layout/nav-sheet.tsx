@@ -18,7 +18,7 @@ import { Separator } from "@/components/ui/separator";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { signOut } from "@/lib/services/auth/auth.service";
 import { cn } from "@/lib/utils";
-import { PAGE_LINKS } from "@/lib/config";
+import { PAGE_LINKS } from "@/lib/config/config";
 import { LogIn, LogOut, LayoutDashboard, Layout } from "lucide-react";
 import { useIsMobile } from "@/lib/hooks/use-mobile";
 
@@ -105,7 +105,7 @@ export function NavSheet({ children }: NavSheetProps) {
                   variant={isActive ? "secondary" : "ghost"}
                   className={cn(
                     "w-full justify-start gap-3 text-xl",
-                    isActive && "bg-secondary"
+                    isActive && "bg-secondary",
                   )}
                 >
                   <Link
@@ -126,7 +126,11 @@ export function NavSheet({ children }: NavSheetProps) {
               <>
                 <Separator className="my-3" />
                 {[
-                  { href: "/dashboard", label: "儀表板", icon: LayoutDashboard },
+                  {
+                    href: "/dashboard",
+                    label: "儀表板",
+                    icon: LayoutDashboard,
+                  },
                   { href: "/dashboard-new", label: "管理後台", icon: Layout },
                 ].map((link) => {
                   const Icon = link.icon;
@@ -142,7 +146,7 @@ export function NavSheet({ children }: NavSheetProps) {
                       variant={isActive ? "secondary" : "ghost"}
                       className={cn(
                         "w-full justify-start gap-3 text-xl",
-                        isActive && "bg-secondary"
+                        isActive && "bg-secondary",
                       )}
                     >
                       <Link

@@ -11,7 +11,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { ALL_SPACES, getSpaceNameById } from "@/lib/config";
+import { ALL_SPACES, getSpaceNameById } from "@/lib/config/config";
 import {
   getWeekDays,
   getNextWeek,
@@ -142,10 +142,7 @@ export function ProjectsWeekCalendar({ projects }: ProjectsWeekCalendarProps) {
 
   const projectsBySpaceAndDate = React.useMemo(() => {
     if (!hasRentals) return null;
-    const spaceToDateToProjects = new Map<
-      string,
-      Map<string, Project[]>
-    >();
+    const spaceToDateToProjects = new Map<string, Map<string, Project[]>>();
     for (const p of projects) {
       const rentals = p.rentals;
       if (!rentals?.length) continue;
