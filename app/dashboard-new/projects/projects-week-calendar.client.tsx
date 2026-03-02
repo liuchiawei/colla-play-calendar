@@ -142,12 +142,6 @@ export function ProjectsWeekCalendar({ projects }: ProjectsWeekCalendarProps) {
   const baseDay = startOfDay(currentDate);
   const isToday = (date: Date) => isSameDay(date, new Date());
 
-  const weekHasProjects = displayDays.some((day) => {
-    const key = toDateKey(day);
-    const list = projectsByDate.get(key);
-    return list != null && list.length > 0;
-  });
-
   return (
     <section
       className="flex-1 flex flex-col min-w-0 w-full rounded-xl border border-border bg-card/50 backdrop-blur-sm overflow-hidden"
@@ -202,7 +196,6 @@ export function ProjectsWeekCalendar({ projects }: ProjectsWeekCalendarProps) {
       </div>
 
       {/* 7 日欄位 */}
-      {weekHasProjects ? (
         <div className="flex-1 min-w-0 grid grid-cols-7 border-t border-border/50">
           {displayDays.map((day) => {
             const dayKey = toDateKey(day);
@@ -221,13 +214,6 @@ export function ProjectsWeekCalendar({ projects }: ProjectsWeekCalendarProps) {
             );
           })}
         </div>
-      ) : (
-        <div className="flex-1 flex items-center justify-center py-12 px-4">
-          <p className="text-muted-foreground text-sm text-center">
-            {PROJECTS_PAGE.emptyProjects}
-          </p>
-        </div>
-      )}
 
       {/* 圖例 */}
       {projects.length > 0 ? (
