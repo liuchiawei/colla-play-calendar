@@ -66,11 +66,17 @@ import {
   PROJECTS_PAGE,
 } from "@/lib/message";
 import { getSpaceNameById, ALL_SPACES } from "@/lib/config/config";
+import {
+  PROJECT_STATUS_OPTIONS,
+  getStatusLabel,
+  getStatusColorClass,
+} from "@/lib/config/project-status";
 import type {
   ProjectWithRentals,
   UpdateProjectInput,
+  ProjectStatus,
 } from "@/lib/types/project";
-import { updateProject, deleteProject } from "./actions";
+import { updateProject, deleteProject, updateProjectStatus } from "./actions";
 import { cn } from "@/lib/utils";
 
 const CURRENCY_FORMATTER = new Intl.NumberFormat("zh-TW", {
@@ -83,12 +89,6 @@ const DATE_FORMATTER = new Intl.DateTimeFormat("zh-TW", { dateStyle: "short" });
 function formatDateTime(value: string | Date): string {
   const d = typeof value === "string" ? new Date(value) : value;
   return format(d, "yyyy/MM/dd HH:mm", { locale: zhTW });
-}
-
-function getStatusLabel(status: string): string {
-  return status === "negotiating"
-    ? PROJECTS_PAGE.statusNegotiating
-    : PROJECTS_PAGE.statusDepositPaid;
 }
 
 function escapeCsvCell(value: string): string {
@@ -285,7 +285,15 @@ const editProjectSchema = z.object({
   projectNotes: z.string().optional(),
   collaPlayContactId: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
   internalNotes: z.string().optional(),
-  status: z.enum(["negotiating", "deposit_paid"]).optional(),
+  status: z
+    .enum([
+      "negotiating",
+      "confirmed",
+      "deposit_paid",
+      "completed",
+      "cancelled",
+    ])
+    .optional(),
   rentals: z.array(rentalItemSchema).min(1, CREATE_PROJECT_PAGE.errorRequired),
 });
 
@@ -318,7 +326,7 @@ function projectToFormValues(project: ProjectWithRentals): EditFormValues {
     projectNotes: project.projectNotes ?? "",
     collaPlayContactId: project.collaPlayContactId,
     internalNotes: project.internalNotes ?? "",
-    status: project.status as "negotiating" | "deposit_paid",
+    status: project.status as ProjectStatus,
     rentals:
       project.rentals.length > 0
         ? project.rentals.map((r) => ({
@@ -375,6 +383,7 @@ export function ProjectDetailContent({
   const [isPendingUpdate, startUpdateTransition] = useTransition();
   const [isPendingDelete, startDeleteTransition] = useTransition();
   const [isPendingDownload, startDownloadTransition] = useTransition();
+  const [isPendingStatus, startStatusTransition] = useTransition();
 
   const totalAmount = project.rentals.reduce(
     (sum, r) => sum + r.rentalAmount + r.fnbAmount,
@@ -440,6 +449,18 @@ export function ProjectDetailContent({
       URL.revokeObjectURL(url);
     });
   }, [project]);
+
+  const handleStatusChange = useCallback(
+    (newStatus: ProjectStatus) => {
+      startStatusTransition(async () => {
+        const result = await updateProjectStatus(project.id, newStatus);
+        if (result.success) {
+          router.refresh();
+        }
+      });
+    },
+    [project.id, router],
+  );
 
   if (isEditing) {
     return (
@@ -690,12 +711,11 @@ export function ProjectDetailContent({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="negotiating">
-                          {PROJECTS_PAGE.statusNegotiating}
-                        </SelectItem>
-                        <SelectItem value="deposit_paid">
-                          {PROJECTS_PAGE.statusDepositPaid}
-                        </SelectItem>
+                        {PROJECT_STATUS_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {PROJECTS_PAGE[opt.labelKey]}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -1027,78 +1047,118 @@ export function ProjectDetailContent({
           {PROJECT_DETAIL_PAGE.deleteError}: {deleteError}
         </p>
       ) : null}
-      <div className="flex flex-wrap justify-end gap-2">
-        {/* Edit Button */}
-        <Button
-          variant="default"
-          size="sm"
-          className="gap-2"
-          onClick={handleEdit}
-        >
-          <Pencil className="size-4" />
-          {PROJECT_DETAIL_PAGE.buttonEdit}
-        </Button>
-        {/* Delete Button */}
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button
-              variant="destructive"
-              size="sm"
-              className="gap-2"
-              disabled={isPendingDelete}
-            >
-              {isPendingDelete ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Trash2 className="size-4" />
-              )}
-              {PROJECT_DETAIL_PAGE.buttonDelete}
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>
-                {PROJECT_DETAIL_PAGE.deleteConfirmTitle}
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                {PROJECT_DETAIL_PAGE.deleteConfirmDescription}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            {deleteError ? (
-              <p className="text-sm text-destructive" role="alert">
-                {deleteError}
-              </p>
-            ) : null}
-            <AlertDialogFooter>
-              <AlertDialogCancel>
-                {PROJECT_DETAIL_PAGE.deleteConfirmCancel}
-              </AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleDeleteConfirm}
+      <div className="flex justify-between">
+        {/* Status Selector */}
+        <div className="flex items-center gap-2">
+          <Select
+            value={project.status}
+            onValueChange={(v) => handleStatusChange(v as ProjectStatus)}
+            disabled={isPendingStatus}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PROJECT_STATUS_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  <span
+                    className={cn(
+                      "mr-2 inline-block size-2 rounded-full",
+                      opt.colorClass,
+                    )}
+                    aria-hidden
+                  />
+                  {PROJECTS_PAGE[opt.labelKey]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {isPendingStatus ? (
+            <Loader2
+              className="size-4 animate-spin text-muted-foreground"
+              aria-hidden
+            />
+          ) : null}
+        </div>
+        <div className="flex flex-wrap justify-end gap-2">
+          {/* Edit Button */}
+          <Button
+            variant="default"
+            size="sm"
+            className="gap-2"
+            onClick={handleEdit}
+          >
+            <Pencil className="size-4" />
+            <span className="hidden md:block">
+              {PROJECT_DETAIL_PAGE.buttonEdit}
+            </span>
+          </Button>
+          {/* Delete Button */}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="gap-2"
                 disabled={isPendingDelete}
               >
                 {isPendingDelete ? (
                   <Loader2 className="size-4 animate-spin" />
-                ) : null}
-                {PROJECT_DETAIL_PAGE.deleteConfirmConfirm}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-2"
-          disabled={isPendingDownload}
-          onClick={handleDownloadCsv}
-        >
-          {isPendingDownload ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <Download className="size-4" />
-          )}
-          {PROJECT_DETAIL_PAGE.buttonDownloadCsv}
-        </Button>
+                ) : (
+                  <Trash2 className="size-4" />
+                )}
+                <span className="hidden md:block">
+                  {PROJECT_DETAIL_PAGE.buttonDelete}
+                </span>
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  {PROJECT_DETAIL_PAGE.deleteConfirmTitle}
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  {PROJECT_DETAIL_PAGE.deleteConfirmDescription}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              {deleteError ? (
+                <p className="text-sm text-destructive" role="alert">
+                  {deleteError}
+                </p>
+              ) : null}
+              <AlertDialogFooter>
+                <AlertDialogCancel>
+                  {PROJECT_DETAIL_PAGE.deleteConfirmCancel}
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDeleteConfirm}
+                  disabled={isPendingDelete}
+                >
+                  {isPendingDelete ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : null}
+                  {PROJECT_DETAIL_PAGE.deleteConfirmConfirm}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            disabled={isPendingDownload}
+            onClick={handleDownloadCsv}
+          >
+            {isPendingDownload ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Download className="size-4" />
+            )}
+            <span className="hidden md:block">
+              {PROJECT_DETAIL_PAGE.buttonDownloadCsv}
+            </span>
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -1206,7 +1266,16 @@ export function ProjectDetailContent({
             <p className="text-sm text-muted-foreground">
               {PROJECT_DETAIL_PAGE.labelStatus}
             </p>
-            <p className="font-medium">{getStatusLabel(project.status)}</p>
+            <p className="font-medium flex items-center gap-2">
+              <span
+                className={cn(
+                  "size-2.5 shrink-0 rounded-full",
+                  getStatusColorClass(project.status),
+                )}
+                aria-hidden
+              />
+              {getStatusLabel(project.status)}
+            </p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">

@@ -273,7 +273,10 @@ model CommentLike {
 // 專案狀態枚舉
 enum ProjectStatus {
   negotiating  // 洽談中
-  deposit_paid // 已付訂金
+  confirmed   // 已確定
+  deposit_paid // 已付訂
+  completed   // 完成
+  cancelled   // 取消
 }
 
 // 專案主檔（客戶＋專案資訊）

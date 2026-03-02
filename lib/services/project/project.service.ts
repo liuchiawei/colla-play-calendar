@@ -13,6 +13,7 @@ import type {
   UpdateProjectInput,
   ProjectWithRentals,
   Project,
+  ProjectStatus,
   OverviewStatsData,
 } from "@/lib/types/project";
 
@@ -261,6 +262,21 @@ export async function updateProject(
  */
 export async function deleteProject(id: string): Promise<void> {
   await prisma.project.delete({ where: { id } });
+}
+
+/**
+ * 僅更新專案狀態（供詳情頁 header Select 使用）
+ */
+export async function updateProjectStatus(
+  id: string,
+  status: ProjectStatus,
+): Promise<ProjectWithRentals> {
+  const updated = await prisma.project.update({
+    where: { id },
+    data: { status },
+    include: { rentals: true },
+  });
+  return updated as ProjectWithRentals;
 }
 
 /**

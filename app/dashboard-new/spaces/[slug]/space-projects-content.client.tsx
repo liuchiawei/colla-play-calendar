@@ -17,8 +17,13 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PROJECTS_PAGE, SPACE_DETAIL_PAGE } from "@/lib/message";
+import {
+  getStatusLabel,
+  getStatusColorClass,
+} from "@/lib/config/project-status";
 import type { Project } from "@/lib/types/project";
 import { SpaceProjectsCalendar } from "./space-projects-calendar.client";
+import { cn } from "@/lib/utils";
 
 const DATE_FORMATTER = new Intl.DateTimeFormat("zh-TW", {
   dateStyle: "short",
@@ -39,12 +44,6 @@ function filterProjects(projects: Project[], query: string): Project[] {
       p.space.toLowerCase().includes(q) ||
       p.contactPerson.toLowerCase().includes(q),
   );
-}
-
-function getStatusLabel(status: Project["status"]): string {
-  return status === "negotiating"
-    ? PROJECTS_PAGE.statusNegotiating
-    : PROJECTS_PAGE.statusDepositPaid;
 }
 
 interface SpaceProjectsContentProps {
@@ -82,7 +81,9 @@ export function SpaceProjectsContent({
           <TabsTrigger value="calendar">
             {SPACE_DETAIL_PAGE.tabCalendarView}
           </TabsTrigger>
-          <TabsTrigger value="list">{SPACE_DETAIL_PAGE.tabListView}</TabsTrigger>
+          <TabsTrigger value="list">
+            {SPACE_DETAIL_PAGE.tabListView}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="calendar" className="mt-6 flex-1 min-w-0">
@@ -96,7 +97,10 @@ export function SpaceProjectsContent({
                 {PROJECTS_PAGE.searchAriaLabel}
               </Label>
               <div className="relative">
-                <Search className="size-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden />
+                <Search
+                  className="size-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                  aria-hidden
+                />
                 <Input
                   id={searchInputId}
                   type="search"
@@ -129,13 +133,24 @@ export function SpaceProjectsContent({
                       <TableHead scope="col">
                         {PROJECTS_PAGE.columnEventOrVenueUse}
                       </TableHead>
-                      <TableHead scope="col">{PROJECTS_PAGE.columnSpace}</TableHead>
-                      <TableHead scope="col">{PROJECTS_PAGE.columnDate}</TableHead>
-                      <TableHead scope="col">{PROJECTS_PAGE.columnContact}</TableHead>
-                      <TableHead scope="col" className="text-right tabular-nums">
+                      <TableHead scope="col">
+                        {PROJECTS_PAGE.columnSpace}
+                      </TableHead>
+                      <TableHead scope="col">
+                        {PROJECTS_PAGE.columnDate}
+                      </TableHead>
+                      <TableHead scope="col">
+                        {PROJECTS_PAGE.columnContact}
+                      </TableHead>
+                      <TableHead
+                        scope="col"
+                        className="text-right tabular-nums"
+                      >
                         {PROJECTS_PAGE.columnAmount}
                       </TableHead>
-                      <TableHead scope="col">{PROJECTS_PAGE.columnStatus}</TableHead>
+                      <TableHead scope="col">
+                        {PROJECTS_PAGE.columnStatus}
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -164,7 +179,18 @@ export function SpaceProjectsContent({
                         <TableCell className="text-right tabular-nums">
                           {CURRENCY_FORMATTER.format(project.amount)}
                         </TableCell>
-                        <TableCell>{getStatusLabel(project.status)}</TableCell>
+                        <TableCell>
+                          <span className="flex items-center gap-2">
+                            <span
+                              className={cn(
+                                "size-2 shrink-0 rounded-full",
+                                getStatusColorClass(project.status),
+                              )}
+                              aria-hidden
+                            />
+                            {getStatusLabel(project.status)}
+                          </span>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

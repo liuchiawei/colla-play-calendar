@@ -2,8 +2,13 @@
 
 import Link from "next/link";
 import { DASHBOARD_OVERVIEW, PROJECTS_PAGE } from "@/lib/message";
+import {
+  getStatusLabel,
+  getStatusColorClass,
+} from "@/lib/config/project-status";
 import type { Project } from "@/lib/types/project";
 import type { Space } from "@/lib/config/config";
+import { cn } from "@/lib/utils";
 
 const DATE_FORMATTER = new Intl.DateTimeFormat("zh-TW", {
   dateStyle: "short",
@@ -13,12 +18,6 @@ const CURRENCY_FORMATTER = new Intl.NumberFormat("zh-TW", {
   style: "currency",
   currency: "TWD",
 });
-
-function getStatusLabel(status: Project["status"]): string {
-  return status === "negotiating"
-    ? PROJECTS_PAGE.statusNegotiating
-    : PROJECTS_PAGE.statusDepositPaid;
-}
 
 function SpacePreviewItem({ space }: { space: Space }) {
   return (
@@ -110,8 +109,15 @@ export function OverviewContent({
                     <span className="text-sm font-medium truncate block">
                       {project.customer}
                     </span>
-                    <span className="text-xs text-muted-foreground">
-                      {DATE_FORMATTER.format(new Date(project.date))} ·{" "}
+                    <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+                      {DATE_FORMATTER.format(new Date(project.date))} ·
+                      <span
+                        className={cn(
+                          "size-1.5 shrink-0 rounded-full",
+                          getStatusColorClass(project.status),
+                        )}
+                        aria-hidden
+                      />
                       {getStatusLabel(project.status)}
                     </span>
                   </div>
