@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useTransition, useCallback } from "react";
+import { useTransition, useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, useFieldArray, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -53,6 +53,13 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
   Table,
   TableBody,
   TableCell,
@@ -76,7 +83,7 @@ import type {
   UpdateProjectInput,
   ProjectStatus,
 } from "@/lib/types/project";
-import { updateProject, deleteProject, updateProjectStatus } from "./actions";
+import { updateProject, deleteProject, updateProjectStatus, deleteRental, updateRental } from "./actions";
 import { cn } from "@/lib/utils";
 
 const CURRENCY_FORMATTER = new Intl.NumberFormat("zh-TW", {
@@ -299,6 +306,25 @@ const editProjectSchema = z.object({
 
 type EditFormValues = z.infer<typeof editProjectSchema>;
 
+type EditRentalFormValues = z.infer<typeof rentalItemSchema>;
+
+function rentalToEditFormValues(
+  r: ProjectWithRentals["rentals"][0],
+): EditRentalFormValues {
+  return {
+    spaceIds: r.spaceIds,
+    date: r.date,
+    startTime: r.startTime,
+    endTime: r.endTime,
+    setupMinutesBefore: r.setupMinutesBefore ?? 30,
+    teardownMinutesAfter: r.teardownMinutesAfter ?? 30,
+    rentalAmount: r.rentalAmount,
+    fnbAmount: r.fnbAmount,
+    paidAmount: r.paidAmount,
+    pendingAmount: r.pendingAmount,
+  };
+}
+
 const defaultRental: EditFormValues["rentals"][0] = {
   spaceIds: [],
   date: "",
@@ -368,6 +394,547 @@ function formValuesToUpdateInput(values: EditFormValues): UpdateProjectInput {
   };
 }
 
+interface EditRentalFormDialogProps {
+  rental: ProjectWithRentals["rentals"][0];
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+function EditRentalFormDialog({
+  rental,
+  onClose,
+  onSuccess,
+}: EditRentalFormDialogProps) {
+  const [isPending, startTransition] = useTransition();
+  const form = useForm<EditRentalFormValues>({
+    resolver: zodResolver(rentalItemSchema) as Resolver<EditRentalFormValues>,
+    defaultValues: rentalToEditFormValues(rental),
+  });
+
+  const handleSubmit = form.handleSubmit((data: EditRentalFormValues) => {
+    startTransition(async () => {
+      const result = await updateRental(rental.id, {
+        ...data,
+        setupMinutesBefore: data.setupMinutesBefore ?? 30,
+        teardownMinutesAfter: data.teardownMinutesAfter ?? 30,
+      });
+      if (result.success) {
+        onSuccess();
+      } else {
+        form.setError("root", { message: result.error });
+      }
+    });
+  });
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{PROJECT_DETAIL_PAGE.editRentalTitle}</DialogTitle>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+            <FormField
+              control={form.control}
+              name="spaceIds"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{CREATE_PROJECT_PAGE.labelSpacesRequired}</FormLabel>
+                  <FormControl>
+                    <fieldset className="flex flex-wrap gap-3 rounded-md border border-input bg-background px-3 py-2">
+                      {ALL_SPACES.map((space) => {
+                        const checked = field.value.includes(space.id);
+                        return (
+                          <label
+                            key={space.id}
+                            className="flex items-center gap-2 cursor-pointer text-sm"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => {
+                                const next = checked
+                                  ? field.value.filter((id) => id !== space.id)
+                                  : [...field.value, space.id];
+                                field.onChange(next);
+                              }}
+                              className="rounded border-input"
+                            />
+                            <span>{space.name}</span>
+                          </label>
+                        );
+                      })}
+                    </fieldset>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{CREATE_PROJECT_PAGE.labelDateRequired}</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !field.value && "text-muted-foreground",
+                            )}
+                            type="button"
+                          >
+                            <CalendarIcon className="mr-2 size-4" />
+                            {field.value
+                              ? format(
+                                  new Date(field.value + "T00:00:00"),
+                                  "yyyy / MM / dd",
+                                  { locale: zhTW },
+                                )
+                              : CREATE_PROJECT_PAGE.dateFormat}
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={
+                            field.value
+                              ? new Date(field.value + "T00:00:00")
+                              : undefined
+                          }
+                          onSelect={(d) =>
+                            field.onChange(d ? format(d, "yyyy-MM-dd") : "")
+                          }
+                          locale={zhTW}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="startTime"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      {CREATE_PROJECT_PAGE.labelStartTimeRequired}
+                    </FormLabel>
+                    <FormControl>
+                      <Input {...field} type="time" step={900} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="endTime"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      {CREATE_PROJECT_PAGE.labelEndTimeRequired}
+                    </FormLabel>
+                    <FormControl>
+                      <Input {...field} type="time" step={900} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <FormField
+                control={form.control}
+                name="rentalAmount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{CREATE_PROJECT_PAGE.labelRentalAmount}</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="number"
+                        min={0}
+                        className="tabular-nums"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="fnbAmount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{CREATE_PROJECT_PAGE.labelFnbAmount}</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="number"
+                        min={0}
+                        className="tabular-nums"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="paidAmount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{CREATE_PROJECT_PAGE.labelPaidAmount}</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="number"
+                        min={0}
+                        className="tabular-nums"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="pendingAmount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      {CREATE_PROJECT_PAGE.labelPendingAmount}
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="number"
+                        min={0}
+                        className="tabular-nums"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            {form.formState.errors.root?.message ? (
+              <p className="text-sm text-destructive" role="alert">
+                {form.formState.errors.root.message}
+              </p>
+            ) : null}
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={isPending}
+              >
+                {PROJECT_DETAIL_PAGE.buttonCancel}
+              </Button>
+              <Button type="submit" disabled={isPending}>
+                {isPending ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin mr-2" />
+                    {CREATE_PROJECT_PAGE.submitting}
+                  </>
+                ) : (
+                  PROJECT_DETAIL_PAGE.buttonSave
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+interface AddRentalFormDialogProps {
+  project: ProjectWithRentals;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+function AddRentalFormDialog({
+  project,
+  onClose,
+  onSuccess,
+}: AddRentalFormDialogProps) {
+  const [isPending, startTransition] = useTransition();
+  const form = useForm<EditRentalFormValues>({
+    resolver: zodResolver(rentalItemSchema) as Resolver<EditRentalFormValues>,
+    defaultValues: {
+      ...defaultRental,
+      spaceIds: [],
+      date: "",
+      startTime: "",
+      endTime: "",
+    },
+  });
+
+  const handleSubmit = form.handleSubmit((data: EditRentalFormValues) => {
+    startTransition(async () => {
+      const baseValues = projectToFormValues(project);
+      const newRentals = [
+        ...project.rentals.map((r) => rentalToEditFormValues(r)),
+        {
+          ...data,
+          setupMinutesBefore: data.setupMinutesBefore ?? 30,
+          teardownMinutesAfter: data.teardownMinutesAfter ?? 30,
+        },
+      ];
+      const payload = formValuesToUpdateInput({
+        ...baseValues,
+        rentals: newRentals,
+      });
+      const result = await updateProject(project.id, payload);
+      if (result.success) {
+        onSuccess();
+      } else {
+        form.setError("root", { message: result.error });
+      }
+    });
+  });
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{PROJECT_DETAIL_PAGE.addRentalDialogTitle}</DialogTitle>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+            <FormField
+              control={form.control}
+              name="spaceIds"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{CREATE_PROJECT_PAGE.labelSpacesRequired}</FormLabel>
+                  <FormControl>
+                    <fieldset className="flex flex-wrap gap-3 rounded-md border border-input bg-background px-3 py-2">
+                      {ALL_SPACES.map((space) => {
+                        const checked = field.value.includes(space.id);
+                        return (
+                          <label
+                            key={space.id}
+                            className="flex items-center gap-2 cursor-pointer text-sm"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => {
+                                const next = checked
+                                  ? field.value.filter((id) => id !== space.id)
+                                  : [...field.value, space.id];
+                                field.onChange(next);
+                              }}
+                              className="rounded border-input"
+                            />
+                            <span>{space.name}</span>
+                          </label>
+                        );
+                      })}
+                    </fieldset>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{CREATE_PROJECT_PAGE.labelDateRequired}</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !field.value && "text-muted-foreground",
+                            )}
+                            type="button"
+                          >
+                            <CalendarIcon className="mr-2 size-4" />
+                            {field.value
+                              ? format(
+                                  new Date(field.value + "T00:00:00"),
+                                  "yyyy / MM / dd",
+                                  { locale: zhTW },
+                                )
+                              : CREATE_PROJECT_PAGE.dateFormat}
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={
+                            field.value
+                              ? new Date(field.value + "T00:00:00")
+                              : undefined
+                          }
+                          onSelect={(d) =>
+                            field.onChange(d ? format(d, "yyyy-MM-dd") : "")
+                          }
+                          locale={zhTW}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="startTime"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      {CREATE_PROJECT_PAGE.labelStartTimeRequired}
+                    </FormLabel>
+                    <FormControl>
+                      <Input {...field} type="time" step={900} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="endTime"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      {CREATE_PROJECT_PAGE.labelEndTimeRequired}
+                    </FormLabel>
+                    <FormControl>
+                      <Input {...field} type="time" step={900} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <FormField
+                control={form.control}
+                name="rentalAmount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{CREATE_PROJECT_PAGE.labelRentalAmount}</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="number"
+                        min={0}
+                        className="tabular-nums"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="fnbAmount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{CREATE_PROJECT_PAGE.labelFnbAmount}</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="number"
+                        min={0}
+                        className="tabular-nums"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="paidAmount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{CREATE_PROJECT_PAGE.labelPaidAmount}</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="number"
+                        min={0}
+                        className="tabular-nums"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="pendingAmount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      {CREATE_PROJECT_PAGE.labelPendingAmount}
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="number"
+                        min={0}
+                        className="tabular-nums"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            {form.formState.errors.root?.message ? (
+              <p className="text-sm text-destructive" role="alert">
+                {form.formState.errors.root.message}
+              </p>
+            ) : null}
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={isPending}
+              >
+                {PROJECT_DETAIL_PAGE.buttonCancel}
+              </Button>
+              <Button type="submit" disabled={isPending}>
+                {isPending ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin mr-2" />
+                    {CREATE_PROJECT_PAGE.submitting}
+                  </>
+                ) : (
+                  PROJECT_DETAIL_PAGE.buttonSave
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 interface ProjectDetailContentProps {
   project: ProjectWithRentals;
   adminOptions: { id: string; name: string }[];
@@ -384,6 +951,11 @@ export function ProjectDetailContent({
   const [isPendingDelete, startDeleteTransition] = useTransition();
   const [isPendingDownload, startDownloadTransition] = useTransition();
   const [isPendingStatus, startStatusTransition] = useTransition();
+  const [editingRentalId, setEditingRentalId] = useState<string | null>(null);
+  const [deletingRentalId, setDeletingRentalId] = useState<string | null>(null);
+  const [deleteRentalError, setDeleteRentalError] = useState<string | null>(null);
+  const [isAddRentalOpen, setIsAddRentalOpen] = useState(false);
+  const [isPendingDeleteRental, startDeleteRentalTransition] = useTransition();
 
   const totalAmount = project.rentals.reduce(
     (sum, r) => sum + r.rentalAmount + r.fnbAmount,
@@ -461,6 +1033,10 @@ export function ProjectDetailContent({
     },
     [project.id, router],
   );
+
+  const editingRental = editingRentalId
+    ? project.rentals.find((r) => r.id === editingRentalId)
+    : undefined;
 
   if (isEditing) {
     return (
@@ -1038,13 +1614,42 @@ export function ProjectDetailContent({
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="min-w-0 flex flex-col gap-6">
+      {editingRental ? (
+        <EditRentalFormDialog
+          key={editingRental.id}
+          rental={editingRental}
+          onClose={() => setEditingRentalId(null)}
+          onSuccess={() => {
+            setEditingRentalId(null);
+            router.refresh();
+          }}
+        />
+      ) : null}
+      {isAddRentalOpen ? (
+        <AddRentalFormDialog
+          project={project}
+          onClose={() => setIsAddRentalOpen(false)}
+          onSuccess={() => {
+            setIsAddRentalOpen(false);
+            router.refresh();
+          }}
+        />
+      ) : null}
       {deleteError ? (
         <p
           className="text-sm text-destructive rounded-md bg-destructive/10 p-3"
           role="alert"
         >
           {PROJECT_DETAIL_PAGE.deleteError}: {deleteError}
+        </p>
+      ) : null}
+      {deleteRentalError ? (
+        <p
+          className="text-sm text-destructive rounded-md bg-destructive/10 p-3"
+          role="alert"
+        >
+          {PROJECT_DETAIL_PAGE.deleteRentalError}: {deleteRentalError}
         </p>
       ) : null}
       <div className="flex justify-between">
@@ -1080,6 +1685,7 @@ export function ProjectDetailContent({
             />
           ) : null}
         </div>
+        {/* Header Buttons */}
         <div className="flex flex-wrap justify-end gap-2">
           {/* Edit Button */}
           <Button
@@ -1161,224 +1767,356 @@ export function ProjectDetailContent({
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <h2 className="text-lg font-semibold">
-            {PROJECT_DETAIL_PAGE.sectionCustomer}
-          </h2>
-        </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <p className="text-sm text-muted-foreground">
-              {PROJECT_DETAIL_PAGE.labelCustomerName}
-            </p>
-            <p className="font-medium">{project.customerName}</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">
-              {PROJECT_DETAIL_PAGE.labelPhone}
-            </p>
-            <p className="font-medium">{project.customerPhone}</p>
-          </div>
-          {project.company ? (
-            <div>
-              <p className="text-sm text-muted-foreground">
-                {PROJECT_DETAIL_PAGE.labelCompany}
-              </p>
-              <p className="font-medium">{project.company}</p>
-            </div>
-          ) : null}
-          {project.taxId ? (
-            <div>
-              <p className="text-sm text-muted-foreground">
-                {PROJECT_DETAIL_PAGE.labelTaxId}
-              </p>
-              <p className="font-medium">{project.taxId}</p>
-            </div>
-          ) : null}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <h2 className="text-lg font-semibold">
-            {PROJECT_DETAIL_PAGE.sectionProject}
-          </h2>
-        </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
-          <div className="sm:col-span-2">
-            <p className="text-sm text-muted-foreground">
-              {PROJECT_DETAIL_PAGE.labelEventOrVenueUse}
-            </p>
-            <p className="font-medium">{project.eventOrVenueUse}</p>
-          </div>
-          {project.totalAttendees != null ? (
-            <div>
-              <p className="text-sm text-muted-foreground">
-                {PROJECT_DETAIL_PAGE.labelTotalAttendees}
-              </p>
-              <p className="font-medium">{project.totalAttendees}</p>
-            </div>
-          ) : null}
-          {project.tables ? (
-            <div>
-              <p className="text-sm text-muted-foreground">
-                {PROJECT_DETAIL_PAGE.labelTables}
-              </p>
-              <p className="font-medium">{project.tables}</p>
-            </div>
-          ) : null}
-          {project.chairs != null ? (
-            <div>
-              <p className="text-sm text-muted-foreground">
-                {PROJECT_DETAIL_PAGE.labelChairs}
-              </p>
-              <p className="font-medium">{project.chairs}</p>
-            </div>
-          ) : null}
-          {project.fnbItems ? (
-            <div className="sm:col-span-2">
-              <p className="text-sm text-muted-foreground">
-                {PROJECT_DETAIL_PAGE.labelFnb}
-              </p>
-              <p className="font-medium whitespace-pre-wrap">
-                {project.fnbItems}
-              </p>
-            </div>
-          ) : null}
-          {project.projectNotes ? (
-            <div className="sm:col-span-2">
-              <p className="text-sm text-muted-foreground">
-                {PROJECT_DETAIL_PAGE.labelProjectNotes}
-              </p>
-              <p className="font-medium whitespace-pre-wrap">
-                {project.projectNotes}
-              </p>
-            </div>
-          ) : null}
-          <div>
-            <p className="text-sm text-muted-foreground">
-              {PROJECT_DETAIL_PAGE.labelCollaPlayContact}
-            </p>
-            <p className="font-medium">{collaPlayContactName}</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">
-              {PROJECT_DETAIL_PAGE.labelStatus}
-            </p>
-            <p className="font-medium flex items-center gap-2">
-              <span
-                className={cn(
-                  "size-2.5 shrink-0 rounded-full",
-                  getStatusColorClass(project.status),
-                )}
-                aria-hidden
-              />
-              {getStatusLabel(project.status)}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">
-              {PROJECT_DETAIL_PAGE.labelCreatedAt}
-            </p>
-            <p className="font-medium tabular-nums">
-              {formatDateTime(project.createdAt)}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">
-              {PROJECT_DETAIL_PAGE.labelUpdatedAt}
-            </p>
-            <p className="font-medium tabular-nums">
-              {formatDateTime(project.updatedAt)}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {project.internalNotes ? (
-        <Card>
+      {/* Main Content */}
+      <div className="min-w-0 grid gap-6 md:grid-cols-2">
+        {/* Customer Information Card */}
+        <Card className="min-w-0">
           <CardHeader>
             <h2 className="text-lg font-semibold">
-              {PROJECT_DETAIL_PAGE.sectionNotes}
+              {PROJECT_DETAIL_PAGE.sectionCustomer}
             </h2>
           </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              {PROJECT_DETAIL_PAGE.labelInternalNotes}
-            </p>
-            <p className="font-medium whitespace-pre-wrap">
-              {project.internalNotes}
-            </p>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <p className="text-sm text-muted-foreground">
+                {PROJECT_DETAIL_PAGE.labelCustomerName}
+              </p>
+              <p className="font-medium">{project.customerName}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">
+                {PROJECT_DETAIL_PAGE.labelPhone}
+              </p>
+              <p className="font-medium">{project.customerPhone}</p>
+            </div>
+            {project.company ? (
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  {PROJECT_DETAIL_PAGE.labelCompany}
+                </p>
+                <p className="font-medium">{project.company}</p>
+              </div>
+            ) : null}
+            {project.taxId ? (
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  {PROJECT_DETAIL_PAGE.labelTaxId}
+                </p>
+                <p className="font-medium">{project.taxId}</p>
+              </div>
+            ) : null}
           </CardContent>
         </Card>
-      ) : null}
 
-      <Card>
-        <CardHeader>
-          <h2 className="text-lg font-semibold">
-            {PROJECT_DETAIL_PAGE.sectionRentals}
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            {PROJECT_DETAIL_PAGE.totalAmount}:{" "}
-            {CURRENCY_FORMATTER.format(totalAmount)}
-          </p>
-        </CardHeader>
-        <CardContent>
-          {project.rentals.length === 0 ? (
-            <p className="text-muted-foreground text-sm">尚無租借項目</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{PROJECT_DETAIL_PAGE.labelDate}</TableHead>
-                  <TableHead>{PROJECT_DETAIL_PAGE.labelTimeRange}</TableHead>
-                  <TableHead>{PROJECT_DETAIL_PAGE.labelSpaces}</TableHead>
-                  <TableHead className="text-right tabular-nums">
-                    {PROJECT_DETAIL_PAGE.labelRentalAmount}
-                  </TableHead>
-                  <TableHead className="text-right tabular-nums">
-                    {PROJECT_DETAIL_PAGE.labelFnbAmount}
-                  </TableHead>
-                  <TableHead className="text-right tabular-nums">
-                    {PROJECT_DETAIL_PAGE.labelPaidAmount}
-                  </TableHead>
-                  <TableHead className="text-right tabular-nums">
-                    {PROJECT_DETAIL_PAGE.labelPendingAmount}
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {project.rentals.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell className="tabular-nums">
-                      {DATE_FORMATTER.format(new Date(r.date + "T00:00:00"))}
-                    </TableCell>
-                    <TableCell className="tabular-nums">
-                      {r.startTime} – {r.endTime}
-                    </TableCell>
-                    <TableCell>
-                      {r.spaceIds.map((id) => getSpaceNameById(id)).join("、")}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {CURRENCY_FORMATTER.format(r.rentalAmount)}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {CURRENCY_FORMATTER.format(r.fnbAmount)}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {CURRENCY_FORMATTER.format(r.paidAmount)}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {CURRENCY_FORMATTER.format(r.pendingAmount)}
+        {/* Project Information Card */}
+        <Card className="min-w-0">
+          <CardHeader>
+            <h2 className="text-lg font-semibold">
+              {PROJECT_DETAIL_PAGE.sectionProject}
+            </h2>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            {/* Event Title */}
+            <div className="sm:col-span-2">
+              <p className="text-sm text-muted-foreground">
+                {PROJECT_DETAIL_PAGE.labelEventOrVenueUse}
+              </p>
+              <p className="font-medium">{project.eventOrVenueUse}</p>
+            </div>
+            {/* Status */}
+            <div>
+              <p className="text-sm text-muted-foreground">
+                {PROJECT_DETAIL_PAGE.labelStatus}
+              </p>
+              <p className="font-medium flex items-center gap-2">
+                <span
+                  className={cn(
+                    "size-2.5 shrink-0 rounded-full",
+                    getStatusColorClass(project.status),
+                  )}
+                  aria-hidden
+                />
+                {getStatusLabel(project.status)}
+              </p>
+            </div>
+            {project.totalAttendees != null ? (
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  {PROJECT_DETAIL_PAGE.labelTotalAttendees}
+                </p>
+                <p className="font-medium">{project.totalAttendees}</p>
+              </div>
+            ) : null}
+            {project.tables ? (
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  {PROJECT_DETAIL_PAGE.labelTables}
+                </p>
+                <p className="font-medium">{project.tables}</p>
+              </div>
+            ) : null}
+            {project.chairs != null ? (
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  {PROJECT_DETAIL_PAGE.labelChairs}
+                </p>
+                <p className="font-medium">{project.chairs}</p>
+              </div>
+            ) : null}
+            {project.fnbItems ? (
+              <div className="sm:col-span-2">
+                <p className="text-sm text-muted-foreground">
+                  {PROJECT_DETAIL_PAGE.labelFnb}
+                </p>
+                <p className="font-medium whitespace-pre-wrap">
+                  {project.fnbItems}
+                </p>
+              </div>
+            ) : null}
+            {project.projectNotes ? (
+              <div className="sm:col-span-2">
+                <p className="text-sm text-muted-foreground">
+                  {PROJECT_DETAIL_PAGE.labelProjectNotes}
+                </p>
+                <p className="font-medium whitespace-pre-wrap">
+                  {project.projectNotes}
+                </p>
+              </div>
+            ) : null}
+            <div>
+              <p className="text-sm text-muted-foreground">
+                {PROJECT_DETAIL_PAGE.labelCollaPlayContact}
+              </p>
+              <p className="font-medium">{collaPlayContactName}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">
+                {PROJECT_DETAIL_PAGE.labelCreatedAt}
+              </p>
+              <p className="font-medium tabular-nums">
+                {formatDateTime(project.createdAt)}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">
+                {PROJECT_DETAIL_PAGE.labelUpdatedAt}
+              </p>
+              <p className="font-medium tabular-nums">
+                {formatDateTime(project.updatedAt)}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Notes Card */}
+        {project.internalNotes ? (
+          <Card className="min-w-0 md:col-span-2">
+            <CardHeader>
+              <h2 className="text-lg font-semibold">
+                {PROJECT_DETAIL_PAGE.sectionNotes}
+              </h2>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                {PROJECT_DETAIL_PAGE.labelInternalNotes}
+              </p>
+              <p className="font-medium whitespace-pre-wrap">
+                {project.internalNotes}
+              </p>
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {/* Rentals Card */}
+        <Card className="min-w-0 md:col-span-2">
+          <CardHeader>
+            <h2 className="text-lg font-semibold">
+              {PROJECT_DETAIL_PAGE.sectionRentals}
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              {PROJECT_DETAIL_PAGE.totalAmount}:{" "}
+              {CURRENCY_FORMATTER.format(totalAmount)}
+            </p>
+          </CardHeader>
+          <CardContent>
+            {project.rentals.length === 0 ? (
+              <div className="flex flex-col items-start gap-3">
+                <p className="text-muted-foreground text-sm">尚無租借項目</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => setIsAddRentalOpen(true)}
+                  aria-label={PROJECT_DETAIL_PAGE.addRentalLabel}
+                >
+                  <Plus className="size-4" />
+                  {PROJECT_DETAIL_PAGE.addRentalLabel}
+                </Button>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{PROJECT_DETAIL_PAGE.labelDate}</TableHead>
+                    <TableHead>{PROJECT_DETAIL_PAGE.labelTimeRange}</TableHead>
+                    <TableHead>{PROJECT_DETAIL_PAGE.labelSpaces}</TableHead>
+                    <TableHead className="text-right tabular-nums">
+                      {PROJECT_DETAIL_PAGE.labelRentalAmount}
+                    </TableHead>
+                    <TableHead className="text-right tabular-nums">
+                      {PROJECT_DETAIL_PAGE.labelFnbAmount}
+                    </TableHead>
+                    <TableHead className="text-right tabular-nums">
+                      {PROJECT_DETAIL_PAGE.labelPaidAmount}
+                    </TableHead>
+                    <TableHead className="text-right tabular-nums">
+                      {PROJECT_DETAIL_PAGE.labelPendingAmount}
+                    </TableHead>
+                    <TableHead className="w-[100px]">
+                      {PROJECT_DETAIL_PAGE.labelOperations}
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {project.rentals.map((r) => (
+                    <TableRow key={r.id}>
+                      <TableCell className="tabular-nums">
+                        {DATE_FORMATTER.format(new Date(r.date + "T00:00:00"))}
+                      </TableCell>
+                      <TableCell className="tabular-nums">
+                        {r.startTime} – {r.endTime}
+                      </TableCell>
+                      <TableCell>
+                        {r.spaceIds
+                          .map((id) => getSpaceNameById(id))
+                          .join("、")}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {CURRENCY_FORMATTER.format(r.rentalAmount)}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {CURRENCY_FORMATTER.format(r.fnbAmount)}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {CURRENCY_FORMATTER.format(r.paidAmount)}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {CURRENCY_FORMATTER.format(r.pendingAmount)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="size-8"
+                            aria-label={PROJECT_DETAIL_PAGE.editRentalTitle}
+                            onClick={() => setEditingRentalId(r.id)}
+                          >
+                            <Pencil className="size-4" />
+                          </Button>
+                          {project.rentals.length > 1 ? (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="size-8 text-destructive hover:text-destructive"
+                                  aria-label={CREATE_PROJECT_PAGE.removeRentalAria}
+                                  disabled={deletingRentalId === r.id || isPendingDeleteRental}
+                                >
+                                  {deletingRentalId === r.id || isPendingDeleteRental ? (
+                                    <Loader2 className="size-4 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="size-4" />
+                                  )}
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>
+                                    {PROJECT_DETAIL_PAGE.deleteRentalConfirmTitle}
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    {PROJECT_DETAIL_PAGE.deleteRentalConfirmDescription}
+                                    {` （${DATE_FORMATTER.format(new Date(r.date + "T00:00:00"))} ${r.startTime}–${r.endTime}）`}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>
+                                    {PROJECT_DETAIL_PAGE.deleteConfirmCancel}
+                                  </AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => {
+                                      setDeleteRentalError(null);
+                                      setDeletingRentalId(r.id);
+                                      startDeleteRentalTransition(async () => {
+                                        const result = await deleteRental(r.id);
+                                        setDeletingRentalId(null);
+                                        if (result.success) {
+                                          router.refresh();
+                                        } else {
+                                          setDeleteRentalError(result.error);
+                                        }
+                                      });
+                                    }}
+                                    disabled={isPendingDeleteRental}
+                                  >
+                                    {isPendingDeleteRental ? (
+                                      <>
+                                        <Loader2 className="size-4 animate-spin mr-2" />
+                                        {PROJECT_DETAIL_PAGE.deleteConfirmConfirm}
+                                      </>
+                                    ) : (
+                                      PROJECT_DETAIL_PAGE.deleteConfirmConfirm
+                                    )}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          ) : (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="size-8 text-muted-foreground"
+                              disabled
+                              aria-label="至少需保留一筆租借"
+                              title="至少需保留一筆租借"
+                            >
+                              <Trash2 className="size-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow>
+                    <TableCell
+                      colSpan={8}
+                      className="h-12 border-t border-dashed bg-muted/20"
+                    >
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="mx-auto gap-2 text-muted-foreground hover:text-foreground"
+                        onClick={() => setIsAddRentalOpen(true)}
+                        aria-label={PROJECT_DETAIL_PAGE.addRentalLabel}
+                      >
+                        <Plus className="size-4" />
+                        {PROJECT_DETAIL_PAGE.addRentalLabel}
+                      </Button>
                     </TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
