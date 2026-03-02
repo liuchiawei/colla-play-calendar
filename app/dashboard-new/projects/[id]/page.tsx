@@ -6,6 +6,7 @@ import Link from "next/link";
 import { DashboardShell } from "../../components/dashboard-shell.client";
 import { PageHeader } from "../../components/page-header.client";
 import { getProjectById } from "@/lib/services/project/project.service";
+import { getAdminContactOptions } from "@/lib/services/admin-contact.service";
 import { PROJECT_DETAIL_PAGE } from "@/lib/message";
 import { ProjectDetailContent } from "./project-detail-content.client";
 import { Button } from "@/components/ui/button";
@@ -25,11 +26,14 @@ function ProjectDetailSkeleton() {
 }
 
 async function ProjectDetail({ id }: { id: string }) {
-  const project = await getProjectById(id);
+  const [project, adminOptions] = await Promise.all([
+    getProjectById(id),
+    getAdminContactOptions(),
+  ]);
   if (!project) {
     notFound();
   }
-  return <ProjectDetailContent project={project} />;
+  return <ProjectDetailContent project={project} adminOptions={adminOptions} />;
 }
 
 interface PageProps {

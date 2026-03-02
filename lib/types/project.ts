@@ -88,10 +88,3 @@ export interface OverviewStatsData {
   confirmedCount: number;
   todayReservations: number;
 }
-
-// Mock options for create project form - 場域請使用 @/lib/config ALL_SPACES（來源為 message SPACE_MESSAGES）
-export const MOCK_CONTACT_OPTIONS: { id: string; name: string }[] = [
-  { id: "contact-1", name: "王小明" },
-  { id: "contact-2", name: "陳小姐" },
-  { id: "contact-3", name: "李經理" },
-];

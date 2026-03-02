@@ -62,7 +62,6 @@ import {
 } from "@/components/ui/table";
 import { PROJECT_DETAIL_PAGE, CREATE_PROJECT_PAGE, PROJECTS_PAGE } from "@/lib/message";
 import { getSpaceNameById, ALL_SPACES } from "@/lib/config";
-import { MOCK_CONTACT_OPTIONS } from "@/lib/types/project";
 import type { ProjectWithRentals, UpdateProjectInput } from "@/lib/types/project";
 import { updateProject, deleteProject } from "./actions";
 import { cn } from "@/lib/utils";
@@ -319,9 +318,10 @@ function formValuesToUpdateInput(values: EditFormValues): UpdateProjectInput {
 
 interface ProjectDetailContentProps {
   project: ProjectWithRentals;
+  adminOptions: { id: string; name: string }[];
 }
 
-export function ProjectDetailContent({ project }: ProjectDetailContentProps) {
+export function ProjectDetailContent({ project, adminOptions }: ProjectDetailContentProps) {
   const router = useRouter();
   const [isEditing, setIsEditing] = React.useState(false);
   const [deleteError, setDeleteError] = React.useState<string | null>(null);
@@ -573,7 +573,7 @@ export function ProjectDetailContent({ project }: ProjectDetailContentProps) {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {MOCK_CONTACT_OPTIONS.map((opt) => (
+                        {adminOptions.map((opt) => (
                           <SelectItem key={opt.id} value={opt.id}>
                             {opt.name}
                           </SelectItem>
