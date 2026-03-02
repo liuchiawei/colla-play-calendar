@@ -170,7 +170,16 @@ export function ProjectsWeekCalendar({ projects }: ProjectsWeekCalendarProps) {
     return spaceToDateToProjects;
   }, [projects, hasRentals, weekDateKeySet]);
 
-  /** 有 rental 資料時使用空間網格；縱軸顯示所有空間（含該週無活動者）以利管理 */
+  const spaceIdsWithProjectsInWeek = React.useMemo(
+    () => new Set(projectsBySpaceAndDate?.keys() ?? []),
+    [projectsBySpaceAndDate],
+  );
+  const spacesToDisplay = React.useMemo(
+    () => ALL_SPACES.filter((s) => spaceIdsWithProjectsInWeek.has(s.id)),
+    [spaceIdsWithProjectsInWeek],
+  );
+
+  /** 有 rental 資料時使用空間網格；縱軸僅顯示該週有專案的空間 */
   const useSpaceGrid = hasRentals;
 
   const weekHasProjects = projects.length > 0;
@@ -247,53 +256,63 @@ export function ProjectsWeekCalendar({ projects }: ProjectsWeekCalendarProps) {
       {weekHasProjects ? (
         useSpaceGrid ? (
           <div className="flex-1 min-w-0 flex flex-col border-t border-border/50">
-            {/* 表頭列：空間標題 + 7 日 */}
-            <div className="grid grid-cols-[minmax(0,1fr)_repeat(7,minmax(0,1fr))] border-b border-border/50 min-w-0">
-              <div className="p-2 border-r border-border/30 font-medium text-sm text-muted-foreground flex items-center">
-                {PROJECTS_PAGE.columnSpace}
+            {spacesToDisplay.length === 0 ? (
+              <div className="flex-1 flex items-center justify-center py-12 px-4">
+                <p className="text-muted-foreground text-sm text-center">
+                  {PROJECTS_PAGE.emptySpaceBookingsThisWeek}
+                </p>
               </div>
-              {displayDays.map((day) => (
-                <DayColumnHeader
-                  key={toDateKey(day)}
-                  day={day}
-                  isToday={isToday(day)}
-                />
-              ))}
-            </div>
-            {/* 各空間列（含該週無專案的空間，空欄顯示 —） */}
-            {ALL_SPACES.map((space) => {
-              const spaceId = space.id;
-              const dateMap = projectsBySpaceAndDate?.get(spaceId);
-              return (
-                <div
-                  key={spaceId}
-                  className="grid grid-cols-[minmax(0,1fr)_repeat(7,minmax(0,1fr))] min-w-0 border-b border-border/30 last:border-b-0"
-                >
-                  <p className="p-2 border-r border-border/30 font-medium text-xs md:text-sm shrink-0 min-w-0">
-                    {getSpaceNameById(spaceId)}
-                  </p>
-                  {displayWeekDateKeys.map((dateKey) => {
-                    const dayProjects = dateMap?.get(dateKey) ?? [];
-                    return (
-                      <div
-                        key={dateKey}
-                        className={cn(
-                          "min-w-0 border-r border-border/30 last:border-r-0",
-                          (() => {
-                            const d = displayDays.find(
-                              (x) => toDateKey(x) === dateKey,
-                            );
-                            return d && isToday(d) ? "bg-primary/5" : "";
-                          })(),
-                        )}
-                      >
-                        <DayColumnContent projects={dayProjects} />
-                      </div>
-                    );
-                  })}
+            ) : (
+              <>
+                {/* 表頭列：空間標題 + 7 日 */}
+                <div className="grid grid-cols-[minmax(0,1fr)_repeat(7,minmax(0,1fr))] border-b border-border/50 min-w-0">
+                  <div className="p-2 border-r border-border/30 font-medium text-sm text-muted-foreground flex items-center">
+                    {PROJECTS_PAGE.columnSpace}
+                  </div>
+                  {displayDays.map((day) => (
+                    <DayColumnHeader
+                      key={toDateKey(day)}
+                      day={day}
+                      isToday={isToday(day)}
+                    />
+                  ))}
                 </div>
-              );
-            })}
+                {/* 各空間列（僅顯示該週有專案的空間） */}
+                {spacesToDisplay.map((space) => {
+                  const spaceId = space.id;
+                  const dateMap = projectsBySpaceAndDate?.get(spaceId);
+                  return (
+                    <div
+                      key={spaceId}
+                      className="grid grid-cols-[minmax(0,1fr)_repeat(7,minmax(0,1fr))] min-w-0 border-b border-border/30 last:border-b-0"
+                    >
+                      <p className="p-2 border-r border-border/30 font-medium text-xs md:text-sm shrink-0 min-w-0">
+                        {getSpaceNameById(spaceId)}
+                      </p>
+                      {displayWeekDateKeys.map((dateKey) => {
+                        const dayProjects = dateMap?.get(dateKey) ?? [];
+                        return (
+                          <div
+                            key={dateKey}
+                            className={cn(
+                              "min-w-0 border-r border-border/30 last:border-r-0",
+                              (() => {
+                                const d = displayDays.find(
+                                  (x) => toDateKey(x) === dateKey,
+                                );
+                                return d && isToday(d) ? "bg-primary/5" : "";
+                              })(),
+                            )}
+                          >
+                            <DayColumnContent projects={dayProjects} />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </>
+            )}
           </div>
         ) : (
           <div className="flex-1 min-w-0 grid grid-cols-7 border-t border-border/50">

@@ -158,6 +158,7 @@ export const PROJECTS_PAGE = {
   statusNegotiating: "洽談中",
   statusDepositPaid: "已付訂",
   emptyProjects: "尚無專案或搜尋無結果",
+  emptySpaceBookingsThisWeek: "本週無場地預訂",
   tabListView: "列表",
   tabWeekView: "週曆",
   tabsAriaLabel: "專案檢視方式",

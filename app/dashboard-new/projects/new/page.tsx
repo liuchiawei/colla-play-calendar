@@ -4,8 +4,10 @@ import { DashboardShell } from "../../components/dashboard-shell.client";
 import { PageHeader } from "../../components/page-header.client";
 import { CreateProjectForm } from "./create-project-form.client";
 import { CREATE_PROJECT_PAGE } from "@/lib/message";
+import { getAdminContactOptions } from "@/lib/services/admin-contact.service";
 
-export default function NewProjectPage() {
+export default async function NewProjectPage() {
+  const adminOptions = await getAdminContactOptions();
   return (
     <DashboardShell>
       <PageHeader
@@ -14,7 +16,7 @@ export default function NewProjectPage() {
         iconName="FolderKanban"
       />
 
-      <CreateProjectForm />
+      <CreateProjectForm adminOptions={adminOptions} />
     </DashboardShell>
   );
 }

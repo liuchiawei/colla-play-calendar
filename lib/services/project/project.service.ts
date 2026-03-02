@@ -7,6 +7,7 @@
 import { cache } from "react";
 import prisma from "@/lib/prisma";
 import { getSpaceNameById } from "@/lib/config";
+import { getAdminContactOptions } from "@/lib/services/admin-contact.service";
 import type {
   CreateProjectInput,
   UpdateProjectInput,
@@ -28,7 +29,8 @@ function mapRowToProject(
     totalAttendees: number | null;
     projectNotes: string | null;
     rentals: Array<{ spaceIds: string[]; date: string; rentalAmount: number; fnbAmount: number }>;
-  }
+  },
+  adminNameById: Map<string, string>
 ): Project {
   const firstRental = row.rentals[0];
   const space = firstRental
@@ -45,7 +47,7 @@ function mapRowToProject(
     eventOrVenueUse: row.eventOrVenueUse,
     space,
     date,
-    contactPerson: row.collaPlayContactId,
+    contactPerson: adminNameById.get(row.collaPlayContactId) ?? row.collaPlayContactId,
     amount,
     status: row.status as Project["status"],
     tables: row.tables ?? null,
@@ -65,23 +67,31 @@ function mapRowToProject(
  * @returns Promise<Project[]>
  */
 export async function getProjectsForList(): Promise<Project[]> {
-  const rows = await prisma.project.findMany({
-    include: { rentals: true },
-    orderBy: { createdAt: "desc" },
-  });
-  return rows.map(mapRowToProject);
+  const [rows, adminOptions] = await Promise.all([
+    prisma.project.findMany({
+      include: { rentals: true },
+      orderBy: { createdAt: "desc" },
+    }),
+    getAdminContactOptions(),
+  ]);
+  const adminNameById = new Map(adminOptions.map((o) => [o.id, o.name]));
+  return rows.map((row) => mapRowToProject(row, adminNameById));
 }
 
 /**
  * 取得最近 N 筆專案（供總覽頁使用，以 React.cache 去重）
  */
 export const getRecentProjects = cache(async (limit: number): Promise<Project[]> => {
-  const rows = await prisma.project.findMany({
-    take: limit,
-    orderBy: { createdAt: "desc" },
-    include: { rentals: true },
-  });
-  return rows.map(mapRowToProject);
+  const [rows, adminOptions] = await Promise.all([
+    prisma.project.findMany({
+      take: limit,
+      orderBy: { createdAt: "desc" },
+      include: { rentals: true },
+    }),
+    getAdminContactOptions(),
+  ]);
+  const adminNameById = new Map(adminOptions.map((o) => [o.id, o.name]));
+  return rows.map((row) => mapRowToProject(row, adminNameById));
 });
 
 /**
@@ -144,12 +154,16 @@ async function getProjectsBySpaceIdImpl(spaceId: string): Promise<Project[]> {
   });
   const projectIds = [...new Set(rentals.map((r) => r.projectId))];
   if (projectIds.length === 0) return [];
-  const rows = await prisma.project.findMany({
-    where: { id: { in: projectIds } },
-    include: { rentals: true },
-    orderBy: { createdAt: "desc" },
-  });
-  return rows.map(mapRowToProject);
+  const [rows, adminOptions] = await Promise.all([
+    prisma.project.findMany({
+      where: { id: { in: projectIds } },
+      include: { rentals: true },
+      orderBy: { createdAt: "desc" },
+    }),
+    getAdminContactOptions(),
+  ]);
+  const adminNameById = new Map(adminOptions.map((o) => [o.id, o.name]));
+  return rows.map((row) => mapRowToProject(row, adminNameById));
 }
 
 export const getProjectsBySpaceId = cache(getProjectsBySpaceIdImpl);

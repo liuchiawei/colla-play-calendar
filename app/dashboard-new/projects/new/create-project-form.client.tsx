@@ -36,7 +36,6 @@ import {
 } from "@/components/ui/popover";
 import { CREATE_PROJECT_PAGE } from "@/lib/message";
 import { ALL_SPACES } from "@/lib/config";
-import { MOCK_CONTACT_OPTIONS } from "@/lib/types/project";
 import type { CreateProjectInput } from "@/lib/types/project";
 import { cn } from "@/lib/utils";
 
@@ -92,7 +91,11 @@ const defaultRental: CreateProjectFormValues["rentals"][0] = {
   pendingAmount: 0,
 };
 
-export function CreateProjectForm() {
+export function CreateProjectForm({
+  adminOptions,
+}: {
+  adminOptions: { id: string; name: string }[];
+}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -438,7 +441,7 @@ export function CreateProjectForm() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {MOCK_CONTACT_OPTIONS.map((opt) => (
+                      {adminOptions.map((opt) => (
                         <SelectItem key={opt.id} value={opt.id}>
                           {opt.name}
                         </SelectItem>

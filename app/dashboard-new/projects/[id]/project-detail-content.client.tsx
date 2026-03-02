@@ -62,7 +62,6 @@ import {
 } from "@/components/ui/table";
 import { PROJECT_DETAIL_PAGE, CREATE_PROJECT_PAGE, PROJECTS_PAGE } from "@/lib/message";
 import { getSpaceNameById, ALL_SPACES } from "@/lib/config";
-import { MOCK_CONTACT_OPTIONS } from "@/lib/types/project";
 import type { ProjectWithRentals, UpdateProjectInput } from "@/lib/types/project";
 import { updateProject, deleteProject } from "./actions";
 import { cn } from "@/lib/utils";
@@ -91,7 +90,10 @@ function escapeCsvCell(value: string): string {
   return s;
 }
 
-function buildProjectDetailCsv(project: ProjectWithRentals): string {
+function buildProjectDetailCsv(
+  project: ProjectWithRentals,
+  collaPlayContactDisplayName: string
+): string {
   const rows: string[] = [];
 
   // Section 1: 專案／客戶摘要（欄位名, 值）
@@ -140,7 +142,7 @@ function buildProjectDetailCsv(project: ProjectWithRentals): string {
     );
   }
   rows.push(
-    [PROJECT_DETAIL_PAGE.labelCollaPlayContact, project.collaPlayContactId].map(escapeCsvCell).join(",")
+    [PROJECT_DETAIL_PAGE.labelCollaPlayContact, collaPlayContactDisplayName].map(escapeCsvCell).join(",")
   );
   rows.push(
     [PROJECT_DETAIL_PAGE.labelStatus, getStatusLabel(project.status)].map(escapeCsvCell).join(",")
@@ -319,9 +321,10 @@ function formValuesToUpdateInput(values: EditFormValues): UpdateProjectInput {
 
 interface ProjectDetailContentProps {
   project: ProjectWithRentals;
+  adminOptions: { id: string; name: string }[];
 }
 
-export function ProjectDetailContent({ project }: ProjectDetailContentProps) {
+export function ProjectDetailContent({ project, adminOptions }: ProjectDetailContentProps) {
   const router = useRouter();
   const [isEditing, setIsEditing] = React.useState(false);
   const [deleteError, setDeleteError] = React.useState<string | null>(null);
@@ -333,6 +336,10 @@ export function ProjectDetailContent({ project }: ProjectDetailContentProps) {
     (sum, r) => sum + r.rentalAmount + r.fnbAmount,
     0
   );
+
+  const collaPlayContactName =
+    adminOptions.find((o) => o.id === project.collaPlayContactId)?.name ??
+    project.collaPlayContactId;
 
   const form = useForm<EditFormValues>({
     resolver: zodResolver(editProjectSchema) as Resolver<EditFormValues>,
@@ -374,7 +381,7 @@ export function ProjectDetailContent({ project }: ProjectDetailContentProps) {
 
   const handleDownloadCsv = useCallback(() => {
     startDownloadTransition(async () => {
-      const csv = buildProjectDetailCsv(project);
+      const csv = buildProjectDetailCsv(project, collaPlayContactName);
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const safeName = (project.eventOrVenueUse || project.id)
@@ -573,7 +580,7 @@ export function ProjectDetailContent({ project }: ProjectDetailContentProps) {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {MOCK_CONTACT_OPTIONS.map((opt) => (
+                        {adminOptions.map((opt) => (
                           <SelectItem key={opt.id} value={opt.id}>
                             {opt.name}
                           </SelectItem>
@@ -962,7 +969,7 @@ export function ProjectDetailContent({ project }: ProjectDetailContentProps) {
           ) : null}
           <div>
             <p className="text-sm text-muted-foreground">{PROJECT_DETAIL_PAGE.labelCollaPlayContact}</p>
-            <p className="font-medium">{project.collaPlayContactId}</p>
+            <p className="font-medium">{collaPlayContactName}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">{PROJECT_DETAIL_PAGE.labelStatus}</p>
