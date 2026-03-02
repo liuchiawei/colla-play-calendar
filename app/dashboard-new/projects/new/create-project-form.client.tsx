@@ -61,8 +61,11 @@ const createProjectSchema = z.object({
   customerName: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
   customerPhone: z
     .string()
-    .min(1, CREATE_PROJECT_PAGE.errorRequired)
-    .regex(/^[\d\s\-]+$/, CREATE_PROJECT_PAGE.errorPhoneInvalid),
+    .optional()
+    .refine(
+      (val) => !val || /^[\d\s\-]+$/.test(val),
+      { message: CREATE_PROJECT_PAGE.errorPhoneInvalid }
+    ),
   company: z.string().optional(),
   taxId: z.string().optional(),
   eventOrVenueUse: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
@@ -128,6 +131,7 @@ export function CreateProjectForm({
   const onSubmit = form.handleSubmit((data: CreateProjectFormValues) => {
     const payload: CreateProjectInput = {
       ...data,
+      customerPhone: data.customerPhone ?? "",
       rentals: data.rentals.map((r) => ({
         ...r,
         setupMinutesBefore: r.setupMinutesBefore ?? 30,
@@ -232,8 +236,11 @@ export function CreateProjectForm({
               name="customerPhone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel aria-required>
-                    {CREATE_PROJECT_PAGE.labelPhoneRequired}
+                  <FormLabel>
+                    {CREATE_PROJECT_PAGE.labelPhone}{" "}
+                    <span className="text-muted-foreground font-normal">
+                      ({CREATE_PROJECT_PAGE.optional})
+                    </span>
                   </FormLabel>
                   <FormControl>
                     <Input
