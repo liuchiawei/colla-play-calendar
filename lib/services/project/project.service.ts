@@ -31,6 +31,8 @@ function mapRowToProject(
     rentals: Array<{
       spaceIds: string[];
       date: string;
+      startTime: string;
+      endTime: string;
       rentalAmount: number;
       fnbAmount: number;
     }>;
@@ -61,7 +63,12 @@ function mapRowToProject(
     fnbItems: row.fnbItems ?? null,
     totalAttendees: row.totalAttendees ?? null,
     projectNotes: row.projectNotes ?? null,
-    rentals: row.rentals.map((r) => ({ date: r.date, spaceIds: r.spaceIds })),
+    rentals: row.rentals.map((r) => ({
+      date: r.date,
+      spaceIds: r.spaceIds,
+      startTime: r.startTime,
+      endTime: r.endTime,
+    })),
   };
 }
 

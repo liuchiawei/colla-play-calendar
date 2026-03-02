@@ -21,6 +21,7 @@ import {
 import { startOfDay, isSameDay } from "date-fns";
 import { PROJECTS_PAGE } from "@/lib/message";
 import type { Project, ProjectStatus } from "@/lib/types/project";
+import { getProjectTimeRange } from "@/lib/utils/project";
 import { cn } from "@/lib/utils";
 
 function toDateKey(d: Date): string {
@@ -40,16 +41,26 @@ function badgeVariantByStatus(status: ProjectStatus): "outline" | "default" {
 
 function ProjectBadgeLink({
   project,
+  dateKey,
   className,
 }: {
   project: Project;
+  /** 週曆格子的日期 key，有傳則顯示該日 rental 的時段 */
+  dateKey?: string;
   className?: string;
 }) {
   const variant = badgeVariantByStatus(project.status);
+  const timeRange = getProjectTimeRange(project, dateKey);
   return (
-    <Badge asChild variant={variant} className={className}>
-      <Link href={`/dashboard-new/projects/${project.id}`} className="truncate">
-        {project.eventOrVenueUse}
+    <Badge asChild variant={variant} className={cn("rounded-sm", className)}>
+      <Link
+        href={`/dashboard-new/projects/${project.id}`}
+        className="flex flex-col"
+      >
+        <span className="text-wrap">{project.eventOrVenueUse}</span>
+        {timeRange != null && (
+          <span className="font-normal opacity-90">{timeRange}</span>
+        )}
       </Link>
     </Badge>
   );
@@ -83,7 +94,13 @@ function DayColumnHeader({ day, isToday }: { day: Date; isToday: boolean }) {
   );
 }
 
-function DayColumnContent({ projects }: { projects: Project[] }) {
+function DayColumnContent({
+  projects,
+  dateKey,
+}: {
+  projects: Project[];
+  dateKey?: string;
+}) {
   if (projects.length === 0) {
     return (
       <div className="p-2 text-muted-foreground text-xs text-center min-h-[4rem] flex items-center justify-center">
@@ -97,6 +114,7 @@ function DayColumnContent({ projects }: { projects: Project[] }) {
         <ProjectBadgeLink
           key={project.id}
           project={project}
+          dateKey={dateKey}
           className="text-[10px] truncate w-full"
         />
       ))}
@@ -301,7 +319,10 @@ export function ProjectsWeekCalendar({ projects }: ProjectsWeekCalendarProps) {
                               })(),
                             )}
                           >
-                            <DayColumnContent projects={dayProjects} />
+                            <DayColumnContent
+                              projects={dayProjects}
+                              dateKey={dateKey}
+                            />
                           </div>
                         );
                       })}
@@ -325,7 +346,7 @@ export function ProjectsWeekCalendar({ projects }: ProjectsWeekCalendarProps) {
                   )}
                 >
                   <DayColumnHeader day={day} isToday={isToday(day)} />
-                  <DayColumnContent projects={dayProjects} />
+                  <DayColumnContent projects={dayProjects} dateKey={dayKey} />
                 </div>
               );
             })}
