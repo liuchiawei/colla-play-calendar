@@ -5,8 +5,10 @@ import { DashboardShell } from "../components/dashboard-shell.client";
 import { PageHeader } from "../components/page-header.client";
 import { SpacesTabs } from "./spaces-tabs.client";
 import { SPACES_PAGE } from "@/lib/message";
+import { getProjectsForList } from "@/lib/services/project/project.service";
 
-export default function SpacesPage() {
+export default async function SpacesPage() {
+  const projects = await getProjectsForList();
   return (
     <DashboardShell>
       <PageHeader
@@ -15,7 +17,7 @@ export default function SpacesPage() {
         iconName="Building2"
       />
 
-      <SpacesTabs />
+      <SpacesTabs projects={projects} />
     </DashboardShell>
   );
 }

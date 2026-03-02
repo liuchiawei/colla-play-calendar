@@ -1,170 +1,108 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import {
-  ALL_SPACES,
-  SPACES_BY_FLOOR,
-  type Space,
-  type FloorKey,
-} from "@/lib/config/config";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ALL_SPACES } from "@/lib/config/config";
 import { SPACES_PAGE } from "@/lib/message";
+import type { Project } from "@/lib/types/project";
+import { SpaceProjectsCalendar } from "./[slug]/space-projects-calendar.client";
 import { LayoutGrid, Building2 } from "lucide-react";
 
-const TAB_VALUES = ["all", "3F", "4F", "5F"] as const;
-type TabValue = (typeof TAB_VALUES)[number];
+const FILTER_ALL = "all" as const;
 
-function getSpacesForTab(value: TabValue): Space[] {
-  if (value === "all") return ALL_SPACES;
-  return SPACES_BY_FLOOR[value as FloorKey];
-}
+/** 各空間對應的 border 色 class（左側邊框），用於月曆上區分空間 */
+const SPACE_BORDER_COLORS: Record<string, string> = {
+  "3f-community-cafe": "border-blue-500",
+  "3f-focus-area": "border-emerald-500",
+  "4f-multipurpose-room": "border-amber-500",
+  "4f-multipurpose-room-1": "border-amber-500",
+  "4f-multipurpose-room-2": "border-amber-500",
+  "4f-podcast-studio": "border-rose-500",
+  "4f-product-photo": "border-violet-500",
+  "4f-event-lounge": "border-cyan-500",
+  "4f-screening-room": "border-orange-500",
+  "4f-tik-&-sip": "border-teal-500",
+  "5f-exhibition-hall": "border-pink-500",
+};
 
-function SpaceCard({ space }: { space: Space }) {
-  return (
-    <li className="min-w-0 list-none">
-      <Link href={`/dashboard-new/spaces/${space.id}`}>
-        <Card className="transition-[box-shadow] hover:shadow-md motion-reduce:transition-none">
-          <CardHeader className="pb-2">
-            <div className="flex items-start justify-between gap-3">
-              <CardTitle className="text-base line-clamp-2 min-w-0 flex-1">
-                {space.name}
-              </CardTitle>
-              <Label
-                asChild
-                className="shrink-0 text-xs font-medium text-muted-foreground"
-                aria-label="樓層"
-              >
-                <span>{space.floor}</span>
-              </Label>
-            </div>
-          </CardHeader>
-          {space.description ? (
-            <CardContent className="pt-0">
-              <p className="text-sm text-muted-foreground line-clamp-2">
-                {space.description}
-              </p>
-            </CardContent>
-          ) : null}
-        </Card>
-      </Link>
-    </li>
+function filterProjectsBySpace(
+  projects: Project[],
+  spaceId: string | null,
+): Project[] {
+  if (spaceId == null || spaceId === FILTER_ALL) return projects;
+  return projects.filter((p) =>
+    p.rentals?.some((r) => r.spaceIds.includes(spaceId)),
   );
 }
 
-function SpaceList({
-  spaces,
-  ariaLabel,
-  sectionHeading,
-}: {
-  spaces: Space[];
-  ariaLabel: string;
-  sectionHeading: string;
-}) {
-  if (spaces.length === 0) {
-    return (
-      <section aria-label={ariaLabel}>
-        <h2 className="text-lg font-semibold mb-4 text-balance">
-          {sectionHeading}
-        </h2>
-        <p className="text-muted-foreground text-sm py-8 text-center">
-          {SPACES_PAGE.emptyFloor}
-        </p>
-      </section>
-    );
-  }
-  return (
-    <section aria-label={ariaLabel}>
-      <h2 className="text-lg font-semibold mb-4 text-balance">
-        {sectionHeading}
-      </h2>
-      <ul
-        className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-        role="list"
-      >
-        {spaces.map((space) => (
-          <SpaceCard key={space.id} space={space} />
-        ))}
-      </ul>
-    </section>
-  );
+interface SpacesTabsProps {
+  projects: Project[];
 }
 
-const TAB_LABELS: Record<TabValue, string> = {
-  all: SPACES_PAGE.tabAll,
-  "3F": SPACES_PAGE.tab3F,
-  "4F": SPACES_PAGE.tab4F,
-  "5F": SPACES_PAGE.tab5F,
-};
+export function SpacesTabs({ projects }: SpacesTabsProps) {
+  const [selectedFilter, setSelectedFilter] =
+    React.useState<string>(FILTER_ALL);
 
-const TAB_ARIA_LABELS: Record<TabValue, string> = {
-  all: SPACES_PAGE.sectionAll,
-  "3F": SPACES_PAGE.section3F,
-  "4F": SPACES_PAGE.section4F,
-  "5F": SPACES_PAGE.section5F,
-};
+  const filteredProjects = React.useMemo(
+    () =>
+      filterProjectsBySpace(
+        projects,
+        selectedFilter === FILTER_ALL ? null : selectedFilter,
+      ),
+    [projects, selectedFilter],
+  );
 
-export function SpacesTabs() {
-  const [value, setValue] = React.useState<TabValue>("all");
+  const isAllView = selectedFilter === FILTER_ALL;
+  const spaceLegend = React.useMemo(
+    () =>
+      ALL_SPACES.map((s) => ({
+        id: s.id,
+        name: s.name,
+      })),
+    [],
+  );
 
   return (
-    <div className="flex-1 p-6">
+    <div className="flex-1 p-6 flex flex-col justify-center min-w-0">
       <Tabs
-        value={value}
-        onValueChange={(v) => setValue(v as TabValue)}
-        className="w-full"
+        value={selectedFilter}
+        onValueChange={setSelectedFilter}
+        className="w-full flex-1 flex flex-col min-w-0"
       >
         <TabsList
-          className="grid w-full max-w-md grid-cols-4"
+          className="flex flex-wrap h-auto gap-1 w-full justify-start mx-auto"
           aria-label={SPACES_PAGE.tabsFilterAriaLabel}
         >
-          <TabsTrigger value="all" className="flex items-center gap-1.5">
+          <TabsTrigger
+            value={FILTER_ALL}
+            className="flex items-center gap-1.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+          >
             <LayoutGrid className="size-4 shrink-0" aria-hidden />
-            {TAB_LABELS.all}
+            {SPACES_PAGE.tabAll}
           </TabsTrigger>
-          <TabsTrigger value="3F" className="flex items-center gap-1.5">
-            <Building2 className="size-4 shrink-0" aria-hidden />
-            {TAB_LABELS["3F"]}
-          </TabsTrigger>
-          <TabsTrigger value="4F" className="flex items-center gap-1.5">
-            <Building2 className="size-4 shrink-0" aria-hidden />
-            {TAB_LABELS["4F"]}
-          </TabsTrigger>
-          <TabsTrigger value="5F" className="flex items-center gap-1.5">
-            <Building2 className="size-4 shrink-0" aria-hidden />
-            {TAB_LABELS["5F"]}
-          </TabsTrigger>
+          {ALL_SPACES.map((space) => (
+            <TabsTrigger
+              key={space.id}
+              value={space.id}
+              className="flex items-center gap-1.5"
+            >
+              {space.name}
+            </TabsTrigger>
+          ))}
         </TabsList>
-        <TabsContent value="all" className="mt-6">
-          <SpaceList
-            spaces={getSpacesForTab("all")}
-            ariaLabel={TAB_ARIA_LABELS.all}
-            sectionHeading={TAB_ARIA_LABELS.all}
+        <div className="mt-6 flex-1 min-w-0">
+          <SpaceProjectsCalendar
+            projects={filteredProjects}
+            spaceName={
+              isAllView
+                ? ""
+                : (ALL_SPACES.find((s) => s.id === selectedFilter)?.name ?? "")
+            }
+            showVenue={true}
+            spaceBorderColors={isAllView ? SPACE_BORDER_COLORS : undefined}
+            spaceLegend={isAllView ? spaceLegend : undefined}
           />
-        </TabsContent>
-        <TabsContent value="3F" className="mt-6">
-          <SpaceList
-            spaces={getSpacesForTab("3F")}
-            ariaLabel={TAB_ARIA_LABELS["3F"]}
-            sectionHeading={SPACES_PAGE.tab3F}
-          />
-        </TabsContent>
-        <TabsContent value="4F" className="mt-6">
-          <SpaceList
-            spaces={getSpacesForTab("4F")}
-            ariaLabel={TAB_ARIA_LABELS["4F"]}
-            sectionHeading={SPACES_PAGE.tab4F}
-          />
-        </TabsContent>
-        <TabsContent value="5F" className="mt-6">
-          <SpaceList
-            spaces={getSpacesForTab("5F")}
-            ariaLabel={TAB_ARIA_LABELS["5F"]}
-            sectionHeading={SPACES_PAGE.tab5F}
-          />
-        </TabsContent>
+        </div>
       </Tabs>
     </div>
   );

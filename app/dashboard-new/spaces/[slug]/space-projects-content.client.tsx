@@ -87,7 +87,11 @@ export function SpaceProjectsContent({
         </TabsList>
 
         <TabsContent value="calendar" className="mt-6 flex-1 min-w-0">
-          <SpaceProjectsCalendar projects={projects} spaceName={spaceName} />
+          <SpaceProjectsCalendar
+            projects={projects}
+            spaceName={spaceName}
+            showVenue={false}
+          />
         </TabsContent>
 
         <TabsContent value="list" className="mt-6 flex-1 min-w-0">
