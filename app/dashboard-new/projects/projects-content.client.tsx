@@ -6,11 +6,10 @@ import Link from "next/link";
 import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Popover,
+  PopoverAnchor,
+  PopoverContent,
+} from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -85,8 +84,8 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
           </Button>
         </Link>
         {/* Search Bar */}
-        <DropdownMenu open={searchOpen} onOpenChange={setSearchOpen}>
-          <DropdownMenuTrigger asChild>
+        <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+          <PopoverAnchor asChild>
             <div className="relative flex-1 max-w-xl w-full">
               <Label htmlFor={searchInputId} className="sr-only">
                 {PROJECTS_PAGE.searchAriaLabel}
@@ -111,11 +110,12 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
                 aria-label={PROJECTS_PAGE.searchAriaLabel}
               />
             </div>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            className="max-h-[min(20rem,var(--radix-dropdown-menu-content-available-height))] w-[var(--radix-dropdown-menu-trigger-width)] overflow-y-auto"
+          </PopoverAnchor>
+          <PopoverContent
             align="start"
             sideOffset={4}
+            onOpenAutoFocus={(e) => e.preventDefault()}
+            className="max-h-[min(20rem,var(--radix-popover-content-available-height))] w-[var(--radix-popover-trigger-width)] overflow-y-auto p-1"
           >
             {filteredProjects.length === 0 ? (
               <div className="py-6 text-center text-sm text-muted-foreground px-2">
@@ -124,26 +124,28 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
                   : PROJECTS_PAGE.emptyProjects}
               </div>
             ) : (
-              filteredProjects.slice(0, dropdownResultsLimit).map((project) => (
-                <DropdownMenuItem key={project.id} asChild>
-                  <Link
-                    href={`/dashboard-new/projects/${project.id}`}
-                    className="block cursor-pointer"
-                    onClick={() => setSearchOpen(false)}
-                  >
-                    <span className="font-medium truncate block">
-                      {project.eventOrVenueUse}
-                    </span>
-                    <span className="text-muted-foreground text-xs truncate block">
-                      {project.customer}
-                      {project.space ? ` · ${project.space}` : ""}
-                    </span>
-                  </Link>
-                </DropdownMenuItem>
-              ))
+              <ul role="list" className="outline-hidden">
+                {filteredProjects.slice(0, dropdownResultsLimit).map((project) => (
+                  <li key={project.id} role="listitem">
+                    <Link
+                      href={`/dashboard-new/projects/${project.id}`}
+                      className="block cursor-pointer rounded-sm px-2 py-1.5 text-sm outline-hidden focus:bg-accent focus:text-accent-foreground hover:bg-accent hover:text-accent-foreground"
+                      onClick={() => setSearchOpen(false)}
+                    >
+                      <span className="font-medium truncate block">
+                        {project.eventOrVenueUse}
+                      </span>
+                      <span className="text-muted-foreground text-xs truncate block">
+                        {project.customer}
+                        {project.space ? ` · ${project.space}` : ""}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+          </PopoverContent>
+        </Popover>
       </div>
 
       <Tabs
