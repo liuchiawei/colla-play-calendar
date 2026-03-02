@@ -1,37 +1,31 @@
 "use client";
 
 import * as React from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Popover,
+  PopoverAnchor,
+  PopoverContent,
+} from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PROJECTS_PAGE } from "@/lib/message";
 import type { Project } from "@/lib/types/project";
 
-const DATE_FORMATTER = new Intl.DateTimeFormat("zh-TW", {
-  dateStyle: "short",
-});
+const ProjectsWeekCalendar = dynamic(
+  () =>
+    import("./projects-week-calendar.client").then((m) => m.ProjectsWeekCalendar),
+  { ssr: false },
+);
 
-const CURRENCY_FORMATTER = new Intl.NumberFormat("zh-TW", {
-  style: "currency",
-  currency: "TWD",
-});
+const ProjectsList = dynamic(
+  () => import("./projects-list").then((m) => m.ProjectsList),
+  { ssr: false },
+);
 
 /** Subsequence fuzzy match: query chars appear in order in text. */
 function fuzzyMatch(text: string, query: string): boolean {
@@ -59,12 +53,6 @@ function filterProjectsFuzzy(projects: Project[], query: string): Project[] {
   });
 }
 
-function getStatusLabel(status: Project["status"]): string {
-  return status === "negotiating"
-    ? PROJECTS_PAGE.statusNegotiating
-    : PROJECTS_PAGE.statusDepositPaid;
-}
-
 interface ProjectsContentProps {
   projects: Project[];
 }
@@ -82,8 +70,9 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
   const dropdownResultsLimit = 8;
 
   return (
-    <div className="flex-1 p-6 flex flex-col gap-6">
-      <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+    <div className="flex-1 min-w-0 p-6 flex flex-col gap-6">
+      <div className="flex flex-col md:flex-row gap-3 items-center justify-between">
+        {/* Create New Project Button */}
         <Link href="/dashboard-new/projects/new" className="shrink-0">
           <Button
             variant="default"
@@ -94,10 +83,10 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
             {PROJECTS_PAGE.createNewProject}
           </Button>
         </Link>
-
-        <DropdownMenu open={searchOpen} onOpenChange={setSearchOpen}>
-          <DropdownMenuTrigger asChild>
-            <div className="relative flex-1 sm:max-w-md">
+        {/* Search Bar */}
+        <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+          <PopoverAnchor asChild>
+            <div className="relative flex-1 max-w-xl w-full">
               <Label htmlFor={searchInputId} className="sr-only">
                 {PROJECTS_PAGE.searchAriaLabel}
               </Label>
@@ -121,11 +110,12 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
                 aria-label={PROJECTS_PAGE.searchAriaLabel}
               />
             </div>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            className="max-h-[min(20rem,var(--radix-dropdown-menu-content-available-height))] w-[var(--radix-dropdown-menu-trigger-width)] overflow-y-auto"
+          </PopoverAnchor>
+          <PopoverContent
             align="start"
             sideOffset={4}
+            onOpenAutoFocus={(e) => e.preventDefault()}
+            className="max-h-[min(20rem,var(--radix-popover-content-available-height))] w-[var(--radix-popover-trigger-width)] overflow-y-auto p-1"
           >
             {filteredProjects.length === 0 ? (
               <div className="py-6 text-center text-sm text-muted-foreground px-2">
@@ -134,91 +124,50 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
                   : PROJECTS_PAGE.emptyProjects}
               </div>
             ) : (
-              filteredProjects.slice(0, dropdownResultsLimit).map((project) => (
-                <DropdownMenuItem key={project.id} asChild>
-                  <Link
-                    href={`/dashboard-new/projects/${project.id}`}
-                    className="block cursor-pointer"
-                    onClick={() => setSearchOpen(false)}
-                  >
-                    <span className="font-medium truncate block">
-                      {project.eventOrVenueUse}
-                    </span>
-                    <span className="text-muted-foreground text-xs truncate block">
-                      {project.customer}
-                      {project.space ? ` · ${project.space}` : ""}
-                    </span>
-                  </Link>
-                </DropdownMenuItem>
-              ))
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
-      <section
-        className="flex-1 min-w-0 rounded-xl border border-border bg-card/50 backdrop-blur-sm overflow-hidden [&_th]:p-4 [&_td]:p-4"
-        aria-label={PROJECTS_PAGE.tableCaption}
-      >
-        {filteredProjects.length === 0 ? (
-          <p className="text-muted-foreground text-sm py-12 text-center px-4">
-            {PROJECTS_PAGE.emptyProjects}
-          </p>
-        ) : (
-          <Table>
-            <TableCaption className="sr-only">
-              {PROJECTS_PAGE.tableCaption}
-            </TableCaption>
-            <TableHeader>
-              <TableRow>
-                <TableHead scope="col">
-                  {PROJECTS_PAGE.columnCustomer}
-                </TableHead>
-                <TableHead scope="col">
-                  {PROJECTS_PAGE.columnEventOrVenueUse}
-                </TableHead>
-                <TableHead scope="col">{PROJECTS_PAGE.columnSpace}</TableHead>
-                <TableHead scope="col">{PROJECTS_PAGE.columnDate}</TableHead>
-                <TableHead scope="col">{PROJECTS_PAGE.columnContact}</TableHead>
-                <TableHead scope="col" className="text-right tabular-nums">
-                  {PROJECTS_PAGE.columnAmount}
-                </TableHead>
-                <TableHead scope="col">{PROJECTS_PAGE.columnStatus}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredProjects.map((project) => (
-                <TableRow key={project.id}>
-                  <TableCell className="min-w-0 max-w-[120px] truncate">
-                    {project.customer}
-                  </TableCell>
-                  <TableCell className="min-w-0 max-w-[180px] truncate">
+              <ul role="list" className="outline-hidden">
+                {filteredProjects.slice(0, dropdownResultsLimit).map((project) => (
+                  <li key={project.id} role="listitem">
                     <Link
                       href={`/dashboard-new/projects/${project.id}`}
-                      className="font-medium text-primary hover:underline focus:outline-none focus:underline"
+                      className="block cursor-pointer rounded-sm px-2 py-1.5 text-sm outline-hidden focus:bg-accent focus:text-accent-foreground hover:bg-accent hover:text-accent-foreground"
+                      onClick={() => setSearchOpen(false)}
                     >
-                      {project.eventOrVenueUse}
+                      <span className="font-medium truncate block">
+                        {project.eventOrVenueUse}
+                      </span>
+                      <span className="text-muted-foreground text-xs truncate block">
+                        {project.customer}
+                        {project.space ? ` · ${project.space}` : ""}
+                      </span>
                     </Link>
-                  </TableCell>
-                  <TableCell className="min-w-0 max-w-[160px] truncate">
-                    {project.space}
-                  </TableCell>
-                  <TableCell className="tabular-nums whitespace-nowrap">
-                    {DATE_FORMATTER.format(new Date(project.date))}
-                  </TableCell>
-                  <TableCell className="min-w-0 max-w-[100px] truncate">
-                    {project.contactPerson}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {CURRENCY_FORMATTER.format(project.amount)}
-                  </TableCell>
-                  <TableCell>{getStatusLabel(project.status)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </section>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </PopoverContent>
+        </Popover>
+      </div>
+
+      <Tabs
+        defaultValue="list"
+        className="flex-1 flex flex-col items-center min-w-0"
+      >
+        <TabsList
+          className="w-full md:max-w-md grid grid-cols-2"
+          aria-label={PROJECTS_PAGE.tabsAriaLabel}
+        >
+          <TabsTrigger value="list">{PROJECTS_PAGE.tabListView}</TabsTrigger>
+          <TabsTrigger value="week">{PROJECTS_PAGE.tabWeekView}</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="list" className="flex-1 min-w-0 w-full">
+          <ProjectsList projects={filteredProjects} />
+        </TabsContent>
+
+        <TabsContent value="week" className="flex-1 min-w-0 w-full">
+          <ProjectsWeekCalendar projects={projects} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

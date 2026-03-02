@@ -150,9 +150,17 @@ export const PROJECTS_PAGE = {
   columnContact: "接洽人",
   columnAmount: "金額",
   columnStatus: "狀態",
+  columnTables: "桌數等",
+  columnChairs: "椅子數",
+  columnFnbItems: "餐飲項目",
+  columnTotalAttendees: "預計人數",
+  columnProjectNotes: "專案備註",
   statusNegotiating: "洽談中",
   statusDepositPaid: "已付訂",
   emptyProjects: "尚無專案或搜尋無結果",
+  tabListView: "列表",
+  tabWeekView: "週曆",
+  tabsAriaLabel: "專案檢視方式",
 } as const;
 
 // Create Project Page (建立新專案表單)
