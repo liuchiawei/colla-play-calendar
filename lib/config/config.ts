@@ -150,8 +150,15 @@ export const SPACES_BY_FLOOR: Record<FloorKey, Space[]> = {
 
 export const ALL_SPACES: Space[] = [...SPACES_3F, ...SPACES_4F, ...SPACES_5F];
 
+/** 已廢除的場域 id（room1/room2 合併為 multipurpose-room），顯示名稱統一回傳多功能教室 */
+const DEPRECATED_SPACE_ID_TO_NAME: Record<string, string> = {
+  "4f-multipurpose-room-1": SPACE_MESSAGES["multipurpose-room"].name,
+  "4f-multipurpose-room-2": SPACE_MESSAGES["multipurpose-room"].name,
+};
+
 /** 依場域 id（如 4f-podcast-studio）回傳顯示名稱，供專案列表等使用 */
 export function getSpaceNameById(id: string): string {
+  if (DEPRECATED_SPACE_ID_TO_NAME[id]) return DEPRECATED_SPACE_ID_TO_NAME[id];
   const space = ALL_SPACES.find((s) => s.id === id);
   return space?.name ?? id;
 }

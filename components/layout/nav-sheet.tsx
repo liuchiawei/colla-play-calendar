@@ -127,8 +127,8 @@ export function NavSheet({ children }: NavSheetProps) {
                 <Separator className="my-3" />
                 {[
                   {
-                    href: "/dashboard",
-                    label: "儀表板",
+                    href: "/dashboard-new",
+                    label: "管理後台",
                     icon: LayoutDashboard,
                   },
                   { href: "/dashboard-new", label: "管理後台", icon: Layout },
@@ -136,7 +136,7 @@ export function NavSheet({ children }: NavSheetProps) {
                   const Icon = link.icon;
                   const isActive =
                     pathname === link.href ||
-                    (link.href !== "/dashboard" &&
+                    (link.href !== "/dashboard-new" &&
                       pathname.startsWith(link.href + "/"));
                   return (
                     <Button
