@@ -57,15 +57,12 @@ function ProjectBadgeLink({
   return (
     <Badge
       asChild
-      className={cn(badgeClassNameByStatus(project.status), className)}
+      className={cn("rounded-sm", badgeClassNameByStatus(project.status), className)}
     >
-      <Link href={`/dashboard-new/projects/${project.id}`} className="truncate">
-        {project.eventOrVenueUse}
+      <Link href={`/dashboard-new/projects/${project.id}`} className="flex flex-col py-2">
+        <span className="text-wrap line-clamp-2">{project.eventOrVenueUse}</span>
         {timeRange != null && (
-          <>
-            <br />
-            <span className="font-normal opacity-90">{timeRange}</span>
-          </>
+          <span className="font-normal opacity-90">{timeRange}</span>
         )}
       </Link>
     </Badge>
