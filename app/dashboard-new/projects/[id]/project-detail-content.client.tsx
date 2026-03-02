@@ -1816,11 +1816,28 @@ export function ProjectDetailContent({
             </h2>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
+            {/* Event Title */}
             <div className="sm:col-span-2">
               <p className="text-sm text-muted-foreground">
                 {PROJECT_DETAIL_PAGE.labelEventOrVenueUse}
               </p>
               <p className="font-medium">{project.eventOrVenueUse}</p>
+            </div>
+            {/* Status */}
+            <div>
+              <p className="text-sm text-muted-foreground">
+                {PROJECT_DETAIL_PAGE.labelStatus}
+              </p>
+              <p className="font-medium flex items-center gap-2">
+                <span
+                  className={cn(
+                    "size-2.5 shrink-0 rounded-full",
+                    getStatusColorClass(project.status),
+                  )}
+                  aria-hidden
+                />
+                {getStatusLabel(project.status)}
+              </p>
             </div>
             {project.totalAttendees != null ? (
               <div>
@@ -1871,21 +1888,6 @@ export function ProjectDetailContent({
                 {PROJECT_DETAIL_PAGE.labelCollaPlayContact}
               </p>
               <p className="font-medium">{collaPlayContactName}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">
-                {PROJECT_DETAIL_PAGE.labelStatus}
-              </p>
-              <p className="font-medium flex items-center gap-2">
-                <span
-                  className={cn(
-                    "size-2.5 shrink-0 rounded-full",
-                    getStatusColorClass(project.status),
-                  )}
-                  aria-hidden
-                />
-                {getStatusLabel(project.status)}
-              </p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">
