@@ -1614,7 +1614,7 @@ export function ProjectDetailContent({
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="min-w-0 flex flex-col gap-6">
       {editingRental ? (
         <EditRentalFormDialog
           key={editingRental.id}
@@ -1768,9 +1768,9 @@ export function ProjectDetailContent({
       </div>
 
       {/* Main Content */}
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="min-w-0 grid gap-6 md:grid-cols-2">
         {/* Customer Information Card */}
-        <Card>
+        <Card className="min-w-0">
           <CardHeader>
             <h2 className="text-lg font-semibold">
               {PROJECT_DETAIL_PAGE.sectionCustomer}
@@ -1809,7 +1809,7 @@ export function ProjectDetailContent({
         </Card>
 
         {/* Project Information Card */}
-        <Card>
+        <Card className="min-w-0">
           <CardHeader>
             <h2 className="text-lg font-semibold">
               {PROJECT_DETAIL_PAGE.sectionProject}
@@ -1908,7 +1908,7 @@ export function ProjectDetailContent({
 
         {/* Notes Card */}
         {project.internalNotes ? (
-          <Card className="md:col-span-2">
+          <Card className="min-w-0 md:col-span-2">
             <CardHeader>
               <h2 className="text-lg font-semibold">
                 {PROJECT_DETAIL_PAGE.sectionNotes}
@@ -1926,7 +1926,7 @@ export function ProjectDetailContent({
         ) : null}
 
         {/* Rentals Card */}
-        <Card className="md:col-span-2">
+        <Card className="min-w-0 md:col-span-2">
           <CardHeader>
             <h2 className="text-lg font-semibold">
               {PROJECT_DETAIL_PAGE.sectionRentals}
@@ -2100,7 +2100,7 @@ export function ProjectDetailContent({
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="gap-2 text-muted-foreground hover:text-foreground"
+                        className="mx-auto gap-2 text-muted-foreground hover:text-foreground"
                         onClick={() => setIsAddRentalOpen(true)}
                         aria-label={PROJECT_DETAIL_PAGE.addRentalLabel}
                       >
