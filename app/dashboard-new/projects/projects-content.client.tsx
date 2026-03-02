@@ -70,7 +70,7 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
   const dropdownResultsLimit = 8;
 
   return (
-    <div className="flex-1 p-6 flex flex-col gap-6">
+    <div className="flex-1 min-w-0 p-6 flex flex-col gap-6">
       <div className="flex flex-col md:flex-row gap-3 items-center justify-between">
         {/* Create New Project Button */}
         <Link href="/dashboard-new/projects/new" className="shrink-0">
@@ -160,11 +160,11 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
           <TabsTrigger value="week">{PROJECTS_PAGE.tabWeekView}</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="list" className="flex-1 min-w-0">
+        <TabsContent value="list" className="flex-1 min-w-0 w-full">
           <ProjectsList projects={filteredProjects} />
         </TabsContent>
 
-        <TabsContent value="week" className="flex-1 min-w-0">
+        <TabsContent value="week" className="flex-1 min-w-0 w-full">
           <ProjectsWeekCalendar projects={projects} />
         </TabsContent>
       </Tabs>

@@ -22,6 +22,11 @@ function mapRowToProject(
     eventOrVenueUse: string;
     collaPlayContactId: string;
     status: string;
+    tables: string | null;
+    chairs: number | null;
+    fnbItems: string | null;
+    totalAttendees: number | null;
+    projectNotes: string | null;
     rentals: Array<{ spaceIds: string[]; date: string; rentalAmount: number; fnbAmount: number }>;
   }
 ): Project {
@@ -43,6 +48,11 @@ function mapRowToProject(
     contactPerson: row.collaPlayContactId,
     amount,
     status: row.status as Project["status"],
+    tables: row.tables ?? null,
+    chairs: row.chairs ?? null,
+    fnbItems: row.fnbItems ?? null,
+    totalAttendees: row.totalAttendees ?? null,
+    projectNotes: row.projectNotes ?? null,
   };
 }
 

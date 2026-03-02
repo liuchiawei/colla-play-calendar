@@ -14,6 +14,16 @@ export interface Project {
   contactPerson: string;
   amount: number;
   status: ProjectStatus;
+  /** 選填：桌數等 */
+  tables?: string | null;
+  /** 選填：椅子數 */
+  chairs?: number | null;
+  /** 選填：餐飲項目 */
+  fnbItems?: string | null;
+  /** 選填：預計人數 */
+  totalAttendees?: number | null;
+  /** 選填：專案備註 */
+  projectNotes?: string | null;
 }
 
 // Create project form: single rental item (場域可多選)
