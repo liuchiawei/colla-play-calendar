@@ -1080,6 +1080,7 @@ export function ProjectDetailContent({
             />
           ) : null}
         </div>
+        {/* Header Buttons */}
         <div className="flex flex-wrap justify-end gap-2">
           {/* Edit Button */}
           <Button
@@ -1161,224 +1162,233 @@ export function ProjectDetailContent({
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <h2 className="text-lg font-semibold">
-            {PROJECT_DETAIL_PAGE.sectionCustomer}
-          </h2>
-        </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <p className="text-sm text-muted-foreground">
-              {PROJECT_DETAIL_PAGE.labelCustomerName}
-            </p>
-            <p className="font-medium">{project.customerName}</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">
-              {PROJECT_DETAIL_PAGE.labelPhone}
-            </p>
-            <p className="font-medium">{project.customerPhone}</p>
-          </div>
-          {project.company ? (
-            <div>
-              <p className="text-sm text-muted-foreground">
-                {PROJECT_DETAIL_PAGE.labelCompany}
-              </p>
-              <p className="font-medium">{project.company}</p>
-            </div>
-          ) : null}
-          {project.taxId ? (
-            <div>
-              <p className="text-sm text-muted-foreground">
-                {PROJECT_DETAIL_PAGE.labelTaxId}
-              </p>
-              <p className="font-medium">{project.taxId}</p>
-            </div>
-          ) : null}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <h2 className="text-lg font-semibold">
-            {PROJECT_DETAIL_PAGE.sectionProject}
-          </h2>
-        </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
-          <div className="sm:col-span-2">
-            <p className="text-sm text-muted-foreground">
-              {PROJECT_DETAIL_PAGE.labelEventOrVenueUse}
-            </p>
-            <p className="font-medium">{project.eventOrVenueUse}</p>
-          </div>
-          {project.totalAttendees != null ? (
-            <div>
-              <p className="text-sm text-muted-foreground">
-                {PROJECT_DETAIL_PAGE.labelTotalAttendees}
-              </p>
-              <p className="font-medium">{project.totalAttendees}</p>
-            </div>
-          ) : null}
-          {project.tables ? (
-            <div>
-              <p className="text-sm text-muted-foreground">
-                {PROJECT_DETAIL_PAGE.labelTables}
-              </p>
-              <p className="font-medium">{project.tables}</p>
-            </div>
-          ) : null}
-          {project.chairs != null ? (
-            <div>
-              <p className="text-sm text-muted-foreground">
-                {PROJECT_DETAIL_PAGE.labelChairs}
-              </p>
-              <p className="font-medium">{project.chairs}</p>
-            </div>
-          ) : null}
-          {project.fnbItems ? (
-            <div className="sm:col-span-2">
-              <p className="text-sm text-muted-foreground">
-                {PROJECT_DETAIL_PAGE.labelFnb}
-              </p>
-              <p className="font-medium whitespace-pre-wrap">
-                {project.fnbItems}
-              </p>
-            </div>
-          ) : null}
-          {project.projectNotes ? (
-            <div className="sm:col-span-2">
-              <p className="text-sm text-muted-foreground">
-                {PROJECT_DETAIL_PAGE.labelProjectNotes}
-              </p>
-              <p className="font-medium whitespace-pre-wrap">
-                {project.projectNotes}
-              </p>
-            </div>
-          ) : null}
-          <div>
-            <p className="text-sm text-muted-foreground">
-              {PROJECT_DETAIL_PAGE.labelCollaPlayContact}
-            </p>
-            <p className="font-medium">{collaPlayContactName}</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">
-              {PROJECT_DETAIL_PAGE.labelStatus}
-            </p>
-            <p className="font-medium flex items-center gap-2">
-              <span
-                className={cn(
-                  "size-2.5 shrink-0 rounded-full",
-                  getStatusColorClass(project.status),
-                )}
-                aria-hidden
-              />
-              {getStatusLabel(project.status)}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">
-              {PROJECT_DETAIL_PAGE.labelCreatedAt}
-            </p>
-            <p className="font-medium tabular-nums">
-              {formatDateTime(project.createdAt)}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">
-              {PROJECT_DETAIL_PAGE.labelUpdatedAt}
-            </p>
-            <p className="font-medium tabular-nums">
-              {formatDateTime(project.updatedAt)}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {project.internalNotes ? (
+      {/* Main Content */}
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Customer Information Card */}
         <Card>
           <CardHeader>
             <h2 className="text-lg font-semibold">
-              {PROJECT_DETAIL_PAGE.sectionNotes}
+              {PROJECT_DETAIL_PAGE.sectionCustomer}
             </h2>
           </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              {PROJECT_DETAIL_PAGE.labelInternalNotes}
-            </p>
-            <p className="font-medium whitespace-pre-wrap">
-              {project.internalNotes}
-            </p>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <p className="text-sm text-muted-foreground">
+                {PROJECT_DETAIL_PAGE.labelCustomerName}
+              </p>
+              <p className="font-medium">{project.customerName}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">
+                {PROJECT_DETAIL_PAGE.labelPhone}
+              </p>
+              <p className="font-medium">{project.customerPhone}</p>
+            </div>
+            {project.company ? (
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  {PROJECT_DETAIL_PAGE.labelCompany}
+                </p>
+                <p className="font-medium">{project.company}</p>
+              </div>
+            ) : null}
+            {project.taxId ? (
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  {PROJECT_DETAIL_PAGE.labelTaxId}
+                </p>
+                <p className="font-medium">{project.taxId}</p>
+              </div>
+            ) : null}
           </CardContent>
         </Card>
-      ) : null}
 
-      <Card>
-        <CardHeader>
-          <h2 className="text-lg font-semibold">
-            {PROJECT_DETAIL_PAGE.sectionRentals}
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            {PROJECT_DETAIL_PAGE.totalAmount}:{" "}
-            {CURRENCY_FORMATTER.format(totalAmount)}
-          </p>
-        </CardHeader>
-        <CardContent>
-          {project.rentals.length === 0 ? (
-            <p className="text-muted-foreground text-sm">尚無租借項目</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{PROJECT_DETAIL_PAGE.labelDate}</TableHead>
-                  <TableHead>{PROJECT_DETAIL_PAGE.labelTimeRange}</TableHead>
-                  <TableHead>{PROJECT_DETAIL_PAGE.labelSpaces}</TableHead>
-                  <TableHead className="text-right tabular-nums">
-                    {PROJECT_DETAIL_PAGE.labelRentalAmount}
-                  </TableHead>
-                  <TableHead className="text-right tabular-nums">
-                    {PROJECT_DETAIL_PAGE.labelFnbAmount}
-                  </TableHead>
-                  <TableHead className="text-right tabular-nums">
-                    {PROJECT_DETAIL_PAGE.labelPaidAmount}
-                  </TableHead>
-                  <TableHead className="text-right tabular-nums">
-                    {PROJECT_DETAIL_PAGE.labelPendingAmount}
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {project.rentals.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell className="tabular-nums">
-                      {DATE_FORMATTER.format(new Date(r.date + "T00:00:00"))}
-                    </TableCell>
-                    <TableCell className="tabular-nums">
-                      {r.startTime} – {r.endTime}
-                    </TableCell>
-                    <TableCell>
-                      {r.spaceIds.map((id) => getSpaceNameById(id)).join("、")}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {CURRENCY_FORMATTER.format(r.rentalAmount)}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {CURRENCY_FORMATTER.format(r.fnbAmount)}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {CURRENCY_FORMATTER.format(r.paidAmount)}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {CURRENCY_FORMATTER.format(r.pendingAmount)}
-                    </TableCell>
+        {/* Project Information Card */}
+        <Card>
+          <CardHeader>
+            <h2 className="text-lg font-semibold">
+              {PROJECT_DETAIL_PAGE.sectionProject}
+            </h2>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <p className="text-sm text-muted-foreground">
+                {PROJECT_DETAIL_PAGE.labelEventOrVenueUse}
+              </p>
+              <p className="font-medium">{project.eventOrVenueUse}</p>
+            </div>
+            {project.totalAttendees != null ? (
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  {PROJECT_DETAIL_PAGE.labelTotalAttendees}
+                </p>
+                <p className="font-medium">{project.totalAttendees}</p>
+              </div>
+            ) : null}
+            {project.tables ? (
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  {PROJECT_DETAIL_PAGE.labelTables}
+                </p>
+                <p className="font-medium">{project.tables}</p>
+              </div>
+            ) : null}
+            {project.chairs != null ? (
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  {PROJECT_DETAIL_PAGE.labelChairs}
+                </p>
+                <p className="font-medium">{project.chairs}</p>
+              </div>
+            ) : null}
+            {project.fnbItems ? (
+              <div className="sm:col-span-2">
+                <p className="text-sm text-muted-foreground">
+                  {PROJECT_DETAIL_PAGE.labelFnb}
+                </p>
+                <p className="font-medium whitespace-pre-wrap">
+                  {project.fnbItems}
+                </p>
+              </div>
+            ) : null}
+            {project.projectNotes ? (
+              <div className="sm:col-span-2">
+                <p className="text-sm text-muted-foreground">
+                  {PROJECT_DETAIL_PAGE.labelProjectNotes}
+                </p>
+                <p className="font-medium whitespace-pre-wrap">
+                  {project.projectNotes}
+                </p>
+              </div>
+            ) : null}
+            <div>
+              <p className="text-sm text-muted-foreground">
+                {PROJECT_DETAIL_PAGE.labelCollaPlayContact}
+              </p>
+              <p className="font-medium">{collaPlayContactName}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">
+                {PROJECT_DETAIL_PAGE.labelStatus}
+              </p>
+              <p className="font-medium flex items-center gap-2">
+                <span
+                  className={cn(
+                    "size-2.5 shrink-0 rounded-full",
+                    getStatusColorClass(project.status),
+                  )}
+                  aria-hidden
+                />
+                {getStatusLabel(project.status)}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">
+                {PROJECT_DETAIL_PAGE.labelCreatedAt}
+              </p>
+              <p className="font-medium tabular-nums">
+                {formatDateTime(project.createdAt)}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">
+                {PROJECT_DETAIL_PAGE.labelUpdatedAt}
+              </p>
+              <p className="font-medium tabular-nums">
+                {formatDateTime(project.updatedAt)}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Notes Card */}
+        {project.internalNotes ? (
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <h2 className="text-lg font-semibold">
+                {PROJECT_DETAIL_PAGE.sectionNotes}
+              </h2>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                {PROJECT_DETAIL_PAGE.labelInternalNotes}
+              </p>
+              <p className="font-medium whitespace-pre-wrap">
+                {project.internalNotes}
+              </p>
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {/* Rentals Card */}
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <h2 className="text-lg font-semibold">
+              {PROJECT_DETAIL_PAGE.sectionRentals}
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              {PROJECT_DETAIL_PAGE.totalAmount}:{" "}
+              {CURRENCY_FORMATTER.format(totalAmount)}
+            </p>
+          </CardHeader>
+          <CardContent>
+            {project.rentals.length === 0 ? (
+              <p className="text-muted-foreground text-sm">尚無租借項目</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{PROJECT_DETAIL_PAGE.labelDate}</TableHead>
+                    <TableHead>{PROJECT_DETAIL_PAGE.labelTimeRange}</TableHead>
+                    <TableHead>{PROJECT_DETAIL_PAGE.labelSpaces}</TableHead>
+                    <TableHead className="text-right tabular-nums">
+                      {PROJECT_DETAIL_PAGE.labelRentalAmount}
+                    </TableHead>
+                    <TableHead className="text-right tabular-nums">
+                      {PROJECT_DETAIL_PAGE.labelFnbAmount}
+                    </TableHead>
+                    <TableHead className="text-right tabular-nums">
+                      {PROJECT_DETAIL_PAGE.labelPaidAmount}
+                    </TableHead>
+                    <TableHead className="text-right tabular-nums">
+                      {PROJECT_DETAIL_PAGE.labelPendingAmount}
+                    </TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+                </TableHeader>
+                <TableBody>
+                  {project.rentals.map((r) => (
+                    <TableRow key={r.id}>
+                      <TableCell className="tabular-nums">
+                        {DATE_FORMATTER.format(new Date(r.date + "T00:00:00"))}
+                      </TableCell>
+                      <TableCell className="tabular-nums">
+                        {r.startTime} – {r.endTime}
+                      </TableCell>
+                      <TableCell>
+                        {r.spaceIds
+                          .map((id) => getSpaceNameById(id))
+                          .join("、")}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {CURRENCY_FORMATTER.format(r.rentalAmount)}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {CURRENCY_FORMATTER.format(r.fnbAmount)}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {CURRENCY_FORMATTER.format(r.paidAmount)}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {CURRENCY_FORMATTER.format(r.pendingAmount)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
