@@ -30,6 +30,8 @@ export interface Project {
     spaceIds: string[];
     startTime?: string;
     endTime?: string;
+    setupMinutesBefore?: number;
+    teardownMinutesAfter?: number;
   }[];
 }
 

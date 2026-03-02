@@ -33,6 +33,8 @@ function mapRowToProject(
       date: string;
       startTime: string;
       endTime: string;
+      setupMinutesBefore: number;
+      teardownMinutesAfter: number;
       rentalAmount: number;
       fnbAmount: number;
     }>;
@@ -68,6 +70,8 @@ function mapRowToProject(
       spaceIds: r.spaceIds,
       startTime: r.startTime,
       endTime: r.endTime,
+      setupMinutesBefore: r.setupMinutesBefore,
+      teardownMinutesAfter: r.teardownMinutesAfter,
     })),
   };
 }
