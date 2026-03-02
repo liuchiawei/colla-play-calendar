@@ -1,6 +1,8 @@
 "use client";
 
+import { useTransition, useState } from "react";
 import Link from "next/link";
+import { Pencil, Trash2 } from "lucide-react";
 import {
   Table,
   TableCaption,
@@ -10,7 +12,19 @@ import {
   TableRow,
   TableCell,
 } from "@/components/ui/table";
-import { PROJECTS_PAGE } from "@/lib/message";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { PROJECTS_PAGE, PROJECT_DETAIL_PAGE } from "@/lib/message";
 import {
   getStatusLabel,
   getStatusColorClass,
@@ -18,6 +32,7 @@ import {
 import { addMinutesToTime, subtractMinutesFromTime } from "@/lib/date-utils";
 import type { Project } from "@/lib/types/project";
 import { cn } from "@/lib/utils";
+import { deleteProject } from "./[id]/actions";
 
 const DATE_FORMATTER = new Intl.DateTimeFormat("zh-TW", {
   dateStyle: "short",
@@ -51,6 +66,22 @@ interface ProjectsListProps {
 }
 
 export function ProjectsList({ projects }: ProjectsListProps) {
+  const [, startTransition] = useTransition();
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  function handleDeleteConfirm(projectId: string) {
+    setDeleteError(null);
+    setDeletingId(projectId);
+    startTransition(async () => {
+      const result = await deleteProject(projectId);
+      if (!result.success) {
+        setDeleteError(result.error);
+        setDeletingId(null);
+      }
+    });
+  }
+
   return (
     <section
       className="flex-1 min-w-0 rounded-xl border border-border bg-card/50 backdrop-blur-sm [&_th]:p-4 [&_td]:p-4"
@@ -117,6 +148,9 @@ export function ProjectsList({ projects }: ProjectsListProps) {
                 </TableHead>
                 <TableHead scope="col">
                   {PROJECTS_PAGE.columnProjectNotes}
+                </TableHead>
+                <TableHead scope="col" className="w-0">
+                  {PROJECTS_PAGE.columnActions}
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -192,6 +226,67 @@ export function ProjectsList({ projects }: ProjectsListProps) {
                   </TableCell>
                   <TableCell className="min-w-0 max-w-[180px] truncate">
                     {project.projectNotes ?? "—"}
+                  </TableCell>
+                  <TableCell className="w-0 whitespace-nowrap">
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        asChild
+                        aria-label={PROJECTS_PAGE.actionEditAria}
+                      >
+                        <Link href={`/dashboard-new/projects/${project.id}`}>
+                          <Pencil className="size-4" />
+                        </Link>
+                      </Button>
+                      <AlertDialog
+                        onOpenChange={(open) => {
+                          if (!open) setDeleteError(null);
+                        }}
+                      >
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={PROJECTS_PAGE.actionDeleteAria}
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              {PROJECT_DETAIL_PAGE.deleteConfirmTitle}
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              {PROJECT_DETAIL_PAGE.deleteConfirmDescription}
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          {deleteError ? (
+                            <p
+                              className="text-sm text-destructive"
+                              role="alert"
+                            >
+                              {deleteError}
+                            </p>
+                          ) : null}
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>
+                              {PROJECT_DETAIL_PAGE.deleteConfirmCancel}
+                            </AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDeleteConfirm(project.id)}
+                              disabled={deletingId === project.id}
+                            >
+                              {deletingId === project.id
+                                ? "刪除中…"
+                                : PROJECT_DETAIL_PAGE.deleteConfirmConfirm}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
