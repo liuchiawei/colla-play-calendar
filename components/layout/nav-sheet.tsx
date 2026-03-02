@@ -131,7 +131,11 @@ export function NavSheet({ children }: NavSheetProps) {
                     label: "管理後台",
                     icon: LayoutDashboard,
                   },
-                  { href: "/dashboard-new", label: "管理後台", icon: Layout },
+                  {
+                    href: "/dashboard",
+                    label: "舊版後台(即將停用)",
+                    icon: LayoutDashboard,
+                  },
                 ].map((link) => {
                   const Icon = link.icon;
                   const isActive =

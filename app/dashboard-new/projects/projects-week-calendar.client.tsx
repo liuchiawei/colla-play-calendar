@@ -20,6 +20,10 @@ import {
 } from "@/lib/date-utils";
 import { startOfDay, isSameDay } from "date-fns";
 import { PROJECTS_PAGE } from "@/lib/message";
+import {
+  PROJECT_STATUS_OPTIONS,
+  getStatusColorClass,
+} from "@/lib/config/project-status";
 import type { Project, ProjectStatus } from "@/lib/types/project";
 import { getProjectTimeRange } from "@/lib/utils/project";
 import { cn } from "@/lib/utils";
@@ -35,8 +39,12 @@ function projectDateKey(project: Project): string {
   return project.date.slice(0, 10);
 }
 
-function badgeVariantByStatus(status: ProjectStatus): "outline" | "default" {
-  return status === "deposit_paid" ? "default" : "outline";
+function badgeClassNameByStatus(status: ProjectStatus): string {
+  return cn(
+    "rounded-sm border-0",
+    getStatusColorClass(status),
+    status !== "cancelled" ? "text-white" : "",
+  );
 }
 
 function ProjectBadgeLink({
@@ -49,10 +57,12 @@ function ProjectBadgeLink({
   dateKey?: string;
   className?: string;
 }) {
-  const variant = badgeVariantByStatus(project.status);
   const timeRange = getProjectTimeRange(project, dateKey);
   return (
-    <Badge asChild variant={variant} className={cn("rounded-sm", className)}>
+    <Badge
+      asChild
+      className={cn(badgeClassNameByStatus(project.status), className)}
+    >
       <Link
         href={`/dashboard-new/projects/${project.id}`}
         className="flex flex-col"
@@ -61,21 +71,17 @@ function ProjectBadgeLink({
         {timeRange != null && (
           <span className="font-normal opacity-90">{timeRange}</span>
         )}
-        
       </Link>
     </Badge>
   );
 }
 
 function StatusDot({ status }: { status: ProjectStatus }) {
-  const isDepositPaid = status === "deposit_paid";
   return (
     <span
       className={cn(
-        "shrink-0 rounded-full",
-        isDepositPaid
-          ? "size-1.5 bg-primary"
-          : "size-1.5 border-2 border-current bg-transparent",
+        "shrink-0 rounded-full size-1.5",
+        getStatusColorClass(status),
       )}
       aria-hidden
     />
@@ -364,29 +370,29 @@ export function ProjectsWeekCalendar({ projects }: ProjectsWeekCalendarProps) {
       {/* 圖例 */}
       {projects.length > 0 ? (
         <div className="mt-3 flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground border-t border-border/50 pt-3 pb-2">
-          <span
-            className="flex items-center gap-1.5 md:hidden"
-            aria-label={PROJECTS_PAGE.statusNegotiating}
-          >
-            <StatusDot status="negotiating" />
-            <span>{PROJECTS_PAGE.statusNegotiating}</span>
-          </span>
-          <span
-            className="flex items-center gap-1.5 md:hidden"
-            aria-label={PROJECTS_PAGE.statusDepositPaid}
-          >
-            <StatusDot status="deposit_paid" />
-            <span>{PROJECTS_PAGE.statusDepositPaid}</span>
-          </span>
-          <span className="hidden items-center gap-1.5 md:flex">
-            <Badge variant="outline" className="text-[10px] font-medium">
-              {PROJECTS_PAGE.statusNegotiating}
-            </Badge>
-          </span>
-          <span className="hidden items-center gap-1.5 md:flex">
-            <Badge variant="default" className="text-[10px] font-medium">
-              {PROJECTS_PAGE.statusDepositPaid}
-            </Badge>
+          {PROJECT_STATUS_OPTIONS.map((opt) => (
+            <span
+              key={opt.value}
+              className="flex items-center gap-1.5 md:hidden"
+              aria-label={PROJECTS_PAGE[opt.labelKey]}
+            >
+              <StatusDot status={opt.value} />
+              <span>{PROJECTS_PAGE[opt.labelKey]}</span>
+            </span>
+          ))}
+          <span className="hidden md:flex flex-wrap items-center gap-2">
+            {PROJECT_STATUS_OPTIONS.map((opt) => (
+              <Badge
+                key={opt.value}
+                className={cn(
+                  "text-[10px] font-medium border-0",
+                  getStatusColorClass(opt.value),
+                  opt.value !== "cancelled" && "text-white",
+                )}
+              >
+                {PROJECTS_PAGE[opt.labelKey]}
+              </Badge>
+            ))}
           </span>
         </div>
       ) : null}

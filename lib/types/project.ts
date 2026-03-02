@@ -1,7 +1,12 @@
 // Project type for dashboard project list
 // 專案列表型別
 
-export type ProjectStatus = "negotiating" | "deposit_paid";
+export type ProjectStatus =
+  | "negotiating"
+  | "confirmed"
+  | "deposit_paid"
+  | "completed"
+  | "cancelled";
 
 export interface Project {
   id: string;

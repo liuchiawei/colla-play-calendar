@@ -11,8 +11,13 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { PROJECTS_PAGE } from "@/lib/message";
+import {
+  getStatusLabel,
+  getStatusColorClass,
+} from "@/lib/config/project-status";
 import { addMinutesToTime, subtractMinutesFromTime } from "@/lib/date-utils";
 import type { Project } from "@/lib/types/project";
+import { cn } from "@/lib/utils";
 
 const DATE_FORMATTER = new Intl.DateTimeFormat("zh-TW", {
   dateStyle: "short",
@@ -22,12 +27,6 @@ const CURRENCY_FORMATTER = new Intl.NumberFormat("zh-TW", {
   style: "currency",
   currency: "TWD",
 });
-
-function getStatusLabel(status: Project["status"]): string {
-  return status === "negotiating"
-    ? PROJECTS_PAGE.statusNegotiating
-    : PROJECTS_PAGE.statusDepositPaid;
-}
 
 function getSetupTimeDisplay(
   startTime: string | undefined,
@@ -69,22 +68,36 @@ export function ProjectsList({ projects }: ProjectsListProps) {
             </TableCaption>
             <TableHeader>
               <TableRow>
-                <TableHead scope="col">{PROJECTS_PAGE.columnCustomer}</TableHead>
+                <TableHead scope="col">
+                  {PROJECTS_PAGE.columnCustomer}
+                </TableHead>
                 <TableHead scope="col">
                   {PROJECTS_PAGE.columnEventOrVenueUse}
                 </TableHead>
                 <TableHead scope="col">{PROJECTS_PAGE.columnSpace}</TableHead>
                 <TableHead scope="col">{PROJECTS_PAGE.columnDate}</TableHead>
-                <TableHead scope="col" className="tabular-nums whitespace-nowrap">
+                <TableHead
+                  scope="col"
+                  className="tabular-nums whitespace-nowrap"
+                >
                   {PROJECTS_PAGE.columnEventStartTime}
                 </TableHead>
-                <TableHead scope="col" className="tabular-nums whitespace-nowrap">
+                <TableHead
+                  scope="col"
+                  className="tabular-nums whitespace-nowrap"
+                >
                   {PROJECTS_PAGE.columnEventEndTime}
                 </TableHead>
-                <TableHead scope="col" className="tabular-nums whitespace-nowrap">
+                <TableHead
+                  scope="col"
+                  className="tabular-nums whitespace-nowrap"
+                >
                   {PROJECTS_PAGE.columnSetupTime}
                 </TableHead>
-                <TableHead scope="col" className="tabular-nums whitespace-nowrap">
+                <TableHead
+                  scope="col"
+                  className="tabular-nums whitespace-nowrap"
+                >
                   {PROJECTS_PAGE.columnTeardownTime}
                 </TableHead>
                 <TableHead scope="col">{PROJECTS_PAGE.columnContact}</TableHead>
@@ -96,11 +109,15 @@ export function ProjectsList({ projects }: ProjectsListProps) {
                 <TableHead scope="col" className="text-right tabular-nums">
                   {PROJECTS_PAGE.columnChairs}
                 </TableHead>
-                <TableHead scope="col">{PROJECTS_PAGE.columnFnbItems}</TableHead>
+                <TableHead scope="col">
+                  {PROJECTS_PAGE.columnFnbItems}
+                </TableHead>
                 <TableHead scope="col" className="text-right tabular-nums">
                   {PROJECTS_PAGE.columnTotalAttendees}
                 </TableHead>
-                <TableHead scope="col">{PROJECTS_PAGE.columnProjectNotes}</TableHead>
+                <TableHead scope="col">
+                  {PROJECTS_PAGE.columnProjectNotes}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -147,7 +164,18 @@ export function ProjectsList({ projects }: ProjectsListProps) {
                   <TableCell className="text-right tabular-nums">
                     {CURRENCY_FORMATTER.format(project.amount)}
                   </TableCell>
-                  <TableCell>{getStatusLabel(project.status)}</TableCell>
+                  <TableCell>
+                    <span className="flex items-center gap-2">
+                      <span
+                        className={cn(
+                          "size-2 shrink-0 rounded-full",
+                          getStatusColorClass(project.status),
+                        )}
+                        aria-hidden
+                      />
+                      {getStatusLabel(project.status)}
+                    </span>
+                  </TableCell>
                   <TableCell className="min-w-0 max-w-[80px] truncate">
                     {project.tables ?? "—"}
                   </TableCell>
@@ -158,7 +186,9 @@ export function ProjectsList({ projects }: ProjectsListProps) {
                     {project.fnbItems ?? "—"}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
-                    {project.totalAttendees != null ? project.totalAttendees : "—"}
+                    {project.totalAttendees != null
+                      ? project.totalAttendees
+                      : "—"}
                   </TableCell>
                   <TableCell className="min-w-0 max-w-[180px] truncate">
                     {project.projectNotes ?? "—"}

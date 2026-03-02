@@ -12,6 +12,10 @@ import {
 } from "@/components/ui/popover";
 import { getDefaultClassNames, type DayButton } from "react-day-picker";
 import { SPACE_DETAIL_PAGE, PROJECTS_PAGE } from "@/lib/message";
+import {
+  PROJECT_STATUS_OPTIONS,
+  getStatusColorClass,
+} from "@/lib/config/project-status";
 import type { Project, ProjectStatus } from "@/lib/types/project";
 import { getProjectTimeRange } from "@/lib/utils/project";
 import { cn } from "@/lib/utils";
@@ -31,8 +35,12 @@ function projectDateKey(project: Project): string {
   return project.date.slice(0, 10);
 }
 
-function badgeVariantByStatus(status: ProjectStatus): "outline" | "default" {
-  return status === "deposit_paid" ? "default" : "outline";
+function badgeClassNameByStatus(status: ProjectStatus): string {
+  return cn(
+    "border-0",
+    getStatusColorClass(status),
+    status !== "cancelled" ? "text-white" : "",
+  );
 }
 
 function ProjectBadgeLink({
@@ -45,17 +53,16 @@ function ProjectBadgeLink({
   dateKey?: string;
   className?: string;
 }) {
-  const variant = badgeVariantByStatus(project.status);
   const timeRange = getProjectTimeRange(project, dateKey);
   return (
-    <Badge asChild variant={variant} className={className}>
-      <Link href={`/dashboard-new/projects/${project.id}`} className="truncate">
-        {project.eventOrVenueUse}
+    <Badge
+      asChild
+      className={cn("rounded-sm", badgeClassNameByStatus(project.status), className)}
+    >
+      <Link href={`/dashboard-new/projects/${project.id}`} className="flex flex-col py-2">
+        <span className="text-wrap line-clamp-2">{project.eventOrVenueUse}</span>
         {timeRange != null && (
-          <>
-            <br />
-            <span className="font-normal opacity-90">{timeRange}</span>
-          </>
+          <span className="font-normal opacity-90">{timeRange}</span>
         )}
       </Link>
     </Badge>
@@ -69,14 +76,11 @@ function DayNumber({ date }: { date: Date }) {
 const DAY_CELL_MAX_VISIBLE = 2;
 
 function StatusDot({ status }: { status: ProjectStatus }) {
-  const isDepositPaid = status === "deposit_paid";
   return (
     <span
       className={cn(
-        "shrink-0 rounded-full",
-        isDepositPaid
-          ? "size-1.5 bg-primary"
-          : "size-1.5 border-2 border-current bg-transparent",
+        "shrink-0 rounded-full size-1.5",
+        getStatusColorClass(status),
       )}
       aria-hidden
     />
@@ -267,31 +271,29 @@ export function SpaceProjectsCalendar({
       )}
       {hasAnyProjects ? (
         <div className="mt-3 flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
-          {/* 手機：圓點圖例 */}
-          <span
-            className="flex items-center gap-1.5 md:hidden"
-            aria-label={PROJECTS_PAGE.statusNegotiating}
-          >
-            <span className="size-2 rounded-full border-2 border-current bg-transparent" />
-            <span>{PROJECTS_PAGE.statusNegotiating}</span>
-          </span>
-          <span
-            className="flex items-center gap-1.5 md:hidden"
-            aria-label={PROJECTS_PAGE.statusDepositPaid}
-          >
-            <span className="size-2 rounded-full bg-primary" />
-            <span>{PROJECTS_PAGE.statusDepositPaid}</span>
-          </span>
-          {/* 平板以上：Status Badge */}
-          <span className="hidden items-center gap-1.5 md:flex">
-            <Badge variant="outline" className="text-[10px] font-medium">
-              {PROJECTS_PAGE.statusNegotiating}
-            </Badge>
-          </span>
-          <span className="hidden items-center gap-1.5 md:flex">
-            <Badge variant="default" className="text-[10px] font-medium">
-              {PROJECTS_PAGE.statusDepositPaid}
-            </Badge>
+          {PROJECT_STATUS_OPTIONS.map((opt) => (
+            <span
+              key={opt.value}
+              className="flex items-center gap-1.5 md:hidden"
+              aria-label={PROJECTS_PAGE[opt.labelKey]}
+            >
+              <StatusDot status={opt.value} />
+              <span>{PROJECTS_PAGE[opt.labelKey]}</span>
+            </span>
+          ))}
+          <span className="hidden md:flex flex-wrap items-center gap-2">
+            {PROJECT_STATUS_OPTIONS.map((opt) => (
+              <Badge
+                key={opt.value}
+                className={cn(
+                  "text-[10px] font-medium border-0",
+                  getStatusColorClass(opt.value),
+                  opt.value !== "cancelled" && "text-white",
+                )}
+              >
+                {PROJECTS_PAGE[opt.labelKey]}
+              </Badge>
+            ))}
           </span>
         </div>
       ) : null}
