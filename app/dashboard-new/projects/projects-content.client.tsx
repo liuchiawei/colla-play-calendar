@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,8 +22,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PROJECTS_PAGE } from "@/lib/message";
 import type { Project } from "@/lib/types/project";
+
+const ProjectsWeekCalendar = dynamic(
+  () =>
+    import("./projects-week-calendar.client").then((m) => m.ProjectsWeekCalendar),
+  { ssr: false },
+);
 
 const DATE_FORMATTER = new Intl.DateTimeFormat("zh-TW", {
   dateStyle: "short",
@@ -156,69 +164,88 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
         </DropdownMenu>
       </div>
 
-      <section
-        className="flex-1 min-w-0 rounded-xl border border-border bg-card/50 backdrop-blur-sm overflow-hidden [&_th]:p-4 [&_td]:p-4"
-        aria-label={PROJECTS_PAGE.tableCaption}
+      <Tabs
+        defaultValue="list"
+        className="flex-1 flex flex-col min-w-0"
       >
-        {filteredProjects.length === 0 ? (
-          <p className="text-muted-foreground text-sm py-12 text-center px-4">
-            {PROJECTS_PAGE.emptyProjects}
-          </p>
-        ) : (
-          <Table>
-            <TableCaption className="sr-only">
-              {PROJECTS_PAGE.tableCaption}
-            </TableCaption>
-            <TableHeader>
-              <TableRow>
-                <TableHead scope="col">
-                  {PROJECTS_PAGE.columnCustomer}
-                </TableHead>
-                <TableHead scope="col">
-                  {PROJECTS_PAGE.columnEventOrVenueUse}
-                </TableHead>
-                <TableHead scope="col">{PROJECTS_PAGE.columnSpace}</TableHead>
-                <TableHead scope="col">{PROJECTS_PAGE.columnDate}</TableHead>
-                <TableHead scope="col">{PROJECTS_PAGE.columnContact}</TableHead>
-                <TableHead scope="col" className="text-right tabular-nums">
-                  {PROJECTS_PAGE.columnAmount}
-                </TableHead>
-                <TableHead scope="col">{PROJECTS_PAGE.columnStatus}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredProjects.map((project) => (
-                <TableRow key={project.id}>
-                  <TableCell className="min-w-0 max-w-[120px] truncate">
-                    {project.customer}
-                  </TableCell>
-                  <TableCell className="min-w-0 max-w-[180px] truncate">
-                    <Link
-                      href={`/dashboard-new/projects/${project.id}`}
-                      className="font-medium text-primary hover:underline focus:outline-none focus:underline"
-                    >
-                      {project.eventOrVenueUse}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="min-w-0 max-w-[160px] truncate">
-                    {project.space}
-                  </TableCell>
-                  <TableCell className="tabular-nums whitespace-nowrap">
-                    {DATE_FORMATTER.format(new Date(project.date))}
-                  </TableCell>
-                  <TableCell className="min-w-0 max-w-[100px] truncate">
-                    {project.contactPerson}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {CURRENCY_FORMATTER.format(project.amount)}
-                  </TableCell>
-                  <TableCell>{getStatusLabel(project.status)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </section>
+        <TabsList
+          className="w-full max-w-[240px] grid grid-cols-2"
+          aria-label={PROJECTS_PAGE.tabsAriaLabel}
+        >
+          <TabsTrigger value="list">{PROJECTS_PAGE.tabListView}</TabsTrigger>
+          <TabsTrigger value="week">{PROJECTS_PAGE.tabWeekView}</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="list" className="mt-6 flex-1 min-w-0">
+          <section
+            className="flex-1 min-w-0 rounded-xl border border-border bg-card/50 backdrop-blur-sm overflow-hidden [&_th]:p-4 [&_td]:p-4"
+            aria-label={PROJECTS_PAGE.tableCaption}
+          >
+            {filteredProjects.length === 0 ? (
+              <p className="text-muted-foreground text-sm py-12 text-center px-4">
+                {PROJECTS_PAGE.emptyProjects}
+              </p>
+            ) : (
+              <Table>
+                <TableCaption className="sr-only">
+                  {PROJECTS_PAGE.tableCaption}
+                </TableCaption>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead scope="col">
+                      {PROJECTS_PAGE.columnCustomer}
+                    </TableHead>
+                    <TableHead scope="col">
+                      {PROJECTS_PAGE.columnEventOrVenueUse}
+                    </TableHead>
+                    <TableHead scope="col">{PROJECTS_PAGE.columnSpace}</TableHead>
+                    <TableHead scope="col">{PROJECTS_PAGE.columnDate}</TableHead>
+                    <TableHead scope="col">{PROJECTS_PAGE.columnContact}</TableHead>
+                    <TableHead scope="col" className="text-right tabular-nums">
+                      {PROJECTS_PAGE.columnAmount}
+                    </TableHead>
+                    <TableHead scope="col">{PROJECTS_PAGE.columnStatus}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredProjects.map((project) => (
+                    <TableRow key={project.id}>
+                      <TableCell className="min-w-0 max-w-[120px] truncate">
+                        {project.customer}
+                      </TableCell>
+                      <TableCell className="min-w-0 max-w-[180px] truncate">
+                        <Link
+                          href={`/dashboard-new/projects/${project.id}`}
+                          className="font-medium text-primary hover:underline focus:outline-none focus:underline"
+                        >
+                          {project.eventOrVenueUse}
+                        </Link>
+                      </TableCell>
+                      <TableCell className="min-w-0 max-w-[160px] truncate">
+                        {project.space}
+                      </TableCell>
+                      <TableCell className="tabular-nums whitespace-nowrap">
+                        {DATE_FORMATTER.format(new Date(project.date))}
+                      </TableCell>
+                      <TableCell className="min-w-0 max-w-[100px] truncate">
+                        {project.contactPerson}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {CURRENCY_FORMATTER.format(project.amount)}
+                      </TableCell>
+                      <TableCell>{getStatusLabel(project.status)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </section>
+        </TabsContent>
+
+        <TabsContent value="week" className="mt-6 flex-1 min-w-0">
+          <ProjectsWeekCalendar projects={projects} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
