@@ -5,8 +5,11 @@ import { DashboardShell } from "./components/dashboard-shell.client";
 import { PageHeader } from "./components/page-header.client";
 import { OverviewContent } from "./overview-content.client";
 import { OverviewStats } from "@/components/features/admin-dashboard/overview-stats";
-import { ALL_SPACES } from "@/lib/config";
-import { getOverviewStats, getRecentProjects } from "@/lib/services/project/project.service";
+import { ALL_SPACES } from "@/lib/config/config";
+import {
+  getOverviewStats,
+  getRecentProjects,
+} from "@/lib/services/project/project.service";
 
 const PREVIEW_SPACES_COUNT = 6;
 

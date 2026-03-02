@@ -6,7 +6,7 @@
 
 import { cache } from "react";
 import prisma from "@/lib/prisma";
-import { getSpaceNameById } from "@/lib/config";
+import { getSpaceNameById } from "@/lib/config/config";
 import { getAdminContactOptions } from "@/lib/services/admin-contact.service";
 import type {
   CreateProjectInput,
@@ -28,9 +28,18 @@ function mapRowToProject(
     fnbItems: string | null;
     totalAttendees: number | null;
     projectNotes: string | null;
-    rentals: Array<{ spaceIds: string[]; date: string; rentalAmount: number; fnbAmount: number }>;
+    rentals: Array<{
+      spaceIds: string[];
+      date: string;
+      startTime: string;
+      endTime: string;
+      setupMinutesBefore: number;
+      teardownMinutesAfter: number;
+      rentalAmount: number;
+      fnbAmount: number;
+    }>;
   },
-  adminNameById: Map<string, string>
+  adminNameById: Map<string, string>,
 ): Project {
   const firstRental = row.rentals[0];
   const space = firstRental
@@ -39,7 +48,7 @@ function mapRowToProject(
   const date = firstRental?.date ?? "";
   const amount = row.rentals.reduce(
     (sum, r) => sum + r.rentalAmount + r.fnbAmount,
-    0
+    0,
   );
   return {
     id: row.id,
@@ -47,7 +56,8 @@ function mapRowToProject(
     eventOrVenueUse: row.eventOrVenueUse,
     space,
     date,
-    contactPerson: adminNameById.get(row.collaPlayContactId) ?? row.collaPlayContactId,
+    contactPerson:
+      adminNameById.get(row.collaPlayContactId) ?? row.collaPlayContactId,
     amount,
     status: row.status as Project["status"],
     tables: row.tables ?? null,
@@ -55,7 +65,14 @@ function mapRowToProject(
     fnbItems: row.fnbItems ?? null,
     totalAttendees: row.totalAttendees ?? null,
     projectNotes: row.projectNotes ?? null,
-    rentals: row.rentals.map((r) => ({ date: r.date, spaceIds: r.spaceIds })),
+    rentals: row.rentals.map((r) => ({
+      date: r.date,
+      spaceIds: r.spaceIds,
+      startTime: r.startTime,
+      endTime: r.endTime,
+      setupMinutesBefore: r.setupMinutesBefore,
+      teardownMinutesAfter: r.teardownMinutesAfter,
+    })),
   };
 }
 
@@ -81,18 +98,20 @@ export async function getProjectsForList(): Promise<Project[]> {
 /**
  * 取得最近 N 筆專案（供總覽頁使用，以 React.cache 去重）
  */
-export const getRecentProjects = cache(async (limit: number): Promise<Project[]> => {
-  const [rows, adminOptions] = await Promise.all([
-    prisma.project.findMany({
-      take: limit,
-      orderBy: { createdAt: "desc" },
-      include: { rentals: true },
-    }),
-    getAdminContactOptions(),
-  ]);
-  const adminNameById = new Map(adminOptions.map((o) => [o.id, o.name]));
-  return rows.map((row) => mapRowToProject(row, adminNameById));
-});
+export const getRecentProjects = cache(
+  async (limit: number): Promise<Project[]> => {
+    const [rows, adminOptions] = await Promise.all([
+      prisma.project.findMany({
+        take: limit,
+        orderBy: { createdAt: "desc" },
+        include: { rentals: true },
+      }),
+      getAdminContactOptions(),
+    ]);
+    const adminNameById = new Map(adminOptions.map((o) => [o.id, o.name]));
+    return rows.map((row) => mapRowToProject(row, adminNameById));
+  },
+);
 
 /**
  * 取得總覽統計（當月場租、洽談中/已確認筆數、今日預定數，以 React.cache 去重）
@@ -133,7 +152,9 @@ export const getOverviewStats = cache(async (): Promise<OverviewStatsData> => {
 /**
  * 取得單一專案（含 rentals），以 React.cache 做 per-request 去重
  */
-async function getProjectByIdImpl(id: string): Promise<ProjectWithRentals | null> {
+async function getProjectByIdImpl(
+  id: string,
+): Promise<ProjectWithRentals | null> {
   const project = await prisma.project.findUnique({
     where: { id },
     include: { rentals: true },
@@ -174,7 +195,7 @@ export const getProjectsBySpaceId = cache(getProjectsBySpaceIdImpl);
  */
 export async function updateProject(
   id: string,
-  input: UpdateProjectInput
+  input: UpdateProjectInput,
 ): Promise<ProjectWithRentals> {
   if (!input.rentals?.length) {
     throw new Error("至少需一筆租借項目");
@@ -252,7 +273,7 @@ export async function deleteProject(id: string): Promise<void> {
  * @returns Promise<ProjectWithRentals>
  */
 export async function createProject(
-  input: CreateProjectInput
+  input: CreateProjectInput,
 ): Promise<ProjectWithRentals> {
   if (!input.rentals?.length) {
     throw new Error("至少需一筆租借項目");

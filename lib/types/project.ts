@@ -25,7 +25,14 @@ export interface Project {
   /** 選填：專案備註 */
   projectNotes?: string | null;
   /** 選填：每筆租借的日期與場域（週曆依空間分組用） */
-  rentals?: { date: string; spaceIds: string[] }[];
+  rentals?: {
+    date: string;
+    spaceIds: string[];
+    startTime?: string;
+    endTime?: string;
+    setupMinutesBefore?: number;
+    teardownMinutesAfter?: number;
+  }[];
 }
 
 // Create project form: single rental item (場域可多選)

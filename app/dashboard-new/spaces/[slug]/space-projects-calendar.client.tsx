@@ -13,6 +13,7 @@ import {
 import { getDefaultClassNames, type DayButton } from "react-day-picker";
 import { SPACE_DETAIL_PAGE, PROJECTS_PAGE } from "@/lib/message";
 import type { Project, ProjectStatus } from "@/lib/types/project";
+import { getProjectTimeRange } from "@/lib/utils/project";
 import { cn } from "@/lib/utils";
 
 const DATE_FORMATTER = new Intl.DateTimeFormat("zh-TW", {
@@ -36,16 +37,26 @@ function badgeVariantByStatus(status: ProjectStatus): "outline" | "default" {
 
 function ProjectBadgeLink({
   project,
+  dateKey,
   className,
 }: {
   project: Project;
+  /** 格子日期 key（YYYY-MM-DD），有傳則顯示該日 rental 的時段 */
+  dateKey?: string;
   className?: string;
 }) {
   const variant = badgeVariantByStatus(project.status);
+  const timeRange = getProjectTimeRange(project, dateKey);
   return (
     <Badge asChild variant={variant} className={className}>
       <Link href={`/dashboard-new/projects/${project.id}`} className="truncate">
         {project.eventOrVenueUse}
+        {timeRange != null && (
+          <>
+            <br />
+            <span className="font-normal opacity-90">{timeRange}</span>
+          </>
+        )}
       </Link>
     </Badge>
   );
@@ -74,15 +85,19 @@ function StatusDot({ status }: { status: ProjectStatus }) {
 
 function DayCellProjectBadges({
   projects,
+  date,
   maxVisible = DAY_CELL_MAX_VISIBLE,
   className,
 }: {
   projects: Project[];
+  /** 格子日期，用於顯示該日的 rental 時段 */
+  date?: Date;
   maxVisible?: number;
   className?: string;
 }) {
   const visible = projects.slice(0, maxVisible);
   const restCount = projects.length - visible.length;
+  const dateKey = date ? toDateKey(date) : undefined;
   return (
     <span
       className={cn(
@@ -108,6 +123,7 @@ function DayCellProjectBadges({
           <ProjectBadgeLink
             key={project.id}
             project={project}
+            dateKey={dateKey}
             className="min-w-0 truncate text-[10px]"
           />
         ))}
@@ -132,7 +148,7 @@ function DayCellContent({
     <div className="flex flex-col items-center justify-center gap-1.5">
       <DayNumber date={date} />
       {projects.length > 0 ? (
-        <DayCellProjectBadges projects={projects} />
+        <DayCellProjectBadges projects={projects} date={date} />
       ) : null}
     </div>
   );
@@ -212,7 +228,10 @@ export function SpaceProjectsCalendar({
             <ul className="flex flex-wrap gap-1.5">
               {dayProjects.map((project) => (
                 <li key={project.id}>
-                  <ProjectBadgeLink project={project} />
+                  <ProjectBadgeLink
+                    project={project}
+                    dateKey={toDateKey(day.date)}
+                  />
                 </li>
               ))}
             </ul>

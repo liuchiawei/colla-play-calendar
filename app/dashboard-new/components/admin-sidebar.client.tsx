@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Home } from "lucide-react";
 import { ThemeToggle } from "@/components/widget/theme-toggle";
-import { dashboardNewNavigation } from "@/lib/config-dashboard-new";
+import { dashboardNewNavigation } from "@/lib/config/config-dashboard-new";
 import { STORE_MESSAGES } from "@/lib/message";
 
 export function AdminSidebar() {

@@ -5,7 +5,7 @@ import {
   Users,
   FileDown,
 } from "lucide-react";
-import { DASHBOARD_NEW_LABELS } from "./message";
+import { DASHBOARD_NEW_LABELS } from "../message";
 
 // Modern Admin Dashboard Navigation Configuration
 // 現代化管理後台導航配置

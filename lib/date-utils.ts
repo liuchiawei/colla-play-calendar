@@ -15,7 +15,7 @@ import {
 import { zhTW, enUS } from "date-fns/locale";
 import type { WeekRange, TimeSlot, EventPosition } from "./types";
 import type { EventWithCategory } from "./types";
-import { STORE_CONFIG } from "./config";
+import { STORE_CONFIG } from "./config/config";
 
 // 週の開始日を月曜日に設定
 const WEEK_OPTIONS = { weekStartsOn: 1 as const };
@@ -110,7 +110,7 @@ export function isEventOnDay(event: EventWithCategory, day: Date): boolean {
 // イベントのカレンダー表示位置を計算
 export function calculateEventPosition(
   event: EventWithCategory,
-  day: Date
+  day: Date,
 ): EventPosition {
   const eventStart = new Date(event.startTime);
   const eventEnd = new Date(event.endTime);
@@ -137,7 +137,7 @@ export function calculateEventPosition(
   const top = Math.max(0, (startMinutes / totalMinutes) * 100);
   const height = Math.min(
     100 - top,
-    ((endMinutes - startMinutes) / totalMinutes) * 100
+    ((endMinutes - startMinutes) / totalMinutes) * 100,
   );
 
   return {
@@ -174,4 +174,46 @@ export function combineDateAndTime(date: string, time: string): string {
 export function formatForDateTimeInput(date: Date | string): string {
   const d = typeof date === "string" ? new Date(date) : date;
   return format(d, "yyyy-MM-dd'T'HH:mm");
+}
+
+const HHMM_REGEX = /^(\d{1,2}):(\d{2})$/;
+
+/** 將 "HH:mm" 轉為自 00:00 起算的分鐘數；無效格式回傳 null */
+function parseTimeToMinutes(time: string): number | null {
+  const m = time.trim().match(HHMM_REGEX);
+  if (!m) return null;
+  const h = parseInt(m[1], 10);
+  const min = parseInt(m[2], 10);
+  if (h < 0 || h > 23 || min < 0 || min > 59) return null;
+  return h * 60 + min;
+}
+
+/** 將分鐘數（0–1439）格式為 "HH:mm" */
+function formatMinutesToTime(totalMinutes: number): string {
+  const clamped = Math.max(0, Math.min(1439, Math.floor(totalMinutes)));
+  const h = Math.floor(clamped / 60);
+  const m = clamped % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+/**
+ * "HH:mm" 加上指定分鐘數，結果限制在當日 00:00–23:59。
+ * @param time "HH:mm" 字串
+ * @param minutes 要加上的分鐘數（可為負）
+ */
+export function addMinutesToTime(time: string, minutes: number): string {
+  const base = parseTimeToMinutes(time);
+  if (base === null) return time;
+  return formatMinutesToTime(base + minutes);
+}
+
+/**
+ * "HH:mm" 減去指定分鐘數，結果限制在當日 00:00–23:59。
+ * @param time "HH:mm" 字串
+ * @param minutes 要減去的分鐘數（可為負）
+ */
+export function subtractMinutesFromTime(time: string, minutes: number): string {
+  const base = parseTimeToMinutes(time);
+  if (base === null) return time;
+  return formatMinutesToTime(base - minutes);
 }

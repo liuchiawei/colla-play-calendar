@@ -2,10 +2,10 @@
 // 依 Vercel React 最佳實踐：server-cache-react、async-suspense-boundaries、server-serialization
 
 import { Suspense } from "react";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { DashboardShell } from "../../components/dashboard-shell.client";
 import { PageHeader } from "../../components/page-header.client";
-import { getSpaceById } from "@/lib/config";
+import { getSpaceById } from "@/lib/config/config";
 import { getProjectsBySpaceId } from "@/lib/services/project/project.service";
 import { SPACE_DETAIL_PAGE } from "@/lib/message";
 import { SpaceProjectsContent } from "./space-projects-content.client";
@@ -28,17 +28,27 @@ async function SpaceProjects({
   spaceName: string;
 }) {
   const projects = await getProjectsBySpaceId(spaceId);
-  return (
-    <SpaceProjectsContent spaceName={spaceName} projects={projects} />
-  );
+  return <SpaceProjectsContent spaceName={spaceName} projects={projects} />;
 }
 
 interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
+/** 已廢除的場域 id（room1/room2）導向多功能教室 */
+const DEPRECATED_SPACE_REDIRECT: Record<string, string> = {
+  "4f-multipurpose-room-1": "4f-multipurpose-room",
+  "4f-multipurpose-room-2": "4f-multipurpose-room",
+};
+
 export default async function SpaceDetailPage({ params }: PageProps) {
   const { slug } = await params;
+
+  const redirectTarget = DEPRECATED_SPACE_REDIRECT[slug];
+  if (redirectTarget) {
+    redirect(`/dashboard-new/spaces/${redirectTarget}`);
+  }
+
   const space = getSpaceById(slug);
 
   if (!space) {

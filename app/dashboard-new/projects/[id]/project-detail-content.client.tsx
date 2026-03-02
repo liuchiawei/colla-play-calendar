@@ -60,9 +60,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { PROJECT_DETAIL_PAGE, CREATE_PROJECT_PAGE, PROJECTS_PAGE } from "@/lib/message";
-import { getSpaceNameById, ALL_SPACES } from "@/lib/config";
-import type { ProjectWithRentals, UpdateProjectInput } from "@/lib/types/project";
+import {
+  PROJECT_DETAIL_PAGE,
+  CREATE_PROJECT_PAGE,
+  PROJECTS_PAGE,
+} from "@/lib/message";
+import { getSpaceNameById, ALL_SPACES } from "@/lib/config/config";
+import type {
+  ProjectWithRentals,
+  UpdateProjectInput,
+} from "@/lib/types/project";
 import { updateProject, deleteProject } from "./actions";
 import { cn } from "@/lib/utils";
 
@@ -92,70 +99,100 @@ function escapeCsvCell(value: string): string {
 
 function buildProjectDetailCsv(
   project: ProjectWithRentals,
-  collaPlayContactDisplayName: string
+  collaPlayContactDisplayName: string,
 ): string {
   const rows: string[] = [];
 
   // Section 1: 專案／客戶摘要（欄位名, 值）
   rows.push(
-    [PROJECT_DETAIL_PAGE.labelCustomerName, project.customerName].map(escapeCsvCell).join(",")
+    [PROJECT_DETAIL_PAGE.labelCustomerName, project.customerName]
+      .map(escapeCsvCell)
+      .join(","),
   );
   rows.push(
-    [PROJECT_DETAIL_PAGE.labelPhone, project.customerPhone].map(escapeCsvCell).join(",")
+    [PROJECT_DETAIL_PAGE.labelPhone, project.customerPhone]
+      .map(escapeCsvCell)
+      .join(","),
   );
   if (project.company) {
     rows.push(
-      [PROJECT_DETAIL_PAGE.labelCompany, project.company].map(escapeCsvCell).join(",")
+      [PROJECT_DETAIL_PAGE.labelCompany, project.company]
+        .map(escapeCsvCell)
+        .join(","),
     );
   }
   if (project.taxId) {
     rows.push(
-      [PROJECT_DETAIL_PAGE.labelTaxId, project.taxId].map(escapeCsvCell).join(",")
+      [PROJECT_DETAIL_PAGE.labelTaxId, project.taxId]
+        .map(escapeCsvCell)
+        .join(","),
     );
   }
   rows.push(
-    [PROJECT_DETAIL_PAGE.labelEventOrVenueUse, project.eventOrVenueUse].map(escapeCsvCell).join(",")
+    [PROJECT_DETAIL_PAGE.labelEventOrVenueUse, project.eventOrVenueUse]
+      .map(escapeCsvCell)
+      .join(","),
   );
   if (project.totalAttendees != null) {
     rows.push(
-      [PROJECT_DETAIL_PAGE.labelTotalAttendees, String(project.totalAttendees)].map(escapeCsvCell).join(",")
+      [PROJECT_DETAIL_PAGE.labelTotalAttendees, String(project.totalAttendees)]
+        .map(escapeCsvCell)
+        .join(","),
     );
   }
   if (project.tables) {
     rows.push(
-      [PROJECT_DETAIL_PAGE.labelTables, project.tables].map(escapeCsvCell).join(",")
+      [PROJECT_DETAIL_PAGE.labelTables, project.tables]
+        .map(escapeCsvCell)
+        .join(","),
     );
   }
   if (project.chairs != null) {
     rows.push(
-      [PROJECT_DETAIL_PAGE.labelChairs, String(project.chairs)].map(escapeCsvCell).join(",")
+      [PROJECT_DETAIL_PAGE.labelChairs, String(project.chairs)]
+        .map(escapeCsvCell)
+        .join(","),
     );
   }
   if (project.fnbItems) {
     rows.push(
-      [PROJECT_DETAIL_PAGE.labelFnb, project.fnbItems].map(escapeCsvCell).join(",")
+      [PROJECT_DETAIL_PAGE.labelFnb, project.fnbItems]
+        .map(escapeCsvCell)
+        .join(","),
     );
   }
   if (project.projectNotes) {
     rows.push(
-      [PROJECT_DETAIL_PAGE.labelProjectNotes, project.projectNotes].map(escapeCsvCell).join(",")
+      [PROJECT_DETAIL_PAGE.labelProjectNotes, project.projectNotes]
+        .map(escapeCsvCell)
+        .join(","),
     );
   }
   rows.push(
-    [PROJECT_DETAIL_PAGE.labelCollaPlayContact, collaPlayContactDisplayName].map(escapeCsvCell).join(",")
+    [PROJECT_DETAIL_PAGE.labelCollaPlayContact, collaPlayContactDisplayName]
+      .map(escapeCsvCell)
+      .join(","),
   );
   rows.push(
-    [PROJECT_DETAIL_PAGE.labelStatus, getStatusLabel(project.status)].map(escapeCsvCell).join(",")
+    [PROJECT_DETAIL_PAGE.labelStatus, getStatusLabel(project.status)]
+      .map(escapeCsvCell)
+      .join(","),
   );
   rows.push(
-    [PROJECT_DETAIL_PAGE.labelCreatedAt, formatDateTime(project.createdAt)].map(escapeCsvCell).join(",")
+    [PROJECT_DETAIL_PAGE.labelCreatedAt, formatDateTime(project.createdAt)]
+      .map(escapeCsvCell)
+      .join(","),
   );
   rows.push(
-    [PROJECT_DETAIL_PAGE.labelUpdatedAt, formatDateTime(project.updatedAt)].map(escapeCsvCell).join(",")
+    [PROJECT_DETAIL_PAGE.labelUpdatedAt, formatDateTime(project.updatedAt)]
+      .map(escapeCsvCell)
+      .join(","),
   );
   if (project.internalNotes) {
     rows.push(
-      [PROJECT_DETAIL_PAGE.labelInternalNotes, project.internalNotes].map(escapeCsvCell).join(",")
+      [PROJECT_DETAIL_PAGE.labelInternalNotes, project.internalNotes]
+        .map(escapeCsvCell)
+        .join(","),
     );
   }
 
@@ -175,7 +212,7 @@ function buildProjectDetailCsv(
 
   const totalAmount = project.rentals.reduce(
     (sum, r) => sum + r.rentalAmount + r.fnbAmount,
-    0
+    0,
   );
   for (const r of project.rentals) {
     const dateStr = DATE_FORMATTER.format(new Date(r.date + "T00:00:00"));
@@ -190,7 +227,9 @@ function buildProjectDetailCsv(
         CURRENCY_FORMATTER.format(r.fnbAmount),
         CURRENCY_FORMATTER.format(r.paidAmount),
         CURRENCY_FORMATTER.format(r.pendingAmount),
-      ].map(escapeCsvCell).join(",")
+      ]
+        .map(escapeCsvCell)
+        .join(","),
     );
   }
   rows.push(
@@ -202,7 +241,9 @@ function buildProjectDetailCsv(
       "",
       "",
       "",
-    ].map(escapeCsvCell).join(",")
+    ]
+      .map(escapeCsvCell)
+      .join(","),
   );
 
   const csvContent = rows.join("\r\n");
@@ -324,7 +365,10 @@ interface ProjectDetailContentProps {
   adminOptions: { id: string; name: string }[];
 }
 
-export function ProjectDetailContent({ project, adminOptions }: ProjectDetailContentProps) {
+export function ProjectDetailContent({
+  project,
+  adminOptions,
+}: ProjectDetailContentProps) {
   const router = useRouter();
   const [isEditing, setIsEditing] = React.useState(false);
   const [deleteError, setDeleteError] = React.useState<string | null>(null);
@@ -334,7 +378,7 @@ export function ProjectDetailContent({ project, adminOptions }: ProjectDetailCon
 
   const totalAmount = project.rentals.reduce(
     (sum, r) => sum + r.rentalAmount + r.fnbAmount,
-    0
+    0,
   );
 
   const collaPlayContactName =
@@ -410,7 +454,9 @@ export function ProjectDetailContent({ project, adminOptions }: ProjectDetailCon
         >
           <Card>
             <CardHeader>
-              <h2 className="text-lg font-semibold">{PROJECT_DETAIL_PAGE.sectionCustomer}</h2>
+              <h2 className="text-lg font-semibold">
+                {PROJECT_DETAIL_PAGE.sectionCustomer}
+              </h2>
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
               <FormField
@@ -418,9 +464,16 @@ export function ProjectDetailContent({ project, adminOptions }: ProjectDetailCon
                 name="customerName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{CREATE_PROJECT_PAGE.labelCustomerNameRequired}</FormLabel>
+                    <FormLabel>
+                      {CREATE_PROJECT_PAGE.labelCustomerNameRequired}
+                    </FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder={CREATE_PROJECT_PAGE.placeholderCustomerName} />
+                      <Input
+                        {...field}
+                        placeholder={
+                          CREATE_PROJECT_PAGE.placeholderCustomerName
+                        }
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -431,9 +484,15 @@ export function ProjectDetailContent({ project, adminOptions }: ProjectDetailCon
                 name="customerPhone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{CREATE_PROJECT_PAGE.labelPhoneRequired}</FormLabel>
+                    <FormLabel>
+                      {CREATE_PROJECT_PAGE.labelPhoneRequired}
+                    </FormLabel>
                     <FormControl>
-                      <Input {...field} type="tel" placeholder={CREATE_PROJECT_PAGE.placeholderPhone} />
+                      <Input
+                        {...field}
+                        type="tel"
+                        placeholder={CREATE_PROJECT_PAGE.placeholderPhone}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -470,7 +529,9 @@ export function ProjectDetailContent({ project, adminOptions }: ProjectDetailCon
 
           <Card>
             <CardHeader>
-              <h2 className="text-lg font-semibold">{PROJECT_DETAIL_PAGE.sectionProject}</h2>
+              <h2 className="text-lg font-semibold">
+                {PROJECT_DETAIL_PAGE.sectionProject}
+              </h2>
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
               <FormField
@@ -478,9 +539,16 @@ export function ProjectDetailContent({ project, adminOptions }: ProjectDetailCon
                 name="eventOrVenueUse"
                 render={({ field }) => (
                   <FormItem className="sm:col-span-2">
-                    <FormLabel>{CREATE_PROJECT_PAGE.labelEventOrVenueUseRequired}</FormLabel>
+                    <FormLabel>
+                      {CREATE_PROJECT_PAGE.labelEventOrVenueUseRequired}
+                    </FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder={CREATE_PROJECT_PAGE.placeholderEventOrVenueUse} />
+                      <Input
+                        {...field}
+                        placeholder={
+                          CREATE_PROJECT_PAGE.placeholderEventOrVenueUse
+                        }
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -491,7 +559,9 @@ export function ProjectDetailContent({ project, adminOptions }: ProjectDetailCon
                 name="totalAttendees"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{CREATE_PROJECT_PAGE.labelTotalAttendees}</FormLabel>
+                    <FormLabel>
+                      {CREATE_PROJECT_PAGE.labelTotalAttendees}
+                    </FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -499,7 +569,11 @@ export function ProjectDetailContent({ project, adminOptions }: ProjectDetailCon
                         {...field}
                         value={field.value ?? ""}
                         onChange={(e) =>
-                          field.onChange(e.target.value === "" ? undefined : Number(e.target.value))
+                          field.onChange(
+                            e.target.value === ""
+                              ? undefined
+                              : Number(e.target.value),
+                          )
                         }
                       />
                     </FormControl>
@@ -533,7 +607,11 @@ export function ProjectDetailContent({ project, adminOptions }: ProjectDetailCon
                         {...field}
                         value={field.value ?? ""}
                         onChange={(e) =>
-                          field.onChange(e.target.value === "" ? undefined : Number(e.target.value))
+                          field.onChange(
+                            e.target.value === ""
+                              ? undefined
+                              : Number(e.target.value),
+                          )
                         }
                       />
                     </FormControl>
@@ -559,7 +637,9 @@ export function ProjectDetailContent({ project, adminOptions }: ProjectDetailCon
                 name="projectNotes"
                 render={({ field }) => (
                   <FormItem className="sm:col-span-2">
-                    <FormLabel>{CREATE_PROJECT_PAGE.labelProjectNotes}</FormLabel>
+                    <FormLabel>
+                      {CREATE_PROJECT_PAGE.labelProjectNotes}
+                    </FormLabel>
                     <FormControl>
                       <Textarea {...field} rows={2} className="resize-none" />
                     </FormControl>
@@ -572,11 +652,17 @@ export function ProjectDetailContent({ project, adminOptions }: ProjectDetailCon
                 name="collaPlayContactId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{CREATE_PROJECT_PAGE.labelCollaPlayContactRequired}</FormLabel>
+                    <FormLabel>
+                      {CREATE_PROJECT_PAGE.labelCollaPlayContactRequired}
+                    </FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder={CREATE_PROJECT_PAGE.placeholderSelectContact} />
+                          <SelectValue
+                            placeholder={
+                              CREATE_PROJECT_PAGE.placeholderSelectContact
+                            }
+                          />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -604,8 +690,12 @@ export function ProjectDetailContent({ project, adminOptions }: ProjectDetailCon
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="negotiating">{PROJECTS_PAGE.statusNegotiating}</SelectItem>
-                        <SelectItem value="deposit_paid">{PROJECTS_PAGE.statusDepositPaid}</SelectItem>
+                        <SelectItem value="negotiating">
+                          {PROJECTS_PAGE.statusNegotiating}
+                        </SelectItem>
+                        <SelectItem value="deposit_paid">
+                          {PROJECTS_PAGE.statusDepositPaid}
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -617,7 +707,9 @@ export function ProjectDetailContent({ project, adminOptions }: ProjectDetailCon
 
           <Card>
             <CardHeader>
-              <h2 className="text-lg font-semibold">{PROJECT_DETAIL_PAGE.sectionNotes}</h2>
+              <h2 className="text-lg font-semibold">
+                {PROJECT_DETAIL_PAGE.sectionNotes}
+              </h2>
             </CardHeader>
             <CardContent>
               <FormField
@@ -625,9 +717,18 @@ export function ProjectDetailContent({ project, adminOptions }: ProjectDetailCon
                 name="internalNotes"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{CREATE_PROJECT_PAGE.labelInternalNotes}</FormLabel>
+                    <FormLabel>
+                      {CREATE_PROJECT_PAGE.labelInternalNotes}
+                    </FormLabel>
                     <FormControl>
-                      <Textarea {...field} rows={3} className="resize-none" placeholder={CREATE_PROJECT_PAGE.placeholderInternalNotes} />
+                      <Textarea
+                        {...field}
+                        rows={3}
+                        className="resize-none"
+                        placeholder={
+                          CREATE_PROJECT_PAGE.placeholderInternalNotes
+                        }
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -638,13 +739,20 @@ export function ProjectDetailContent({ project, adminOptions }: ProjectDetailCon
 
           <Card>
             <CardHeader>
-              <h2 className="text-lg font-semibold">{CREATE_PROJECT_PAGE.sectionRentals}</h2>
+              <h2 className="text-lg font-semibold">
+                {CREATE_PROJECT_PAGE.sectionRentals}
+              </h2>
             </CardHeader>
             <CardContent className="flex flex-col gap-6">
               {fields.map((fieldItem, index) => (
-                <div key={fieldItem.id} className="rounded-lg border border-border bg-muted/30 p-4 space-y-4">
+                <div
+                  key={fieldItem.id}
+                  className="rounded-lg border border-border bg-muted/30 p-4 space-y-4"
+                >
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium tabular-nums">第 {index + 1} 筆</span>
+                    <span className="text-sm font-medium tabular-nums">
+                      第 {index + 1} 筆
+                    </span>
                     <Button
                       type="button"
                       variant="ghost"
@@ -662,19 +770,26 @@ export function ProjectDetailContent({ project, adminOptions }: ProjectDetailCon
                     name={`rentals.${index}.spaceIds`}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{CREATE_PROJECT_PAGE.labelSpacesRequired}</FormLabel>
+                        <FormLabel>
+                          {CREATE_PROJECT_PAGE.labelSpacesRequired}
+                        </FormLabel>
                         <FormControl>
                           <fieldset className="flex flex-wrap gap-3 rounded-md border border-input bg-background px-3 py-2">
                             {ALL_SPACES.map((space) => {
                               const checked = field.value.includes(space.id);
                               return (
-                                <label key={space.id} className="flex items-center gap-2 cursor-pointer text-sm">
+                                <label
+                                  key={space.id}
+                                  className="flex items-center gap-2 cursor-pointer text-sm"
+                                >
                                   <input
                                     type="checkbox"
                                     checked={checked}
                                     onChange={() => {
                                       const next = checked
-                                        ? field.value.filter((id) => id !== space.id)
+                                        ? field.value.filter(
+                                            (id) => id !== space.id,
+                                          )
                                         : [...field.value, space.id];
                                       field.onChange(next);
                                     }}
@@ -696,27 +811,47 @@ export function ProjectDetailContent({ project, adminOptions }: ProjectDetailCon
                       name={`rentals.${index}.date`}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{CREATE_PROJECT_PAGE.labelDateRequired}</FormLabel>
+                          <FormLabel>
+                            {CREATE_PROJECT_PAGE.labelDateRequired}
+                          </FormLabel>
                           <Popover>
                             <PopoverTrigger asChild>
                               <FormControl>
                                 <Button
                                   variant="outline"
-                                  className={cn("w-full justify-start text-left font-normal", !field.value && "text-muted-foreground")}
+                                  className={cn(
+                                    "w-full justify-start text-left font-normal",
+                                    !field.value && "text-muted-foreground",
+                                  )}
                                   type="button"
                                 >
                                   <CalendarIcon className="mr-2 size-4" />
                                   {field.value
-                                    ? format(new Date(field.value + "T00:00:00"), "yyyy / MM / dd", { locale: zhTW })
+                                    ? format(
+                                        new Date(field.value + "T00:00:00"),
+                                        "yyyy / MM / dd",
+                                        { locale: zhTW },
+                                      )
                                     : CREATE_PROJECT_PAGE.dateFormat}
                                 </Button>
                               </FormControl>
                             </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
+                            <PopoverContent
+                              className="w-auto p-0"
+                              align="start"
+                            >
                               <Calendar
                                 mode="single"
-                                selected={field.value ? new Date(field.value + "T00:00:00") : undefined}
-                                onSelect={(d) => field.onChange(d ? format(d, "yyyy-MM-dd") : "")}
+                                selected={
+                                  field.value
+                                    ? new Date(field.value + "T00:00:00")
+                                    : undefined
+                                }
+                                onSelect={(d) =>
+                                  field.onChange(
+                                    d ? format(d, "yyyy-MM-dd") : "",
+                                  )
+                                }
                                 locale={zhTW}
                               />
                             </PopoverContent>
@@ -730,7 +865,9 @@ export function ProjectDetailContent({ project, adminOptions }: ProjectDetailCon
                       name={`rentals.${index}.startTime`}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{CREATE_PROJECT_PAGE.labelStartTimeRequired}</FormLabel>
+                          <FormLabel>
+                            {CREATE_PROJECT_PAGE.labelStartTimeRequired}
+                          </FormLabel>
                           <FormControl>
                             <Input {...field} type="time" step={900} />
                           </FormControl>
@@ -743,7 +880,9 @@ export function ProjectDetailContent({ project, adminOptions }: ProjectDetailCon
                       name={`rentals.${index}.endTime`}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{CREATE_PROJECT_PAGE.labelEndTimeRequired}</FormLabel>
+                          <FormLabel>
+                            {CREATE_PROJECT_PAGE.labelEndTimeRequired}
+                          </FormLabel>
                           <FormControl>
                             <Input {...field} type="time" step={900} />
                           </FormControl>
@@ -758,9 +897,16 @@ export function ProjectDetailContent({ project, adminOptions }: ProjectDetailCon
                       name={`rentals.${index}.rentalAmount`}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{CREATE_PROJECT_PAGE.labelRentalAmount}</FormLabel>
+                          <FormLabel>
+                            {CREATE_PROJECT_PAGE.labelRentalAmount}
+                          </FormLabel>
                           <FormControl>
-                            <Input {...field} type="number" min={0} className="tabular-nums" />
+                            <Input
+                              {...field}
+                              type="number"
+                              min={0}
+                              className="tabular-nums"
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -771,9 +917,16 @@ export function ProjectDetailContent({ project, adminOptions }: ProjectDetailCon
                       name={`rentals.${index}.fnbAmount`}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{CREATE_PROJECT_PAGE.labelFnbAmount}</FormLabel>
+                          <FormLabel>
+                            {CREATE_PROJECT_PAGE.labelFnbAmount}
+                          </FormLabel>
                           <FormControl>
-                            <Input {...field} type="number" min={0} className="tabular-nums" />
+                            <Input
+                              {...field}
+                              type="number"
+                              min={0}
+                              className="tabular-nums"
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -784,9 +937,16 @@ export function ProjectDetailContent({ project, adminOptions }: ProjectDetailCon
                       name={`rentals.${index}.paidAmount`}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{CREATE_PROJECT_PAGE.labelPaidAmount}</FormLabel>
+                          <FormLabel>
+                            {CREATE_PROJECT_PAGE.labelPaidAmount}
+                          </FormLabel>
                           <FormControl>
-                            <Input {...field} type="number" min={0} className="tabular-nums" />
+                            <Input
+                              {...field}
+                              type="number"
+                              min={0}
+                              className="tabular-nums"
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -797,9 +957,16 @@ export function ProjectDetailContent({ project, adminOptions }: ProjectDetailCon
                       name={`rentals.${index}.pendingAmount`}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{CREATE_PROJECT_PAGE.labelPendingAmount}</FormLabel>
+                          <FormLabel>
+                            {CREATE_PROJECT_PAGE.labelPendingAmount}
+                          </FormLabel>
                           <FormControl>
-                            <Input {...field} type="number" min={0} className="tabular-nums" />
+                            <Input
+                              {...field}
+                              type="number"
+                              min={0}
+                              className="tabular-nums"
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -808,7 +975,12 @@ export function ProjectDetailContent({ project, adminOptions }: ProjectDetailCon
                   </div>
                 </div>
               ))}
-              <Button type="button" variant="outline" onClick={() => append({ ...defaultRental })} className="w-fit gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => append({ ...defaultRental })}
+                className="w-fit gap-2"
+              >
                 <Plus className="size-4" />
                 {CREATE_PROJECT_PAGE.addRental}
               </Button>
@@ -821,7 +993,12 @@ export function ProjectDetailContent({ project, adminOptions }: ProjectDetailCon
             </p>
           ) : null}
           <div className="flex gap-2">
-            <Button type="button" variant="outline" onClick={() => setIsEditing(false)} disabled={isPendingUpdate}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsEditing(false)}
+              disabled={isPendingUpdate}
+            >
               {PROJECT_DETAIL_PAGE.buttonCancel}
             </Button>
             <Button type="submit" disabled={isPendingUpdate}>
@@ -843,20 +1020,33 @@ export function ProjectDetailContent({ project, adminOptions }: ProjectDetailCon
   return (
     <div className="flex flex-col gap-6">
       {deleteError ? (
-        <p className="text-sm text-destructive rounded-md bg-destructive/10 p-3" role="alert">
+        <p
+          className="text-sm text-destructive rounded-md bg-destructive/10 p-3"
+          role="alert"
+        >
           {PROJECT_DETAIL_PAGE.deleteError}: {deleteError}
         </p>
       ) : null}
       <div className="flex flex-wrap justify-end gap-2">
         {/* Edit Button */}
-        <Button variant="default" size="sm" className="gap-2" onClick={handleEdit}>
+        <Button
+          variant="default"
+          size="sm"
+          className="gap-2"
+          onClick={handleEdit}
+        >
           <Pencil className="size-4" />
           {PROJECT_DETAIL_PAGE.buttonEdit}
         </Button>
         {/* Delete Button */}
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button variant="destructive" size="sm" className="gap-2" disabled={isPendingDelete}>
+            <Button
+              variant="destructive"
+              size="sm"
+              className="gap-2"
+              disabled={isPendingDelete}
+            >
               {isPendingDelete ? (
                 <Loader2 className="size-4 animate-spin" />
               ) : (
@@ -867,8 +1057,12 @@ export function ProjectDetailContent({ project, adminOptions }: ProjectDetailCon
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>{PROJECT_DETAIL_PAGE.deleteConfirmTitle}</AlertDialogTitle>
-              <AlertDialogDescription>{PROJECT_DETAIL_PAGE.deleteConfirmDescription}</AlertDialogDescription>
+              <AlertDialogTitle>
+                {PROJECT_DETAIL_PAGE.deleteConfirmTitle}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {PROJECT_DETAIL_PAGE.deleteConfirmDescription}
+              </AlertDialogDescription>
             </AlertDialogHeader>
             {deleteError ? (
               <p className="text-sm text-destructive" role="alert">
@@ -876,9 +1070,16 @@ export function ProjectDetailContent({ project, adminOptions }: ProjectDetailCon
               </p>
             ) : null}
             <AlertDialogFooter>
-              <AlertDialogCancel>{PROJECT_DETAIL_PAGE.deleteConfirmCancel}</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDeleteConfirm} disabled={isPendingDelete}>
-                {isPendingDelete ? <Loader2 className="size-4 animate-spin" /> : null}
+              <AlertDialogCancel>
+                {PROJECT_DETAIL_PAGE.deleteConfirmCancel}
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteConfirm}
+                disabled={isPendingDelete}
+              >
+                {isPendingDelete ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : null}
                 {PROJECT_DETAIL_PAGE.deleteConfirmConfirm}
               </AlertDialogAction>
             </AlertDialogFooter>
@@ -902,26 +1103,36 @@ export function ProjectDetailContent({ project, adminOptions }: ProjectDetailCon
 
       <Card>
         <CardHeader>
-          <h2 className="text-lg font-semibold">{PROJECT_DETAIL_PAGE.sectionCustomer}</h2>
+          <h2 className="text-lg font-semibold">
+            {PROJECT_DETAIL_PAGE.sectionCustomer}
+          </h2>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div>
-            <p className="text-sm text-muted-foreground">{PROJECT_DETAIL_PAGE.labelCustomerName}</p>
+            <p className="text-sm text-muted-foreground">
+              {PROJECT_DETAIL_PAGE.labelCustomerName}
+            </p>
             <p className="font-medium">{project.customerName}</p>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">{PROJECT_DETAIL_PAGE.labelPhone}</p>
+            <p className="text-sm text-muted-foreground">
+              {PROJECT_DETAIL_PAGE.labelPhone}
+            </p>
             <p className="font-medium">{project.customerPhone}</p>
           </div>
           {project.company ? (
             <div>
-              <p className="text-sm text-muted-foreground">{PROJECT_DETAIL_PAGE.labelCompany}</p>
+              <p className="text-sm text-muted-foreground">
+                {PROJECT_DETAIL_PAGE.labelCompany}
+              </p>
               <p className="font-medium">{project.company}</p>
             </div>
           ) : null}
           {project.taxId ? (
             <div>
-              <p className="text-sm text-muted-foreground">{PROJECT_DETAIL_PAGE.labelTaxId}</p>
+              <p className="text-sm text-muted-foreground">
+                {PROJECT_DETAIL_PAGE.labelTaxId}
+              </p>
               <p className="font-medium">{project.taxId}</p>
             </div>
           ) : null}
@@ -930,58 +1141,88 @@ export function ProjectDetailContent({ project, adminOptions }: ProjectDetailCon
 
       <Card>
         <CardHeader>
-          <h2 className="text-lg font-semibold">{PROJECT_DETAIL_PAGE.sectionProject}</h2>
+          <h2 className="text-lg font-semibold">
+            {PROJECT_DETAIL_PAGE.sectionProject}
+          </h2>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
-            <p className="text-sm text-muted-foreground">{PROJECT_DETAIL_PAGE.labelEventOrVenueUse}</p>
+            <p className="text-sm text-muted-foreground">
+              {PROJECT_DETAIL_PAGE.labelEventOrVenueUse}
+            </p>
             <p className="font-medium">{project.eventOrVenueUse}</p>
           </div>
           {project.totalAttendees != null ? (
             <div>
-              <p className="text-sm text-muted-foreground">{PROJECT_DETAIL_PAGE.labelTotalAttendees}</p>
+              <p className="text-sm text-muted-foreground">
+                {PROJECT_DETAIL_PAGE.labelTotalAttendees}
+              </p>
               <p className="font-medium">{project.totalAttendees}</p>
             </div>
           ) : null}
           {project.tables ? (
             <div>
-              <p className="text-sm text-muted-foreground">{PROJECT_DETAIL_PAGE.labelTables}</p>
+              <p className="text-sm text-muted-foreground">
+                {PROJECT_DETAIL_PAGE.labelTables}
+              </p>
               <p className="font-medium">{project.tables}</p>
             </div>
           ) : null}
           {project.chairs != null ? (
             <div>
-              <p className="text-sm text-muted-foreground">{PROJECT_DETAIL_PAGE.labelChairs}</p>
+              <p className="text-sm text-muted-foreground">
+                {PROJECT_DETAIL_PAGE.labelChairs}
+              </p>
               <p className="font-medium">{project.chairs}</p>
             </div>
           ) : null}
           {project.fnbItems ? (
             <div className="sm:col-span-2">
-              <p className="text-sm text-muted-foreground">{PROJECT_DETAIL_PAGE.labelFnb}</p>
-              <p className="font-medium whitespace-pre-wrap">{project.fnbItems}</p>
+              <p className="text-sm text-muted-foreground">
+                {PROJECT_DETAIL_PAGE.labelFnb}
+              </p>
+              <p className="font-medium whitespace-pre-wrap">
+                {project.fnbItems}
+              </p>
             </div>
           ) : null}
           {project.projectNotes ? (
             <div className="sm:col-span-2">
-              <p className="text-sm text-muted-foreground">{PROJECT_DETAIL_PAGE.labelProjectNotes}</p>
-              <p className="font-medium whitespace-pre-wrap">{project.projectNotes}</p>
+              <p className="text-sm text-muted-foreground">
+                {PROJECT_DETAIL_PAGE.labelProjectNotes}
+              </p>
+              <p className="font-medium whitespace-pre-wrap">
+                {project.projectNotes}
+              </p>
             </div>
           ) : null}
           <div>
-            <p className="text-sm text-muted-foreground">{PROJECT_DETAIL_PAGE.labelCollaPlayContact}</p>
+            <p className="text-sm text-muted-foreground">
+              {PROJECT_DETAIL_PAGE.labelCollaPlayContact}
+            </p>
             <p className="font-medium">{collaPlayContactName}</p>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">{PROJECT_DETAIL_PAGE.labelStatus}</p>
+            <p className="text-sm text-muted-foreground">
+              {PROJECT_DETAIL_PAGE.labelStatus}
+            </p>
             <p className="font-medium">{getStatusLabel(project.status)}</p>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">{PROJECT_DETAIL_PAGE.labelCreatedAt}</p>
-            <p className="font-medium tabular-nums">{formatDateTime(project.createdAt)}</p>
+            <p className="text-sm text-muted-foreground">
+              {PROJECT_DETAIL_PAGE.labelCreatedAt}
+            </p>
+            <p className="font-medium tabular-nums">
+              {formatDateTime(project.createdAt)}
+            </p>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">{PROJECT_DETAIL_PAGE.labelUpdatedAt}</p>
-            <p className="font-medium tabular-nums">{formatDateTime(project.updatedAt)}</p>
+            <p className="text-sm text-muted-foreground">
+              {PROJECT_DETAIL_PAGE.labelUpdatedAt}
+            </p>
+            <p className="font-medium tabular-nums">
+              {formatDateTime(project.updatedAt)}
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -989,20 +1230,29 @@ export function ProjectDetailContent({ project, adminOptions }: ProjectDetailCon
       {project.internalNotes ? (
         <Card>
           <CardHeader>
-            <h2 className="text-lg font-semibold">{PROJECT_DETAIL_PAGE.sectionNotes}</h2>
+            <h2 className="text-lg font-semibold">
+              {PROJECT_DETAIL_PAGE.sectionNotes}
+            </h2>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">{PROJECT_DETAIL_PAGE.labelInternalNotes}</p>
-            <p className="font-medium whitespace-pre-wrap">{project.internalNotes}</p>
+            <p className="text-sm text-muted-foreground">
+              {PROJECT_DETAIL_PAGE.labelInternalNotes}
+            </p>
+            <p className="font-medium whitespace-pre-wrap">
+              {project.internalNotes}
+            </p>
           </CardContent>
         </Card>
       ) : null}
 
       <Card>
         <CardHeader>
-          <h2 className="text-lg font-semibold">{PROJECT_DETAIL_PAGE.sectionRentals}</h2>
+          <h2 className="text-lg font-semibold">
+            {PROJECT_DETAIL_PAGE.sectionRentals}
+          </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            {PROJECT_DETAIL_PAGE.totalAmount}: {CURRENCY_FORMATTER.format(totalAmount)}
+            {PROJECT_DETAIL_PAGE.totalAmount}:{" "}
+            {CURRENCY_FORMATTER.format(totalAmount)}
           </p>
         </CardHeader>
         <CardContent>
@@ -1015,26 +1265,44 @@ export function ProjectDetailContent({ project, adminOptions }: ProjectDetailCon
                   <TableHead>{PROJECT_DETAIL_PAGE.labelDate}</TableHead>
                   <TableHead>{PROJECT_DETAIL_PAGE.labelTimeRange}</TableHead>
                   <TableHead>{PROJECT_DETAIL_PAGE.labelSpaces}</TableHead>
-                  <TableHead className="text-right tabular-nums">{PROJECT_DETAIL_PAGE.labelRentalAmount}</TableHead>
-                  <TableHead className="text-right tabular-nums">{PROJECT_DETAIL_PAGE.labelFnbAmount}</TableHead>
-                  <TableHead className="text-right tabular-nums">{PROJECT_DETAIL_PAGE.labelPaidAmount}</TableHead>
-                  <TableHead className="text-right tabular-nums">{PROJECT_DETAIL_PAGE.labelPendingAmount}</TableHead>
+                  <TableHead className="text-right tabular-nums">
+                    {PROJECT_DETAIL_PAGE.labelRentalAmount}
+                  </TableHead>
+                  <TableHead className="text-right tabular-nums">
+                    {PROJECT_DETAIL_PAGE.labelFnbAmount}
+                  </TableHead>
+                  <TableHead className="text-right tabular-nums">
+                    {PROJECT_DETAIL_PAGE.labelPaidAmount}
+                  </TableHead>
+                  <TableHead className="text-right tabular-nums">
+                    {PROJECT_DETAIL_PAGE.labelPendingAmount}
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {project.rentals.map((r) => (
                   <TableRow key={r.id}>
-                    <TableCell className="tabular-nums">{DATE_FORMATTER.format(new Date(r.date + "T00:00:00"))}</TableCell>
+                    <TableCell className="tabular-nums">
+                      {DATE_FORMATTER.format(new Date(r.date + "T00:00:00"))}
+                    </TableCell>
                     <TableCell className="tabular-nums">
                       {r.startTime} – {r.endTime}
                     </TableCell>
                     <TableCell>
                       {r.spaceIds.map((id) => getSpaceNameById(id)).join("、")}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">{CURRENCY_FORMATTER.format(r.rentalAmount)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{CURRENCY_FORMATTER.format(r.fnbAmount)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{CURRENCY_FORMATTER.format(r.paidAmount)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{CURRENCY_FORMATTER.format(r.pendingAmount)}</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {CURRENCY_FORMATTER.format(r.rentalAmount)}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {CURRENCY_FORMATTER.format(r.fnbAmount)}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {CURRENCY_FORMATTER.format(r.paidAmount)}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {CURRENCY_FORMATTER.format(r.pendingAmount)}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

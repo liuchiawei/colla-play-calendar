@@ -36,7 +36,7 @@ import type {
   EventRegistrationWithUser,
   EventStatus,
 } from "@/lib/types";
-import type { DashboardTab } from "@/lib/config";
+import type { DashboardTab } from "@/lib/config/config";
 
 export default function DashboardClient() {
   // 當前選中的 tab
@@ -182,30 +182,33 @@ export default function DashboardClient() {
   }, []);
 
   // 審核活動
-  const handleEventReview = React.useCallback(async (eventId: string, status: EventStatus) => {
-    setIsSubmitting(true);
-    try {
-      const response = await fetch(`/api/events/${eventId}/review`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
-      });
+  const handleEventReview = React.useCallback(
+    async (eventId: string, status: EventStatus) => {
+      setIsSubmitting(true);
+      try {
+        const response = await fetch(`/api/events/${eventId}/review`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status }),
+        });
 
-      const data = await response.json();
+        const data = await response.json();
 
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || "審核失敗");
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || "審核失敗");
+        }
+
+        // 重新獲取數據
+        await fetchData();
+      } catch (error) {
+        console.error("Failed to review event:", error);
+        throw error;
+      } finally {
+        setIsSubmitting(false);
       }
-
-      // 重新獲取數據
-      await fetchData();
-    } catch (error) {
-      console.error("Failed to review event:", error);
-      throw error;
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [fetchData]);
+    },
+    [fetchData],
+  );
 
   // 開啟報名列表
   const handleViewRegistrations = (eventId: string) => {

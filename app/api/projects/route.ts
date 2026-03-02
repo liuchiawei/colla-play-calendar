@@ -17,8 +17,13 @@ function validateCreateProjectInput(
   if (!b.customerName || typeof b.customerName !== "string" || !b.customerName.trim()) {
     return { ok: false, error: "聯絡人姓名為必填" };
   }
-  if (!b.customerPhone || typeof b.customerPhone !== "string" || !b.customerPhone.trim()) {
-    return { ok: false, error: "聯絡電話為必填" };
+  const rawPhone = b.customerPhone;
+  const customerPhone =
+    rawPhone == null || typeof rawPhone !== "string"
+      ? ""
+      : rawPhone.trim();
+  if (customerPhone && !/^[\d\s\-]+$/.test(customerPhone)) {
+    return { ok: false, error: "聯絡電話格式錯誤" };
   }
   if (!b.eventOrVenueUse || typeof b.eventOrVenueUse !== "string" || !b.eventOrVenueUse.trim()) {
     return { ok: false, error: "活動或場地用途為必填" };
@@ -44,7 +49,10 @@ function validateCreateProjectInput(
       return { ok: false, error: `第 ${i + 1} 筆租借項目：結束時間必須晚於開始時間` };
     }
   }
-  const data = body as CreateProjectInput;
+  const data = {
+    ...(body as CreateProjectInput),
+    customerPhone,
+  };
   return { ok: true, data };
 }
 
