@@ -2,15 +2,9 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { getDefaultClassNames, type DayButton } from "react-day-picker";
 import { SPACE_DETAIL_PAGE, PROJECTS_PAGE } from "@/lib/message";
 import {
   PROJECT_STATUS_OPTIONS,
@@ -18,22 +12,23 @@ import {
 } from "@/lib/config/project-status";
 import type { Project, ProjectStatus } from "@/lib/types/project";
 import { getProjectTimeRange } from "@/lib/utils/project";
-import { getSpaceNameById } from "@/lib/config/config";
+import { ALL_SPACES, getSpaceNameById } from "@/lib/config/config";
+import { formatMonthYear } from "@/lib/date-utils";
+import {
+  startOfMonth,
+  getDaysInMonth,
+  addMonths,
+  subMonths,
+  addDays,
+  isSameDay,
+} from "date-fns";
 import { cn } from "@/lib/utils";
-
-const DATE_FORMATTER = new Intl.DateTimeFormat("zh-TW", {
-  dateStyle: "short",
-});
 
 function toDateKey(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
-}
-
-function projectDateKey(project: Project): string {
-  return project.date.slice(0, 10);
 }
 
 /** 取得專案主要空間 id（第一筆 rental 的第一個 spaceId），供 border 色與圖例對應 */
@@ -126,12 +121,6 @@ function ProjectBadgeLink({
   );
 }
 
-function DayNumber({ date }: { date: Date }) {
-  return <>{date.getDate()}</>;
-}
-
-const DAY_CELL_MAX_VISIBLE = 2;
-
 function StatusDot({ status }: { status: ProjectStatus }) {
   return (
     <span
@@ -144,93 +133,41 @@ function StatusDot({ status }: { status: ProjectStatus }) {
   );
 }
 
-function DayCellProjectBadges({
-  projects,
-  date,
-  maxVisible = DAY_CELL_MAX_VISIBLE,
-  className,
-  showVenue = true,
-  spaceBorderColors,
-}: {
-  projects: Project[];
-  /** 格子日期，用於顯示該日的 rental 時段 */
-  date?: Date;
-  maxVisible?: number;
-  className?: string;
-  showVenue?: boolean;
-  spaceBorderColors?: Record<string, string>;
-}) {
-  const visible = projects.slice(0, maxVisible);
-  const restCount = projects.length - visible.length;
-  const dateKey = date ? toDateKey(date) : undefined;
-  return (
-    <span
-      className={cn(
-        "flex min-w-0 w-full flex items-center justify-center gap-0.5 overflow-hidden",
-        className,
-      )}
-      aria-label={projects.length > 0 ? `${projects.length} 個專案` : undefined}
-    >
-      {/* 手機：圓點（依 status） */}
-      <span className="min-w-0 flex items-center gap-0.5 justify-center md:hidden">
-        {visible.map((project) => (
-          <StatusDot key={project.id} status={project.status} />
-        ))}
-        {restCount > 0 ? (
-          <span className="text-[10px] font-medium text-muted-foreground shrink-0">
-            +{restCount}
-          </span>
-        ) : null}
-      </span>
-      {/* 平板以上：專案名稱 Badge */}
-      <span className="hidden min-w-0 flex-1 flex-wrap items-center justify-center gap-0.5 overflow-hidden md:flex">
-        {visible.map((project) => (
-          <ProjectBadgeLink
-            key={project.id}
-            project={project}
-            dateKey={dateKey}
-            className="min-w-0 truncate text-[10px]"
-            showVenue={showVenue}
-            spaceBorderClass={
-              spaceBorderColors
-                ? spaceBorderColors[getPrimarySpaceId(project) ?? ""]
-                : undefined
-            }
-            spaceBorderColors={spaceBorderColors}
-          />
-        ))}
-        {restCount > 0 ? (
-          <span className="text-[10px] font-medium text-muted-foreground shrink-0">
-            +{restCount}
-          </span>
-        ) : null}
-      </span>
-    </span>
-  );
-}
-
 function DayCellContent({
-  date,
   projects,
+  dateKey,
   showVenue,
   spaceBorderColors,
 }: {
-  date: Date;
   projects: Project[];
+  dateKey: string;
   showVenue?: boolean;
   spaceBorderColors?: Record<string, string>;
 }) {
+  if (projects.length === 0) {
+    return (
+      <div className="p-2 text-muted-foreground text-xs text-center min-h-[3rem] flex items-center justify-center">
+        —
+      </div>
+    );
+  }
   return (
-    <div className="flex flex-col items-center justify-center gap-1.5">
-      <DayNumber date={date} />
-      {projects.length > 0 ? (
-        <DayCellProjectBadges
-          projects={projects}
-          date={date}
+    <div className="p-2 flex flex-col gap-1.5 min-h-[3rem]">
+      {projects.map((project) => (
+        <ProjectBadgeLink
+          key={project.id}
+          project={project}
+          dateKey={dateKey}
+          className="text-[10px] truncate w-full"
           showVenue={showVenue}
+          spaceBorderClass={
+            spaceBorderColors
+              ? spaceBorderColors[getPrimarySpaceId(project) ?? ""]
+              : undefined
+          }
           spaceBorderColors={spaceBorderColors}
         />
-      ) : null}
+      ))}
     </div>
   );
 }
@@ -251,6 +188,8 @@ interface SpaceProjectsCalendarProps {
   spaceLegend?: SpaceLegendEntry[];
 }
 
+const MAX_SPACES_COLUMNS = 8;
+
 export function SpaceProjectsCalendar({
   projects,
   spaceName,
@@ -258,103 +197,77 @@ export function SpaceProjectsCalendar({
   spaceBorderColors,
   spaceLegend,
 }: SpaceProjectsCalendarProps) {
-  const [month, setMonth] = React.useState(() => new Date());
-
-  const projectsByDate = React.useMemo(() => {
-    const m = new Map<string, Project[]>();
-    for (const p of projects) {
-      const key = projectDateKey(p);
-      const list = m.get(key);
-      if (list) list.push(p);
-      else m.set(key, [p]);
-    }
-    return m;
-  }, [projects]);
-
-  const defaultClassNames = getDefaultClassNames();
-
-  const CustomDayButton = React.useCallback(
-    (props: React.ComponentProps<typeof DayButton>) => {
-      const { day, className, modifiers, ...rest } = props;
-      const dayKey = toDateKey(day.date);
-      const dayProjects = projectsByDate.get(dayKey) ?? [];
-
-      if (dayProjects.length === 0) {
-        return (
-          <Button
-            variant="ghost"
-            size="icon"
-            data-day={day.date.toISOString().slice(0, 10)}
-            className={cn(
-              "flex flex-col items-center justify-center aspect-square size-auto w-full min-w-(--cell-size) gap-0.5 leading-none font-normal hover:bg-muted hover:text-foreground",
-              defaultClassNames.day,
-              className,
-            )}
-            aria-label={day.date.toLocaleDateString("zh-TW")}
-            {...rest}
-          >
-            <DayCellContent
-              date={day.date}
-              projects={[]}
-              showVenue={showVenue}
-              spaceBorderColors={spaceBorderColors}
-            />
-          </Button>
-        );
-      }
-
-      return (
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              data-day={day.date.toISOString().slice(0, 10)}
-              className={cn(
-                "flex aspect-square size-auto w-full min-w-(--cell-size) flex-col gap-0.5 leading-none font-normal hover:bg-muted hover:text-foreground",
-                defaultClassNames.day,
-                className,
-              )}
-              aria-label={`${day.date.toLocaleDateString("zh-TW")}，${dayProjects.length} 個專案`}
-              {...rest}
-            >
-              <DayCellContent
-                date={day.date}
-                projects={dayProjects}
-                showVenue={showVenue}
-                spaceBorderColors={spaceBorderColors}
-              />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent align="start" className="w-72 p-2">
-            <p className="mb-2 text-xs text-muted-foreground">
-              {DATE_FORMATTER.format(day.date)}
-            </p>
-            <ul className="flex flex-wrap gap-1.5">
-              {dayProjects.map((project) => (
-                <li key={project.id}>
-                  <ProjectBadgeLink
-                    project={project}
-                    dateKey={toDateKey(day.date)}
-                    showVenue={showVenue}
-                    spaceBorderClass={
-                      spaceBorderColors
-                        ? spaceBorderColors[getPrimarySpaceId(project) ?? ""]
-                        : undefined
-                    }
-                    spaceBorderColors={spaceBorderColors}
-                  />
-                </li>
-              ))}
-            </ul>
-          </PopoverContent>
-        </Popover>
-      );
-    },
-    [projectsByDate, showVenue, spaceBorderColors],
+  const [currentDate, setCurrentDate] = React.useState(() =>
+    startOfMonth(new Date()),
   );
 
+  const firstDayOfMonth = startOfMonth(currentDate);
+  const daysInMonth = getDaysInMonth(currentDate);
+
+  const monthDateKeys = React.useMemo(() => {
+    return Array.from({ length: daysInMonth }, (_, i) =>
+      toDateKey(addDays(firstDayOfMonth, i)),
+    );
+  }, [firstDayOfMonth, daysInMonth]);
+
+  const monthDateKeySet = React.useMemo(
+    () => new Set(monthDateKeys),
+    [monthDateKeys],
+  );
+
+  const hasRentals = projects.some((p) => p.rentals && p.rentals.length > 0);
+
+  const projectsBySpaceAndDate = React.useMemo(() => {
+    if (!hasRentals) return null;
+    const spaceToDateToProjects = new Map<
+      string,
+      Map<string, Project[]>
+    >();
+    for (const p of projects) {
+      const rentals = p.rentals;
+      if (!rentals?.length) continue;
+      for (const r of rentals) {
+        const dateKey = r.date.slice(0, 10);
+        if (!monthDateKeySet.has(dateKey)) continue;
+        for (const spaceId of r.spaceIds) {
+          let dateMap = spaceToDateToProjects.get(spaceId);
+          if (!dateMap) {
+            dateMap = new Map<string, Project[]>();
+            spaceToDateToProjects.set(spaceId, dateMap);
+          }
+          let list = dateMap.get(dateKey);
+          if (!list) {
+            list = [];
+            dateMap.set(dateKey, list);
+          }
+          if (!list.includes(p)) list.push(p);
+        }
+      }
+    }
+    return spaceToDateToProjects;
+  }, [projects, hasRentals, monthDateKeySet]);
+
+  const spacesToDisplay = React.useMemo(() => {
+    const spaceIdsWithActivity = new Set(projectsBySpaceAndDate?.keys() ?? []);
+    return ALL_SPACES.filter((s) => spaceIdsWithActivity.has(s.id)).slice(
+      0,
+      MAX_SPACES_COLUMNS,
+    );
+  }, [projectsBySpaceAndDate]);
+
   const hasAnyProjects = projects.length > 0;
+  const showMonthGrid =
+    hasAnyProjects && (spacesToDisplay.length > 0 || !hasRentals);
+
+  const goToPreviousMonth = () => {
+    setCurrentDate((d) => subMonths(d, 1));
+  };
+
+  const goToNextMonth = () => {
+    setCurrentDate((d) => addMonths(d, 1));
+  };
+
+  const isToday = (date: Date) => isSameDay(date, new Date());
 
   return (
     <section
@@ -362,21 +275,113 @@ export function SpaceProjectsCalendar({
       aria-label={SPACE_DETAIL_PAGE.tableCaption}
     >
       {hasAnyProjects ? (
-        <Calendar
-          mode="single"
-          selected={undefined}
-          onSelect={() => {}}
-          month={month}
-          onMonthChange={setMonth}
-          showOutsideDays
-          components={{ DayButton: CustomDayButton }}
-          className="mx-auto w-full"
-        />
+        <>
+          {/* Header: 上一月 | 月份 | 下一月 */}
+          <div className="flex items-center justify-between gap-2 pb-3 border-b border-border/50 w-full">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={goToPreviousMonth}
+              aria-label="上一月"
+              className="size-8 shrink-0"
+            >
+              <ChevronLeft className="size-4" />
+            </Button>
+            <span className="font-medium text-sm md:text-base tabular-nums">
+              {formatMonthYear(currentDate)}
+            </span>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={goToNextMonth}
+              aria-label="下一月"
+              className="size-8 shrink-0"
+            >
+              <ChevronRight className="size-4" />
+            </Button>
+          </div>
+
+          {/* Body: 月曆網格 — 橫軸空間、縱軸日期 */}
+          {showMonthGrid ? (
+            spacesToDisplay.length > 0 ? (
+              <div className="flex-1 min-w-0 flex flex-col border-t border-border/50 overflow-x-auto mt-3">
+                <table className="w-full min-w-[400px] border-collapse">
+                  <thead>
+                    <tr className="border-b border-border/50">
+                      <th
+                        scope="col"
+                        className="p-2 text-left font-medium text-xs md:text-sm text-muted-foreground w-12 shrink-0 border-r border-border/30"
+                      >
+                        日期
+                      </th>
+                      {spacesToDisplay.map((space) => (
+                        <th
+                          key={space.id}
+                          scope="col"
+                          className="p-2 text-left font-medium text-xs md:text-sm text-muted-foreground min-w-[120px] border-r border-border/30 last:border-r-0"
+                        >
+                          {space.name}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {monthDateKeys.map((dateKey) => {
+                      const dayDate = new Date(dateKey + "T12:00:00");
+                      return (
+                        <tr
+                          key={dateKey}
+                          className={cn(
+                            "border-b border-border/30 last:border-b-0",
+                            isToday(dayDate) && "bg-primary/5",
+                          )}
+                        >
+                          <td className="p-2 font-medium text-xs md:text-sm w-12 shrink-0 border-r border-border/30 align-top">
+                            {dayDate.getDate()}
+                          </td>
+                          {spacesToDisplay.map((space) => {
+                            const dayProjects =
+                              projectsBySpaceAndDate
+                                ?.get(space.id)
+                                ?.get(dateKey) ?? [];
+                            return (
+                              <td
+                                key={space.id}
+                                className={cn(
+                                  "min-w-0 border-r border-border/30 last:border-r-0 align-top",
+                                  isToday(dayDate) && "bg-primary/5",
+                                )}
+                              >
+                                <DayCellContent
+                                  projects={dayProjects}
+                                  dateKey={dateKey}
+                                  showVenue={showVenue}
+                                  spaceBorderColors={spaceBorderColors}
+                                />
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="flex-1 flex items-center justify-center py-12 px-4 mt-3">
+                <p className="text-muted-foreground text-sm text-center">
+                  {SPACE_DETAIL_PAGE.emptyProjects}
+                </p>
+              </div>
+            )
+          ) : null}
+        </>
       ) : (
         <p className="text-muted-foreground text-sm py-12 text-center px-4">
           {SPACE_DETAIL_PAGE.emptyProjects}
         </p>
       )}
+
       {hasAnyProjects ? (
         <div className="mt-3 flex flex-col items-center gap-3 text-xs text-muted-foreground">
           {spaceLegend != null &&
