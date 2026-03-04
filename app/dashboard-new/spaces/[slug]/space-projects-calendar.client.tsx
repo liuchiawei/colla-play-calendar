@@ -301,7 +301,7 @@ export function SpaceProjectsCalendar({
             </Button>
           </div>
 
-          {/* Body: 月曆網格 — 橫軸空間、縱軸日期 */}
+          {/* Body: 月曆網格 — 橫軸日期(1~31)、縱軸空間 */}
           {showMonthGrid ? (
             spacesToDisplay.length > 0 ? (
               <div className="flex-1 min-w-0 flex flex-col border-t border-border/50 overflow-x-auto mt-3">
@@ -310,60 +310,61 @@ export function SpaceProjectsCalendar({
                     <tr className="border-b border-border/50">
                       <th
                         scope="col"
-                        className="p-2 text-left font-medium text-xs md:text-sm text-muted-foreground w-12 shrink-0 border-r border-border/30"
+                        className="p-2 text-left font-medium text-xs md:text-sm text-muted-foreground min-w-[100px] shrink-0 border-r border-border/30"
                       >
-                        日期
+                        空間
                       </th>
-                      {spacesToDisplay.map((space) => (
-                        <th
-                          key={space.id}
-                          scope="col"
-                          className="p-2 text-left font-medium text-xs md:text-sm text-muted-foreground min-w-[120px] border-r border-border/30 last:border-r-0"
-                        >
-                          {space.name}
-                        </th>
-                      ))}
+                      {monthDateKeys.map((dateKey) => {
+                        const dayDate = new Date(dateKey + "T12:00:00");
+                        return (
+                          <th
+                            key={dateKey}
+                            scope="col"
+                            className={cn(
+                              "p-2 text-center font-medium text-xs md:text-sm text-muted-foreground w-12 min-w-[2.5rem] border-r border-border/30 last:border-r-0",
+                              isToday(dayDate) && "bg-primary/10 text-primary",
+                            )}
+                          >
+                            {dayDate.getDate()}
+                          </th>
+                        );
+                      })}
                     </tr>
                   </thead>
                   <tbody>
-                    {monthDateKeys.map((dateKey) => {
-                      const dayDate = new Date(dateKey + "T12:00:00");
-                      return (
-                        <tr
-                          key={dateKey}
-                          className={cn(
-                            "border-b border-border/30 last:border-b-0",
-                            isToday(dayDate) && "bg-primary/5",
-                          )}
-                        >
-                          <td className="p-2 font-medium text-xs md:text-sm w-12 shrink-0 border-r border-border/30 align-top">
-                            {dayDate.getDate()}
-                          </td>
-                          {spacesToDisplay.map((space) => {
-                            const dayProjects =
-                              projectsBySpaceAndDate
-                                ?.get(space.id)
-                                ?.get(dateKey) ?? [];
-                            return (
-                              <td
-                                key={space.id}
-                                className={cn(
-                                  "min-w-0 border-r border-border/30 last:border-r-0 align-top",
-                                  isToday(dayDate) && "bg-primary/5",
-                                )}
-                              >
-                                <DayCellContent
-                                  projects={dayProjects}
-                                  dateKey={dateKey}
-                                  showVenue={showVenue}
-                                  spaceBorderColors={spaceBorderColors}
-                                />
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      );
-                    })}
+                    {spacesToDisplay.map((space) => (
+                      <tr
+                        key={space.id}
+                        className="border-b border-border/30 last:border-b-0"
+                      >
+                        <td className="p-2 font-medium text-xs md:text-sm min-w-0 border-r border-border/30 align-top">
+                          {space.name}
+                        </td>
+                        {monthDateKeys.map((dateKey) => {
+                          const dayDate = new Date(dateKey + "T12:00:00");
+                          const dayProjects =
+                            projectsBySpaceAndDate
+                              ?.get(space.id)
+                              ?.get(dateKey) ?? [];
+                          return (
+                            <td
+                              key={dateKey}
+                              className={cn(
+                                "min-w-0 border-r border-border/30 last:border-r-0 align-top",
+                                isToday(dayDate) && "bg-primary/5",
+                              )}
+                            >
+                              <DayCellContent
+                                projects={dayProjects}
+                                dateKey={dateKey}
+                                showVenue={showVenue}
+                                spaceBorderColors={spaceBorderColors}
+                              />
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
