@@ -16,7 +16,6 @@ export default async function SpacesPage() {
         description={SPACES_PAGE.description}
         iconName="Building2"
       />
-
       <SpacesTabs projects={projects} />
     </DashboardShell>
   );
