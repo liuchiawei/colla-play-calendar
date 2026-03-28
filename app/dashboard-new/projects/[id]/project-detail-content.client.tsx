@@ -1020,7 +1020,7 @@ export function ProjectDetailContent({
       a.click();
       URL.revokeObjectURL(url);
     });
-  }, [project]);
+  }, [project, collaPlayContactName]);
 
   const handleStatusChange = useCallback(
     (newStatus: ProjectStatus) => {
