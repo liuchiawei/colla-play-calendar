@@ -49,15 +49,15 @@ export const SPACE_MESSAGES: Record<
   { name: string; description: string }
 > = {
   "community-cafe": {
-    name: "頻率交流道／社群咖啡廳",
+    name: "社群咖啡廳",
     description: "開放式社群交流空間，適合小型聚會與工作坊",
   },
   "focus-area": {
-    name: "背對世界的時間／專注工作區",
+    name: "專注工作區",
     description: "安靜的專注工作環境，適合深度工作與學習",
   },
   "multipurpose-room": {
-    name: "空白分頁／多功能教室",
+    name: "多功能教室",
     description: "彈性時段制，適合課程、工作坊與團體活動",
   },
   "tik-&-sip": {
@@ -65,23 +65,23 @@ export const SPACE_MESSAGES: Record<
     description: "自然酒酒吧，適合小酌與放鬆",
   },
   "podcast-studio": {
-    name: "水下的聲音／Podcast 錄音室",
+    name: "Podcast 錄音室",
     description: "專業 Podcast 錄音空間，配備高品質錄音設備",
   },
   "product-photo": {
-    name: "艾莉緹的相機／小物攝影間",
+    name: "攝影室",
     description: "專業小物攝影空間，適合產品拍攝與內容創作",
   },
   "event-lounge": {
-    name: "WUCOLIN／活動交誼廳",
+    name: "交誼廳",
     description: "舒適的活動交誼空間，適合聚會與小型活動",
   },
   "screening-room": {
-    name: "第三人稱／播映室",
+    name: "播映室",
     description: "專業播映空間，適合影片放映與簡報展示",
   },
   "exhibition-hall": {
-    name: "大氣層／展演廳",
+    name: "展演廳",
     description: "大型展演空間，適合展覽、表演與大型活動",
   },
 } as const;
