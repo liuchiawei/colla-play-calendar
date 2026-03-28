@@ -107,7 +107,7 @@ function ProjectBadgeLink({
               <span
                 key={id}
                 className={cn(
-                  "rounded-sm border-1 px-1 py-0.5",
+                  "rounded-sm border px-1 py-0.5",
                   spaceBorderColors?.[id] ?? "border-muted",
                 )}
               >
@@ -146,13 +146,13 @@ function DayCellContent({
 }) {
   if (projects.length === 0) {
     return (
-      <div className="p-2 text-muted-foreground text-xs text-center min-h-[3rem] flex items-center justify-center">
+      <div className="p-2 text-muted-foreground text-xs text-center min-h-12 flex items-center justify-center">
         —
       </div>
     );
   }
   return (
-    <div className="p-2 flex flex-col gap-1.5 min-h-[3rem]">
+    <div className="p-2 flex flex-col gap-1.5 min-h-12">
       {projects.map((project) => (
         <ProjectBadgeLink
           key={project.id}
@@ -318,7 +318,7 @@ export function SpaceProjectsCalendar({
                             key={dateKey}
                             scope="col"
                             className={cn(
-                              "p-2 text-center font-medium text-xs md:text-sm text-muted-foreground w-12 min-w-[2.5rem] border-r border-border/30 last:border-r-0",
+                              "p-2 text-center font-medium text-xs md:text-sm text-muted-foreground w-12 min-w-10 border-r border-border/30 last:border-r-0",
                               isToday(dayDate) && "bg-primary/10 text-primary",
                             )}
                           >
@@ -404,7 +404,7 @@ export function SpaceProjectsCalendar({
                         )}
                         aria-hidden
                       />
-                      <span className="truncate max-w-[8rem]">
+                      <span className="truncate max-w-32">
                         {entry.name}
                       </span>
                     </span>
