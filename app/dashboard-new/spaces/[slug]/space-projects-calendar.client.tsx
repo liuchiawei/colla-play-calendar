@@ -219,10 +219,7 @@ export function SpaceProjectsCalendar({
 
   const projectsBySpaceAndDate = React.useMemo(() => {
     if (!hasRentals) return null;
-    const spaceToDateToProjects = new Map<
-      string,
-      Map<string, Project[]>
-    >();
+    const spaceToDateToProjects = new Map<string, Map<string, Project[]>>();
     for (const p of projects) {
       const rentals = p.rentals;
       if (!rentals?.length) continue;

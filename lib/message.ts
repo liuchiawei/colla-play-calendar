@@ -196,8 +196,7 @@ export const CREATE_PROJECT_PAGE = {
 
   labelEventOrVenueUse: "活動名稱或場地用途",
   labelEventOrVenueUseRequired: "活動名稱或場地用途 *",
-  placeholderEventOrVenueUse:
-    "例如：產品發表會、工作坊、Podcast 錄製…",
+  placeholderEventOrVenueUse: "例如：產品發表會、工作坊、Podcast 錄製…",
   labelTotalAttendees: "活動總人數",
   placeholderAttendees: "預估參與人數",
   labelTables: "桌子需求",
@@ -230,7 +229,7 @@ export const CREATE_PROJECT_PAGE = {
   labelRentalAmount: "場租金額 (NT$)",
   labelFnbAmount: "餐飲金額 (NT$)",
   labelPaidAmount: "已付款項 (NT$)",
-  labelPendingAmount: "待付金額 (NT$)",
+  labelPendingAmount: "待付金額 (NT$)（自動計算）",
 
   submit: "建立專案",
   submitting: "儲存中…",
@@ -274,7 +273,7 @@ export const PROJECT_DETAIL_PAGE = {
   labelRentalAmount: "場租",
   labelFnbAmount: "餐飲",
   labelPaidAmount: "已付",
-  labelPendingAmount: "待付",
+  labelPendingAmount: "待付（自動計算）",
   totalAmount: "總金額",
 
   buttonEdit: "編輯",

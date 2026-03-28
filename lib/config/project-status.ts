@@ -19,14 +19,36 @@ export const PROJECT_STATUS_OPTIONS: Array<{
   /** Tailwind class for badge/dot (e.g. bg-slate-500, bg-primary) */
   colorClass: string;
 }> = [
-  { value: "negotiating", labelKey: "statusNegotiating", colorClass: "bg-slate-500" },
-  { value: "confirmed", labelKey: "statusConfirmed", colorClass: "bg-blue-500" },
-  { value: "deposit_paid", labelKey: "statusDepositPaid", colorClass: "bg-primary" },
-  { value: "completed", labelKey: "statusCompleted", colorClass: "bg-green-600" },
-  { value: "cancelled", labelKey: "statusCancelled", colorClass: "bg-muted text-muted-foreground" },
+  {
+    value: "negotiating",
+    labelKey: "statusNegotiating",
+    colorClass: "bg-slate-500",
+  },
+  {
+    value: "confirmed",
+    labelKey: "statusConfirmed",
+    colorClass: "bg-blue-500",
+  },
+  {
+    value: "deposit_paid",
+    labelKey: "statusDepositPaid",
+    colorClass: "bg-primary",
+  },
+  {
+    value: "completed",
+    labelKey: "statusCompleted",
+    colorClass: "bg-green-600",
+  },
+  {
+    value: "cancelled",
+    labelKey: "statusCancelled",
+    colorClass: "bg-muted text-muted-foreground",
+  },
 ];
 
-const STATUS_BY_VALUE = new Map(PROJECT_STATUS_OPTIONS.map((o) => [o.value, o]));
+const STATUS_BY_VALUE = new Map(
+  PROJECT_STATUS_OPTIONS.map((o) => [o.value, o]),
+);
 
 /** 依狀態回傳顯示用標籤（從 PROJECTS_PAGE 取文案） */
 export function getStatusLabel(status: ProjectStatus): string {

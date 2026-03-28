@@ -17,6 +17,7 @@ import type {
   ProjectStatus,
   OverviewStatsData,
 } from "@/lib/types/project";
+import { computeProjectRentalPendingAmount } from "@/lib/utils/project-rental-pending";
 
 function mapRowToProject(
   row: {
@@ -245,7 +246,7 @@ export async function updateProject(
           rentalAmount: Math.max(0, Math.round(r.rentalAmount)),
           fnbAmount: Math.max(0, Math.round(r.fnbAmount)),
           paidAmount: Math.max(0, Math.round(r.paidAmount)),
-          pendingAmount: Math.max(0, Math.round(r.pendingAmount)),
+          pendingAmount: computeProjectRentalPendingAmount(r),
           spaceIds: r.spaceIds,
         },
       });
@@ -315,7 +316,7 @@ export async function updateProjectRental(
       rentalAmount: Math.max(0, Math.round(input.rentalAmount)),
       fnbAmount: Math.max(0, Math.round(input.fnbAmount)),
       paidAmount: Math.max(0, Math.round(input.paidAmount)),
-      pendingAmount: Math.max(0, Math.round(input.pendingAmount)),
+      pendingAmount: computeProjectRentalPendingAmount(input),
       spaceIds: input.spaceIds,
     },
   });
@@ -392,7 +393,7 @@ export async function createProject(
           rentalAmount: Math.max(0, Math.round(r.rentalAmount)),
           fnbAmount: Math.max(0, Math.round(r.fnbAmount)),
           paidAmount: Math.max(0, Math.round(r.paidAmount)),
-          pendingAmount: Math.max(0, Math.round(r.pendingAmount)),
+          pendingAmount: computeProjectRentalPendingAmount(r),
           spaceIds: r.spaceIds,
         },
       });
