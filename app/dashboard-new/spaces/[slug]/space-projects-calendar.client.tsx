@@ -201,6 +201,13 @@ export function SpaceProjectsCalendar({
   spaceBorderColors,
   spaceLegend,
 }: SpaceProjectsCalendarProps) {
+  const visibleProjects = React.useMemo(() => {
+    return projects.filter((p) => {
+      const statusForUi = normalizeProjectStatusForUi(p.status);
+      return statusForUi === "negotiating" || statusForUi === "confirmed";
+    });
+  }, [projects]);
+
   const [currentDate, setCurrentDate] = React.useState(() =>
     startOfMonth(new Date()),
   );
@@ -219,12 +226,14 @@ export function SpaceProjectsCalendar({
     [monthDateKeys],
   );
 
-  const hasRentals = projects.some((p) => p.rentals && p.rentals.length > 0);
+  const hasRentals = visibleProjects.some(
+    (p) => p.rentals && p.rentals.length > 0,
+  );
 
   const projectsBySpaceAndDate = React.useMemo(() => {
     if (!hasRentals) return null;
     const spaceToDateToProjects = new Map<string, Map<string, Project[]>>();
-    for (const p of projects) {
+    for (const p of visibleProjects) {
       const rentals = p.rentals;
       if (!rentals?.length) continue;
       for (const r of rentals) {
@@ -250,7 +259,7 @@ export function SpaceProjectsCalendar({
       }
     }
     return spaceToDateToProjects;
-  }, [projects, hasRentals, monthDateKeySet]);
+  }, [visibleProjects, hasRentals, monthDateKeySet]);
 
   const spacesToDisplay = React.useMemo(() => {
     const spaceIdsWithActivity = new Set(projectsBySpaceAndDate?.keys() ?? []);
@@ -260,7 +269,7 @@ export function SpaceProjectsCalendar({
     );
   }, [projectsBySpaceAndDate]);
 
-  const hasAnyProjects = projects.length > 0;
+  const hasAnyProjects = visibleProjects.length > 0;
   const showMonthGrid =
     hasAnyProjects && (spacesToDisplay.length > 0 || !hasRentals);
 
