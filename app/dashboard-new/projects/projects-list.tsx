@@ -30,7 +30,6 @@ import {
   getStatusColorClass,
   normalizeProjectStatusForUi,
 } from "@/lib/config/project-status";
-import { addMinutesToTime, subtractMinutesFromTime } from "@/lib/date-utils";
 import type { Project } from "@/lib/types/project";
 import { cn } from "@/lib/utils";
 import { formatRentalDateRangeForTable } from "@/lib/utils/project";
@@ -44,24 +43,6 @@ const CURRENCY_FORMATTER = new Intl.NumberFormat("zh-TW", {
   style: "currency",
   currency: "TWD",
 });
-
-function getSetupTimeDisplay(
-  startTime: string | undefined,
-  setupMinutesBefore: number | undefined,
-): string {
-  if (!startTime) return "—";
-  const minutes = setupMinutesBefore ?? 30;
-  return subtractMinutesFromTime(startTime, minutes);
-}
-
-function getTeardownTimeDisplay(
-  endTime: string | undefined,
-  teardownMinutesAfter: number | undefined,
-): string {
-  if (!endTime) return "—";
-  const minutes = teardownMinutesAfter ?? 30;
-  return addMinutesToTime(endTime, minutes);
-}
 
 interface ProjectsListProps {
   projects: Project[];
@@ -121,18 +102,6 @@ export function ProjectsList({ projects }: ProjectsListProps) {
                 >
                   {PROJECTS_PAGE.columnEventEndTime}
                 </TableHead>
-                <TableHead
-                  scope="col"
-                  className="tabular-nums whitespace-nowrap"
-                >
-                  {PROJECTS_PAGE.columnSetupTime}
-                </TableHead>
-                <TableHead
-                  scope="col"
-                  className="tabular-nums whitespace-nowrap"
-                >
-                  {PROJECTS_PAGE.columnTeardownTime}
-                </TableHead>
                 <TableHead scope="col">{PROJECTS_PAGE.columnContact}</TableHead>
                 <TableHead scope="col" className="text-right tabular-nums">
                   {PROJECTS_PAGE.columnAmount}
@@ -188,18 +157,6 @@ export function ProjectsList({ projects }: ProjectsListProps) {
                   </TableCell>
                   <TableCell className="tabular-nums whitespace-nowrap">
                     {project.rentals?.[0]?.endTime ?? "—"}
-                  </TableCell>
-                  <TableCell className="tabular-nums whitespace-nowrap">
-                    {getSetupTimeDisplay(
-                      project.rentals?.[0]?.startTime,
-                      project.rentals?.[0]?.setupMinutesBefore,
-                    )}
-                  </TableCell>
-                  <TableCell className="tabular-nums whitespace-nowrap">
-                    {getTeardownTimeDisplay(
-                      project.rentals?.[0]?.endTime,
-                      project.rentals?.[0]?.teardownMinutesAfter,
-                    )}
                   </TableCell>
                   <TableCell className="min-w-0 max-w-[100px] truncate">
                     {project.contactPerson}
