@@ -343,6 +343,7 @@ export async function updateProjectStatus(
  *
  * 使用 transaction 先建立 Project，再建立所有 ProjectRental。
  * 日期／時間依表單格式存入（date: YYYY-MM-DD, startTime/endTime: HH:mm）。
+ * 任一段租借已付款項（正規化後）大於 0 時，專案狀態為已確定（confirmed），否則為洽談中（negotiating）。
  *
  * @param input 表單 payload（CreateProjectInput）
  * @returns Promise<ProjectWithRentals>
@@ -363,6 +364,10 @@ export async function createProject(
     }
   }
 
+  const hasPaidAmount = input.rentals.some(
+    (r) => Math.max(0, Math.round(r.paidAmount)) > 0,
+  );
+
   const project = await prisma.$transaction(async (tx) => {
     const created = await tx.project.create({
       data: {
@@ -378,6 +383,7 @@ export async function createProject(
         projectNotes: input.projectNotes ?? null,
         collaPlayContactId: input.collaPlayContactId,
         internalNotes: input.internalNotes ?? null,
+        status: hasPaidAmount ? "confirmed" : "negotiating",
       },
     });
 

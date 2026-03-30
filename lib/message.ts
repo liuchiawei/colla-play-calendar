@@ -229,6 +229,9 @@ export const CREATE_PROJECT_PAGE = {
   labelRentalAmount: "場租金額 (NT$)",
   labelFnbAmount: "餐飲金額 (NT$)",
   labelPaidAmount: "已付款項 (NT$)",
+  /** 建立專案時：任一段已付款項大於 0 則狀態為已確定 */
+  hintPaidAmountSetsConfirmed:
+    "任一段已付款項大於 0 時，建立後專案狀態將為「已確定」。",
   labelPendingAmount: "待付金額 (NT$)（自動計算）",
 
   submit: "建立專案",

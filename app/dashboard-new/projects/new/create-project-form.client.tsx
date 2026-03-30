@@ -21,6 +21,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -823,6 +824,11 @@ export function CreateProjectForm({
                             className="tabular-nums"
                           />
                         </FormControl>
+                        {index === 0 ? (
+                          <FormDescription>
+                            {CREATE_PROJECT_PAGE.hintPaidAmountSetsConfirmed}
+                          </FormDescription>
+                        ) : null}
                         <FormMessage />
                       </FormItem>
                     )}
