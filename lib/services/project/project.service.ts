@@ -5,6 +5,7 @@
  */
 
 import { cache } from "react";
+import { Prisma } from "@/lib/generated/prisma/client";
 import prisma from "@/lib/prisma";
 import { getSpaceNameById } from "@/lib/config/config";
 import { getAdminContactOptions } from "@/lib/services/admin-contact.service";
@@ -18,6 +19,17 @@ import type {
   OverviewStatsData,
 } from "@/lib/types/project";
 import { computeProjectRentalPendingAmount } from "@/lib/utils/project-rental-pending";
+import {
+  normalizeEquipmentNeedsForDb,
+  parseEquipmentNeedsFromDb,
+} from "@/lib/utils/project-equipment-needs";
+
+function equipmentNeedsToPrismaInput(
+  normalized: Record<string, boolean> | null,
+): Prisma.InputJsonValue | typeof Prisma.DbNull {
+  if (normalized === null) return Prisma.DbNull;
+  return normalized as Prisma.InputJsonValue;
+}
 
 function mapRowToProject(
   row: {
@@ -31,6 +43,7 @@ function mapRowToProject(
     fnbItems: string | null;
     totalAttendees: number | null;
     projectNotes: string | null;
+    equipmentNeeds: unknown;
     rentals: Array<{
       spaceIds: string[];
       date: string;
@@ -68,6 +81,10 @@ function mapRowToProject(
     fnbItems: row.fnbItems ?? null,
     totalAttendees: row.totalAttendees ?? null,
     projectNotes: row.projectNotes ?? null,
+    equipmentNeeds:
+      row.equipmentNeeds == null
+        ? null
+        : parseEquipmentNeedsFromDb(row.equipmentNeeds),
     rentals: row.rentals.map((r) => ({
       date: r.date,
       spaceIds: r.spaceIds,
@@ -232,6 +249,11 @@ export async function updateProject(
         collaPlayContactId: input.collaPlayContactId,
         internalNotes: input.internalNotes ?? null,
         ...(input.status != null && { status: input.status }),
+        ...(input.equipmentNeeds !== undefined && {
+          equipmentNeeds: equipmentNeedsToPrismaInput(
+            normalizeEquipmentNeedsForDb(input.equipmentNeeds),
+          ),
+        }),
       },
     });
     for (const r of input.rentals) {
@@ -383,6 +405,9 @@ export async function createProject(
         projectNotes: input.projectNotes ?? null,
         collaPlayContactId: input.collaPlayContactId,
         internalNotes: input.internalNotes ?? null,
+        equipmentNeeds: equipmentNeedsToPrismaInput(
+          normalizeEquipmentNeedsForDb(input.equipmentNeeds),
+        ),
         status: hasPaidAmount ? "confirmed" : "negotiating",
       },
     });

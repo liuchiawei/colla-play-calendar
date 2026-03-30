@@ -8,6 +8,14 @@ export type ProjectStatus =
   | "completed"
   | "cancelled";
 
+/** 專案設備勾選（存於 equipmentNeeds JSONB） */
+export type ProjectEquipmentNeeds = {
+  microphone?: boolean;
+  extensionCord?: boolean;
+  projector?: boolean;
+  whiteboard?: boolean;
+};
+
 export interface Project {
   id: string;
   /** 對應 DB customerName（客戶姓名） */
@@ -29,6 +37,8 @@ export interface Project {
   totalAttendees?: number | null;
   /** 選填：專案備註 */
   projectNotes?: string | null;
+  /** 選填：設備勾選（舊資料可能為 null） */
+  equipmentNeeds?: ProjectEquipmentNeeds | null;
   /** 選填：每筆租借的日期與場域（週曆依空間分組用） */
   rentals?: {
     date: string;
@@ -70,6 +80,8 @@ export interface CreateProjectInput {
   projectNotes?: string;
   collaPlayContactId: string;
   internalNotes?: string;
+  /** 選填；全未勾選時服務層存 null */
+  equipmentNeeds?: ProjectEquipmentNeeds | null;
   rentals: RentalItem[];
 }
 
@@ -87,6 +99,8 @@ export interface UpdateProjectInput {
   projectNotes?: string;
   collaPlayContactId: string;
   internalNotes?: string;
+  /** 未傳則不更新此欄（向後相容舊客戶端） */
+  equipmentNeeds?: ProjectEquipmentNeeds | null;
   status?: ProjectStatus;
   rentals: (RentalItem & { id?: string })[];
 }

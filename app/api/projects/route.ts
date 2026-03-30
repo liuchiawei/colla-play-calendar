@@ -6,6 +6,7 @@ import { createProject, getProjectsForList } from "@/lib/services/project/projec
 import type { ApiResponse } from "@/lib/types";
 import type { CreateProjectInput, ProjectWithRentals } from "@/lib/types/project";
 import type { Project } from "@/lib/types/project";
+import { parseEquipmentNeedsFromApiBody } from "@/lib/utils/project-equipment-needs";
 
 function validateCreateProjectInput(
   body: unknown
@@ -49,9 +50,30 @@ function validateCreateProjectInput(
       return { ok: false, error: `第 ${i + 1} 筆租借項目：結束時間必須晚於開始時間` };
     }
   }
-  const data = {
-    ...(body as CreateProjectInput),
+
+  let equipmentNeeds: CreateProjectInput["equipmentNeeds"];
+  if (Object.prototype.hasOwnProperty.call(b, "equipmentNeeds")) {
+    try {
+      equipmentNeeds = parseEquipmentNeedsFromApiBody(
+        b.equipmentNeeds,
+      ) as CreateProjectInput["equipmentNeeds"];
+    } catch (e) {
+      return {
+        ok: false,
+        error: e instanceof Error ? e.message : "設備需求格式錯誤",
+      };
+    }
+  }
+
+  const raw = { ...(body as CreateProjectInput) };
+  delete (raw as Record<string, unknown>).equipmentNeeds;
+
+  const data: CreateProjectInput = {
+    ...raw,
     customerPhone,
+    ...(Object.prototype.hasOwnProperty.call(b, "equipmentNeeds") && {
+      equipmentNeeds,
+    }),
   };
   return { ok: true, data };
 }

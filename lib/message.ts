@@ -181,8 +181,20 @@ export const CREATE_PROJECT_PAGE = {
 
   sectionCustomer: "客戶資訊",
   sectionProject: "專案資訊",
+  sectionEquipment: "設備需求",
   sectionNotes: "專案備註",
   sectionRentals: "租借項目",
+
+  labelActivityType: "活動類型",
+  placeholderSelectActivityType: "選擇活動類型",
+  labelActivityTypeOtherDetail: "活動類型說明",
+  placeholderActivityTypeOtherDetail: "請輸入自訂活動類型…",
+
+  labelEquipmentExtras: "其他設備（可複選）",
+  labelEquipmentMicrophone: "麥克風",
+  labelEquipmentExtensionCord: "延長線",
+  labelEquipmentProjector: "投影設備",
+  labelEquipmentWhiteboard: "白板／白板筆",
 
   labelCustomerName: "客戶名稱",
   labelCustomerNameRequired: "客戶名稱 *",
@@ -240,6 +252,8 @@ export const CREATE_PROJECT_PAGE = {
   removeRentalAria: "移除此筆租借",
 
   errorRequired: "此欄位為必填",
+  errorActivityTypeRequired: "請選擇活動類型",
+  errorActivityTypeOtherRequired: "選擇「其他」時請填寫說明",
   errorPhoneInvalid: "請輸入有效的聯絡電話",
   errorEndBeforeStart: "結束時間須晚於開始時間",
 } as const;
@@ -251,8 +265,21 @@ export const PROJECT_DETAIL_PAGE = {
 
   sectionCustomer: "客戶資訊",
   sectionProject: "專案資訊",
+  sectionEquipment: "設備需求",
   sectionNotes: "備註",
   sectionRentals: "租借項目",
+
+  labelActivityType: "活動類型",
+  placeholderSelectActivityType: "選擇活動類型",
+  labelActivityTypeOtherDetail: "活動類型說明",
+  placeholderActivityTypeOtherDetail: "請輸入自訂活動類型…",
+
+  labelEquipmentExtras: "其他設備（可複選）",
+  labelEquipmentMicrophone: "麥克風",
+  labelEquipmentExtensionCord: "延長線",
+  labelEquipmentProjector: "投影設備",
+  labelEquipmentWhiteboard: "白板／白板筆",
+  labelEquipmentSummary: "設備勾選",
 
   labelCustomerName: "客戶名稱",
   labelPhone: "聯絡電話",
