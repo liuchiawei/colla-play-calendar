@@ -44,11 +44,29 @@ import { ALL_SPACES } from "@/lib/config/config";
 import type { CreateProjectInput } from "@/lib/types/project";
 import { cn } from "@/lib/utils";
 import { computeProjectRentalPendingAmount } from "@/lib/utils/project-rental-pending";
+import {
+  PROJECT_ACTIVITY_CUSTOM_SENTINEL,
+  PROJECT_ACTIVITY_TYPE_OPTIONS,
+  PROJECT_ACTIVITY_TYPE_OTHER,
+  isActivityTypePresetFieldValue,
+  resolveEventTypeFromForm,
+} from "@/lib/constants/project-form";
+import { defaultEquipmentNeedsForm } from "@/lib/utils/project-equipment-needs";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  intervalsOverlap,
+  isValidRentalTimeWindow,
+  rentalBoundsMs,
+  spaceIdsIntersect,
+} from "@/lib/utils/project-rental-interval";
+
+const SHOW_SETUP_TEARDOWN_FIELDS = false;
 
 const rentalItemSchema = z
   .object({
     spaceIds: z.array(z.string()).min(1, CREATE_PROJECT_PAGE.errorRequired),
     date: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
+    endDate: z.string().optional().default(""),
     startTime: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
     endTime: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
     setupMinutesBefore: z.number().min(0).optional(),
@@ -57,42 +75,113 @@ const rentalItemSchema = z
     fnbAmount: z.coerce.number().min(0),
     paidAmount: z.coerce.number().min(0),
   })
-  .refine((data) => data.endTime > data.startTime, {
-    message: CREATE_PROJECT_PAGE.errorEndBeforeStart,
-    path: ["endTime"],
-  });
+  .refine(
+    (data) =>
+      isValidRentalTimeWindow({
+        date: data.date,
+        endDate: data.endDate?.trim() || null,
+        startTime: data.startTime,
+        endTime: data.endTime,
+      }),
+    {
+      message: CREATE_PROJECT_PAGE.errorInvalidRentalWindow,
+      path: ["endTime"],
+    },
+  );
 
-const createProjectSchema = z.object({
-  customerName: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
-  customerPhone: z
-    .string()
-    .optional()
-    .refine(
-      (val) => !val || /^[\d\s\-]+$/.test(val),
-      { message: CREATE_PROJECT_PAGE.errorPhoneInvalid }
-    ),
-  company: z.string().optional(),
-  taxId: z.string().optional(),
-  eventOrVenueUse: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
-  totalAttendees: z.coerce.number().min(0).optional(),
-  tables: z.string().optional(),
-  chairs: z.coerce.number().min(0).optional(),
-  fnbItems: z.string().optional(),
-  projectNotes: z.string().optional(),
-  collaPlayContactId: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
-  internalNotes: z.string().optional(),
-  rentals: z.array(rentalItemSchema).min(1, CREATE_PROJECT_PAGE.errorRequired),
+const equipmentNeedsFormSchema = z.object({
+  microphone: z.boolean(),
+  extensionCord: z.boolean(),
+  projector: z.boolean(),
+  whiteboard: z.boolean(),
 });
+
+const createProjectSchema = z
+  .object({
+    customerName: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
+    customerPhone: z
+      .string()
+      .optional()
+      .refine((val) => !val || /^[\d\s\-]+$/.test(val), {
+        message: CREATE_PROJECT_PAGE.errorPhoneInvalid,
+      }),
+    company: z.string().optional(),
+    taxId: z.string().optional(),
+    activityTypePreset: z
+      .string()
+      .min(1, CREATE_PROJECT_PAGE.errorActivityTypeRequired)
+      .refine((s) => isActivityTypePresetFieldValue(s), {
+        message: CREATE_PROJECT_PAGE.errorActivityTypeRequired,
+      }),
+    activityCustomDetail: z.string().optional().default(""),
+    eventOrVenueUse: z.string().trim().min(1, CREATE_PROJECT_PAGE.errorRequired),
+    totalAttendees: z.coerce.number().min(0).optional(),
+    tables: z.string().optional(),
+    chairs: z.coerce.number().min(0).optional(),
+    equipmentNeeds: equipmentNeedsFormSchema.default(() =>
+      defaultEquipmentNeedsForm(),
+    ),
+    fnbItems: z.string().optional(),
+    projectNotes: z.string().optional(),
+    collaPlayContactId: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
+    internalNotes: z.string().optional(),
+    rentals: z
+      .array(rentalItemSchema)
+      .min(1, CREATE_PROJECT_PAGE.errorRequired),
+  })
+  .superRefine((data, ctx) => {
+    const needsCustom =
+      data.activityTypePreset === PROJECT_ACTIVITY_CUSTOM_SENTINEL ||
+      data.activityTypePreset === PROJECT_ACTIVITY_TYPE_OTHER;
+    if (needsCustom && !data.activityCustomDetail.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: CREATE_PROJECT_PAGE.errorActivityTypeOtherRequired,
+        path: ["activityCustomDetail"],
+      });
+    }
+    const rentals = data.rentals;
+    for (let i = 0; i < rentals.length; i++) {
+      const a = rentals[i];
+      const boundsA = rentalBoundsMs({
+        date: a.date,
+        endDate: a.endDate?.trim() || null,
+        startTime: a.startTime,
+        endTime: a.endTime,
+      });
+      if (!boundsA) continue;
+      for (let j = i + 1; j < rentals.length; j++) {
+        const b = rentals[j];
+        if (!spaceIdsIntersect(a.spaceIds, b.spaceIds)) continue;
+        const boundsB = rentalBoundsMs({
+          date: b.date,
+          endDate: b.endDate?.trim() || null,
+          startTime: b.startTime,
+          endTime: b.endTime,
+        });
+        if (!boundsB) continue;
+        if (intervalsOverlap(boundsA, boundsB)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: CREATE_PROJECT_PAGE.errorRentalOverlapInternal,
+            path: ["rentals", i, "spaceIds"],
+          });
+          return;
+        }
+      }
+    }
+  });
 
 type CreateProjectFormValues = z.infer<typeof createProjectSchema>;
 
 const defaultRental: CreateProjectFormValues["rentals"][0] = {
   spaceIds: [],
   date: "",
+  endDate: "",
   startTime: "",
   endTime: "",
-  setupMinutesBefore: 30,
-  teardownMinutesAfter: 30,
+  setupMinutesBefore: 0,
+  teardownMinutesAfter: 0,
   rentalAmount: 0,
   fnbAmount: 0,
   paidAmount: 0,
@@ -115,10 +204,13 @@ export function CreateProjectForm({
       customerPhone: "",
       company: "",
       taxId: "",
+      activityTypePreset: "",
+      activityCustomDetail: "",
       eventOrVenueUse: "",
       totalAttendees: undefined,
       tables: "",
       chairs: undefined,
+      equipmentNeeds: defaultEquipmentNeedsForm(),
       fnbItems: "",
       projectNotes: "",
       collaPlayContactId: "",
@@ -133,17 +225,41 @@ export function CreateProjectForm({
   });
 
   const watchedRentals = useWatch({ control: form.control, name: "rentals" });
+  const watchedActivityPreset = useWatch({
+    control: form.control,
+    name: "activityTypePreset",
+  });
+  const showActivityCustomDetail =
+    watchedActivityPreset === PROJECT_ACTIVITY_CUSTOM_SENTINEL ||
+    watchedActivityPreset === PROJECT_ACTIVITY_TYPE_OTHER;
 
   const onSubmit = form.handleSubmit((data: CreateProjectFormValues) => {
+    const {
+      activityTypePreset,
+      activityCustomDetail,
+      equipmentNeeds,
+      eventOrVenueUse,
+      ...rest
+    } = data;
     const payload: CreateProjectInput = {
-      ...data,
+      ...rest,
+      eventOrVenueUse,
+      eventType: resolveEventTypeFromForm(
+        activityTypePreset,
+        activityCustomDetail ?? "",
+      ),
       customerPhone: data.customerPhone ?? "",
-      rentals: data.rentals.map((r) => ({
-        ...r,
-        setupMinutesBefore: r.setupMinutesBefore ?? 30,
-        teardownMinutesAfter: r.teardownMinutesAfter ?? 30,
-        pendingAmount: computeProjectRentalPendingAmount(r),
-      })),
+      equipmentNeeds,
+      rentals: data.rentals.map((r) => {
+        const endDateTrim = r.endDate?.trim() ?? "";
+        return {
+          ...r,
+          endDate: endDateTrim ? endDateTrim : undefined,
+          setupMinutesBefore: r.setupMinutesBefore ?? 0,
+          teardownMinutesAfter: r.teardownMinutesAfter ?? 0,
+          pendingAmount: computeProjectRentalPendingAmount(r),
+        };
+      }),
     };
     startTransition(async () => {
       try {
@@ -312,6 +428,71 @@ export function CreateProjectForm({
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <FormField
               control={form.control}
+              name="activityTypePreset"
+              render={({ field }) => (
+                <FormItem className="sm:col-span-2">
+                  <FormLabel aria-required>
+                    {CREATE_PROJECT_PAGE.labelActivityType}{" "}
+                    <span className="text-destructive">*</span>
+                  </FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value || undefined}
+                    name={field.name}
+                  >
+                    <FormControl>
+                      <SelectTrigger
+                        className="w-full"
+                        aria-label={CREATE_PROJECT_PAGE.labelActivityType}
+                      >
+                        <SelectValue
+                          placeholder={
+                            CREATE_PROJECT_PAGE.placeholderSelectActivityType
+                          }
+                        />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {PROJECT_ACTIVITY_TYPE_OPTIONS.map((opt) => (
+                        <SelectItem key={opt} value={opt}>
+                          {opt}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value={PROJECT_ACTIVITY_CUSTOM_SENTINEL}>
+                        自訂（不在上列）
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            {showActivityCustomDetail ? (
+              <FormField
+                control={form.control}
+                name="activityCustomDetail"
+                render={({ field }) => (
+                  <FormItem className="sm:col-span-2">
+                    <FormLabel aria-required>
+                      {CREATE_PROJECT_PAGE.labelActivityTypeOtherDetail}{" "}
+                      <span className="text-destructive">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        name={field.name}
+                        placeholder={
+                          CREATE_PROJECT_PAGE.placeholderActivityTypeOtherDetail
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            ) : null}
+            <FormField
+              control={form.control}
               name="eventOrVenueUse"
               render={({ field }) => (
                 <FormItem className="sm:col-span-2">
@@ -322,82 +503,7 @@ export function CreateProjectForm({
                     <Input
                       {...field}
                       name={field.name}
-                      placeholder={
-                        CREATE_PROJECT_PAGE.placeholderEventOrVenueUse
-                      }
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="totalAttendees"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>
-                    {CREATE_PROJECT_PAGE.labelTotalAttendees}
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      type="number"
-                      min={0}
-                      name={field.name}
-                      placeholder={CREATE_PROJECT_PAGE.placeholderAttendees}
-                      value={field.value ?? ""}
-                      onChange={(e) =>
-                        field.onChange(
-                          e.target.value === ""
-                            ? undefined
-                            : Number(e.target.value),
-                        )
-                      }
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="tables"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>
-                    {CREATE_PROJECT_PAGE.labelTables}{" "}
-                    <span className="text-muted-foreground font-normal">
-                      ({CREATE_PROJECT_PAGE.optional})
-                    </span>
-                  </FormLabel>
-                  <FormControl>
-                    <Input {...field} name={field.name} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="chairs"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{CREATE_PROJECT_PAGE.labelChairs}</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      type="number"
-                      min={0}
-                      name={field.name}
-                      value={field.value ?? ""}
-                      onChange={(e) =>
-                        field.onChange(
-                          e.target.value === ""
-                            ? undefined
-                            : Number(e.target.value),
-                        )
-                      }
+                      placeholder={CREATE_PROJECT_PAGE.placeholderEventOrVenueUse}
                     />
                   </FormControl>
                   <FormMessage />
@@ -479,6 +585,177 @@ export function CreateProjectForm({
                 </FormItem>
               )}
             />
+          </CardContent>
+        </Card>
+
+        {/* 設備需求 */}
+        <Card>
+          <CardHeader>
+            <h2 className="text-lg font-semibold leading-none tracking-tight">
+              {CREATE_PROJECT_PAGE.sectionEquipment}
+            </h2>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="totalAttendees"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    {CREATE_PROJECT_PAGE.labelTotalAttendees}
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      type="number"
+                      min={0}
+                      name={field.name}
+                      placeholder={CREATE_PROJECT_PAGE.placeholderAttendees}
+                      value={field.value ?? ""}
+                      onChange={(e) =>
+                        field.onChange(
+                          e.target.value === ""
+                            ? undefined
+                            : Number(e.target.value),
+                        )
+                      }
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="tables"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    {CREATE_PROJECT_PAGE.labelTables}{" "}
+                    <span className="text-muted-foreground font-normal">
+                      ({CREATE_PROJECT_PAGE.optional})
+                    </span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input {...field} name={field.name} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="chairs"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{CREATE_PROJECT_PAGE.labelChairs}</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      type="number"
+                      min={0}
+                      name={field.name}
+                      value={field.value ?? ""}
+                      onChange={(e) =>
+                        field.onChange(
+                          e.target.value === ""
+                            ? undefined
+                            : Number(e.target.value),
+                        )
+                      }
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="sm:col-span-2 space-y-3">
+              <p className="text-sm font-medium leading-none">
+                {CREATE_PROJECT_PAGE.labelEquipmentExtras}
+              </p>
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                <FormField
+                  control={form.control}
+                  name="equipmentNeeds.microphone"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center gap-2 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={(c) => field.onChange(c === true)}
+                          aria-label={
+                            CREATE_PROJECT_PAGE.labelEquipmentMicrophone
+                          }
+                        />
+                      </FormControl>
+                      <FormLabel className="font-normal leading-none">
+                        {CREATE_PROJECT_PAGE.labelEquipmentMicrophone}
+                      </FormLabel>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="equipmentNeeds.extensionCord"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center gap-2 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={(c) => field.onChange(c === true)}
+                          aria-label={
+                            CREATE_PROJECT_PAGE.labelEquipmentExtensionCord
+                          }
+                        />
+                      </FormControl>
+                      <FormLabel className="font-normal leading-none">
+                        {CREATE_PROJECT_PAGE.labelEquipmentExtensionCord}
+                      </FormLabel>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="equipmentNeeds.projector"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center gap-2 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={(c) => field.onChange(c === true)}
+                          aria-label={
+                            CREATE_PROJECT_PAGE.labelEquipmentProjector
+                          }
+                        />
+                      </FormControl>
+                      <FormLabel className="font-normal leading-none">
+                        {CREATE_PROJECT_PAGE.labelEquipmentProjector}
+                      </FormLabel>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="equipmentNeeds.whiteboard"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center gap-2 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={(c) => field.onChange(c === true)}
+                          aria-label={
+                            CREATE_PROJECT_PAGE.labelEquipmentWhiteboard
+                          }
+                        />
+                      </FormControl>
+                      <FormLabel className="font-normal leading-none">
+                        {CREATE_PROJECT_PAGE.labelEquipmentWhiteboard}
+                      </FormLabel>
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
           </CardContent>
         </Card>
 
@@ -596,7 +873,7 @@ export function CreateProjectForm({
                   )}
                 />
 
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-4 sm:grid-cols-2">
                   <FormField
                     control={form.control}
                     name={`rentals.${index}.date`}
@@ -616,6 +893,73 @@ export function CreateProjectForm({
                                 )}
                                 type="button"
                                 aria-label={CREATE_PROJECT_PAGE.labelDate}
+                              >
+                                <CalendarIcon
+                                  className="mr-2 size-4"
+                                  aria-hidden
+                                />
+                                {field.value
+                                  ? format(
+                                      new Date(field.value + "T00:00:00"),
+                                      "yyyy / MM / dd",
+                                      { locale: zhTW },
+                                    )
+                                  : CREATE_PROJECT_PAGE.dateFormat}
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={
+                                field.value
+                                  ? new Date(field.value + "T00:00:00")
+                                  : undefined
+                              }
+                              onSelect={(d) => {
+                                const next = d ? format(d, "yyyy-MM-dd") : "";
+                                field.onChange(next);
+                                const endPath =
+                                  `rentals.${index}.endDate` as const;
+                                const curEnd = form.getValues(endPath);
+                                if (!String(curEnd ?? "").trim()) {
+                                  form.setValue(endPath, next, {
+                                    shouldDirty: true,
+                                    shouldValidate: true,
+                                  });
+                                }
+                              }}
+                              locale={zhTW}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={`rentals.${index}.endDate`}
+                    render={({ field }) => (
+                      // 結束日期
+                      <FormItem>
+                        <FormLabel>
+                          {CREATE_PROJECT_PAGE.labelEndDate}
+                        </FormLabel>
+                        {/* <FormDescription className="text-xs">
+                          {CREATE_PROJECT_PAGE.labelEndDateHint}
+                        </FormDescription> */}
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  "w-full justify-start text-left font-normal",
+                                  !field.value && "text-muted-foreground",
+                                )}
+                                type="button"
+                                aria-label={CREATE_PROJECT_PAGE.labelEndDate}
                               >
                                 <CalendarIcon
                                   className="mr-2 size-4"
@@ -698,70 +1042,72 @@ export function CreateProjectForm({
                   />
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <FormField
-                    control={form.control}
-                    name={`rentals.${index}.setupMinutesBefore`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          {CREATE_PROJECT_PAGE.labelSetupTime}{" "}
-                          <span className="text-muted-foreground font-normal text-xs">
-                            ({CREATE_PROJECT_PAGE.setupDefault})
-                          </span>
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            type="number"
-                            min={0}
-                            name={field.name}
-                            value={field.value ?? 30}
-                            onChange={(e) =>
-                              field.onChange(
-                                e.target.value === ""
-                                  ? undefined
-                                  : Number(e.target.value),
-                              )
-                            }
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name={`rentals.${index}.teardownMinutesAfter`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          {CREATE_PROJECT_PAGE.labelTeardownTime}{" "}
-                          <span className="text-muted-foreground font-normal text-xs">
-                            ({CREATE_PROJECT_PAGE.teardownDefault})
-                          </span>
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            type="number"
-                            min={0}
-                            name={field.name}
-                            value={field.value ?? 30}
-                            onChange={(e) =>
-                              field.onChange(
-                                e.target.value === ""
-                                  ? undefined
-                                  : Number(e.target.value),
-                              )
-                            }
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                {SHOW_SETUP_TEARDOWN_FIELDS ? (
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <FormField
+                      control={form.control}
+                      name={`rentals.${index}.setupMinutesBefore`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            {CREATE_PROJECT_PAGE.labelSetupTime}{" "}
+                            <span className="text-muted-foreground font-normal text-xs">
+                              ({CREATE_PROJECT_PAGE.setupDefault})
+                            </span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              type="number"
+                              min={0}
+                              name={field.name}
+                              value={field.value ?? 30}
+                              onChange={(e) =>
+                                field.onChange(
+                                  e.target.value === ""
+                                    ? undefined
+                                    : Number(e.target.value),
+                                )
+                              }
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`rentals.${index}.teardownMinutesAfter`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            {CREATE_PROJECT_PAGE.labelTeardownTime}{" "}
+                            <span className="text-muted-foreground font-normal text-xs">
+                              ({CREATE_PROJECT_PAGE.teardownDefault})
+                            </span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              type="number"
+                              min={0}
+                              name={field.name}
+                              value={field.value ?? 30}
+                              onChange={(e) =>
+                                field.onChange(
+                                  e.target.value === ""
+                                    ? undefined
+                                    : Number(e.target.value),
+                                )
+                              }
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                ) : null}
 
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   <FormField
@@ -810,6 +1156,7 @@ export function CreateProjectForm({
                     control={form.control}
                     name={`rentals.${index}.paidAmount`}
                     render={({ field }) => (
+                      // 已付款項
                       <FormItem>
                         <FormLabel>
                           {CREATE_PROJECT_PAGE.labelPaidAmount}
@@ -823,6 +1170,11 @@ export function CreateProjectForm({
                             className="tabular-nums"
                           />
                         </FormControl>
+                        {/* {index === 0 ? (
+                          <FormDescription>
+                            {CREATE_PROJECT_PAGE.hintPaidAmountSetsConfirmed}
+                          </FormDescription>
+                        ) : null} */}
                         <FormMessage />
                       </FormItem>
                     )}

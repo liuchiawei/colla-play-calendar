@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { DASHBOARD_OVERVIEW, PROJECTS_PAGE } from "@/lib/message";
+import { DASHBOARD_OVERVIEW } from "@/lib/message";
 import {
   getStatusLabel,
   getStatusColorClass,
+  normalizeProjectStatusForUi,
 } from "@/lib/config/project-status";
 import type { Project } from "@/lib/types/project";
 import type { Space } from "@/lib/config/config";
@@ -99,8 +100,10 @@ export function OverviewContent({
           </div>
         ) : (
           <ul className="flex-1 list-none p-0 m-0" role="list">
-            {recentProjects.map((project) => (
-              <li key={project.id}>
+            {recentProjects.map((project) => {
+              const statusForUi = normalizeProjectStatusForUi(project.status);
+              return (
+                <li key={project.id}>
                 <Link
                   href={`/dashboard-new/projects/${project.id}`}
                   className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border/50 last:border-0 min-w-0 hover:bg-accent/20 rounded-xs"
@@ -110,23 +113,30 @@ export function OverviewContent({
                       {project.customer}
                     </span>
                     <span className="text-xs text-muted-foreground flex items-center gap-1.5">
-                      {DATE_FORMATTER.format(new Date(project.date))} ·
-                      <span
-                        className={cn(
-                          "size-1.5 shrink-0 rounded-full",
-                          getStatusColorClass(project.status),
-                        )}
-                        aria-hidden
-                      />
-                      {getStatusLabel(project.status)}
+                      {DATE_FORMATTER.format(new Date(project.date))}
+                      {statusForUi ? (
+                        <>
+                          {" "}
+                          ·
+                          <span
+                            className={cn(
+                              "size-1.5 shrink-0 rounded-full",
+                              getStatusColorClass(statusForUi),
+                            )}
+                            aria-hidden
+                          />
+                          {getStatusLabel(statusForUi)}
+                        </>
+                      ) : null}
                     </span>
                   </div>
                   <span className="text-sm tabular-nums shrink-0">
                     {CURRENCY_FORMATTER.format(project.amount)}
                   </span>
                 </Link>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>

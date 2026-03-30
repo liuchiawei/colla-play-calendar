@@ -287,6 +287,7 @@ model Project {
   company             String? // 公司（選填）
   taxId               String? // 統編（選填）
   eventOrVenueUse     String // 活動或場地用途
+  eventType           String         @default("其他") // 活動類型（舊資料預設其他）
   totalAttendees      Int? // 預計人數
   tables              String? // 桌數等
   chairs              Int? // 椅子數
@@ -294,6 +295,7 @@ model Project {
   projectNotes        String? // 專案備註
   collaPlayContactId  String // CollaPlay 窗口 ID（目前字串，未來可改 FK）
   internalNotes       String? // 內部備註
+  equipmentNeeds      Json?    @db.JsonB // 設備勾選（麥克風、延長線、投影、白板等），舊資料為 null
   status              ProjectStatus  @default(negotiating)
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
@@ -306,7 +308,8 @@ model Project {
 model ProjectRental {
   id                    String   @id @default(cuid())
   projectId             String
-  date                  String   @db.VarChar(10) // YYYY-MM-DD
+  date                  String   @db.VarChar(10) // YYYY-MM-DD（開始日）
+  endDate               String?  @db.VarChar(10) // YYYY-MM-DD（結束日，null 視同與 date 同日）
   startTime             String   @db.VarChar(5) // HH:mm
   endTime               String   @db.VarChar(5) // HH:mm
   setupMinutesBefore   Int      @default(30)

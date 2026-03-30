@@ -11,7 +11,13 @@ import {
   updateProjectStatus as updateProjectStatusService,
   deleteProjectRental,
   updateProjectRental,
+  getProjectById,
 } from "@/lib/services/project/project.service";
+import { getAdminContactOptions } from "@/lib/services/admin-contact.service";
+import {
+  buildProjectDetailCsv,
+  getProjectDetailCsvFilename,
+} from "@/lib/services/project/project-detail-csv.service";
 import type {
   UpdateProjectInput,
   UpdateRentalInput,
@@ -25,6 +31,9 @@ export type UpdateProjectStatusResult = { success: true; data: ProjectWithRental
 export type DeleteRentalResult = { success: true } | { success: false; error: string };
 export type UpdateRentalResult =
   | { success: true; data: ProjectWithRentals["rentals"][0] }
+  | { success: false; error: string };
+export type DownloadProjectDetailCsvResult =
+  | { success: true; csv: string; filename: string }
   | { success: false; error: string };
 
 async function getSession() {
@@ -121,6 +130,33 @@ export async function updateProjectStatus(id: string, status: ProjectStatus): Pr
     return { success: true, data };
   } catch (e) {
     const message = e instanceof Error ? e.message : "更新失敗";
+    return { success: false, error: message };
+  }
+}
+
+export async function downloadProjectDetailCsv(
+  id: string,
+): Promise<DownloadProjectDetailCsvResult> {
+  const session = await getSession();
+  if (!session?.user?.id) {
+    return { success: false, error: "需要登入" };
+  }
+  try {
+    const [project, adminOptions] = await Promise.all([
+      getProjectById(id),
+      getAdminContactOptions(),
+    ]);
+    if (!project) {
+      return { success: false, error: "找不到此專案" };
+    }
+    const collaPlayContactDisplayName =
+      adminOptions.find((o) => o.id === project.collaPlayContactId)?.name ??
+      project.collaPlayContactId;
+    const csv = buildProjectDetailCsv(project, collaPlayContactDisplayName);
+    const filename = getProjectDetailCsvFilename(project);
+    return { success: true, csv, filename };
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "下載失敗";
     return { success: false, error: message };
   }
 }

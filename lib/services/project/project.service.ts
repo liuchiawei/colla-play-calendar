@@ -5,6 +5,7 @@
  */
 
 import { cache } from "react";
+import { Prisma } from "@/lib/generated/prisma/client";
 import prisma from "@/lib/prisma";
 import { getSpaceNameById } from "@/lib/config/config";
 import { getAdminContactOptions } from "@/lib/services/admin-contact.service";
@@ -18,12 +19,207 @@ import type {
   OverviewStatsData,
 } from "@/lib/types/project";
 import { computeProjectRentalPendingAmount } from "@/lib/utils/project-rental-pending";
+import {
+  normalizeEquipmentNeedsForDb,
+  parseEquipmentNeedsFromDb,
+} from "@/lib/utils/project-equipment-needs";
+import { CREATE_PROJECT_PAGE } from "@/lib/message";
+import {
+  intervalsOverlap,
+  isValidRentalTimeWindow,
+  rentalBoundsMs,
+  spaceIdsIntersect,
+} from "@/lib/utils/project-rental-interval";
+
+/** 與其他專案租借時段衝突（API 可回 409） */
+export class ProjectRentalConflictError extends Error {
+  override readonly name = "ProjectRentalConflictError";
+  constructor(message: string) {
+    super(message);
+  }
+}
+
+/** 寫入 DB：與開始日相同或未填則 null */
+function normalizeEndDateForDb(
+  date: string,
+  endDate: string | null | undefined,
+): string | null {
+  const d = date.slice(0, 10);
+  const e = (endDate ?? "").trim().slice(0, 10);
+  if (!e || e === d) return null;
+  return e;
+}
+
+type RentalWindowInput = {
+  spaceIds: string[];
+  date: string;
+  endDate?: string | null;
+  startTime: string;
+  endTime: string;
+};
+
+export type ExternalRentalConflict = {
+  projectId: string;
+  eventOrVenueUse: string;
+  rental: {
+    id: string;
+    spaceIds: string[];
+    date: string;
+    endDate: string | null;
+    startTime: string;
+    endTime: string;
+  };
+};
+
+function assertRentalWindowsValid(rentals: RentalWindowInput[]) {
+  for (const r of rentals) {
+    if (
+      !isValidRentalTimeWindow({
+        date: r.date,
+        endDate: r.endDate,
+        startTime: r.startTime,
+        endTime: r.endTime,
+      })
+    ) {
+      throw new Error(CREATE_PROJECT_PAGE.errorInvalidRentalWindow);
+    }
+  }
+}
+
+function assertNoInternalRentalOverlaps(rentals: RentalWindowInput[]) {
+  for (let i = 0; i < rentals.length; i++) {
+    const a = rentals[i];
+    const boundsA = rentalBoundsMs({
+      date: a.date,
+      endDate: a.endDate,
+      startTime: a.startTime,
+      endTime: a.endTime,
+    });
+    if (!boundsA) continue;
+    for (let j = i + 1; j < rentals.length; j++) {
+      const b = rentals[j];
+      if (!spaceIdsIntersect(a.spaceIds, b.spaceIds)) continue;
+      const boundsB = rentalBoundsMs({
+        date: b.date,
+        endDate: b.endDate,
+        startTime: b.startTime,
+        endTime: b.endTime,
+      });
+      if (!boundsB) continue;
+      if (intervalsOverlap(boundsA, boundsB)) {
+        throw new ProjectRentalConflictError(
+          CREATE_PROJECT_PAGE.errorRentalOverlapInternal,
+        );
+      }
+    }
+  }
+}
+
+async function findExternalRentalConflicts(
+  db: { projectRental: typeof prisma.projectRental },
+  rentals: RentalWindowInput[],
+  options: { excludeProjectId?: string; excludeRentalId?: string },
+): Promise<ExternalRentalConflict[][]> {
+  const conflictsByRental: ExternalRentalConflict[][] = [];
+  for (const r of rentals) {
+    const bounds = rentalBoundsMs({
+      date: r.date,
+      endDate: r.endDate,
+      startTime: r.startTime,
+      endTime: r.endTime,
+    });
+    if (!bounds) {
+      throw new Error(CREATE_PROJECT_PAGE.errorInvalidRentalWindow);
+    }
+
+    const rows = await db.projectRental.findMany({
+      where: {
+        ...(options.excludeRentalId
+          ? { id: { not: options.excludeRentalId } }
+          : {}),
+        spaceIds: { hasSome: r.spaceIds },
+        project: {
+          status: { not: "cancelled" },
+          ...(options.excludeProjectId
+            ? { id: { not: options.excludeProjectId } }
+            : {}),
+        },
+      },
+      include: {
+        project: { select: { eventOrVenueUse: true } },
+      },
+    });
+
+    const conflicts: ExternalRentalConflict[] = [];
+    for (const row of rows) {
+      if (!spaceIdsIntersect(r.spaceIds, row.spaceIds)) continue;
+      const rowBounds = rentalBoundsMs({
+        date: row.date,
+        endDate: row.endDate,
+        startTime: row.startTime,
+        endTime: row.endTime,
+      });
+      if (!rowBounds) continue;
+      if (intervalsOverlap(bounds, rowBounds)) {
+        conflicts.push({
+          projectId: row.projectId,
+          eventOrVenueUse: row.project.eventOrVenueUse,
+          rental: {
+            id: row.id,
+            spaceIds: row.spaceIds,
+            date: row.date,
+            endDate: row.endDate,
+            startTime: row.startTime,
+            endTime: row.endTime,
+          },
+        });
+      }
+    }
+    conflictsByRental.push(conflicts);
+  }
+  return conflictsByRental;
+}
+
+async function assertNoExternalRentalConflicts(
+  db: { projectRental: typeof prisma.projectRental },
+  rentals: RentalWindowInput[],
+  options: { excludeProjectId?: string; excludeRentalId?: string },
+) {
+  const conflictsByRental = await findExternalRentalConflicts(
+    db,
+    rentals,
+    options,
+  );
+  for (const conflicts of conflictsByRental) {
+    const conflict = conflicts[0];
+    if (!conflict) continue;
+    throw new ProjectRentalConflictError(
+      `與既有專案「${conflict.eventOrVenueUse}」在相同空間時段重疊，請調整。`,
+    );
+  }
+}
+
+export async function getExternalRentalConflicts(
+  rentals: RentalWindowInput[],
+  options: { excludeProjectId?: string; excludeRentalId?: string } = {},
+): Promise<ExternalRentalConflict[][]> {
+  assertRentalWindowsValid(rentals);
+  return findExternalRentalConflicts(prisma, rentals, options);
+}
+
+function equipmentNeedsToPrismaInput(
+  normalized: Record<string, boolean> | null,
+): Prisma.InputJsonValue | typeof Prisma.DbNull {
+  if (normalized === null) return Prisma.DbNull;
+  return normalized as Prisma.InputJsonValue;
+}
 
 function mapRowToProject(
   row: {
     id: string;
     customerName: string;
     eventOrVenueUse: string;
+    eventType: string;
     collaPlayContactId: string;
     status: string;
     tables: string | null;
@@ -31,9 +227,11 @@ function mapRowToProject(
     fnbItems: string | null;
     totalAttendees: number | null;
     projectNotes: string | null;
+    equipmentNeeds: unknown;
     rentals: Array<{
       spaceIds: string[];
       date: string;
+      endDate: string | null;
       startTime: string;
       endTime: string;
       setupMinutesBefore: number;
@@ -57,6 +255,7 @@ function mapRowToProject(
     id: row.id,
     customer: row.customerName,
     eventOrVenueUse: row.eventOrVenueUse,
+    eventType: row.eventType,
     space,
     date,
     contactPerson:
@@ -68,8 +267,13 @@ function mapRowToProject(
     fnbItems: row.fnbItems ?? null,
     totalAttendees: row.totalAttendees ?? null,
     projectNotes: row.projectNotes ?? null,
+    equipmentNeeds:
+      row.equipmentNeeds == null
+        ? null
+        : parseEquipmentNeedsFromDb(row.equipmentNeeds),
     rentals: row.rentals.map((r) => ({
       date: r.date,
+      endDate: r.endDate ?? undefined,
       spaceIds: r.spaceIds,
       startTime: r.startTime,
       endTime: r.endTime,
@@ -134,13 +338,15 @@ export const getOverviewStats = cache(async (): Promise<OverviewStatsData> => {
         .aggregate({
           where: {
             date: { gte: start, lte: end },
-            project: { status: "deposit_paid" },
+            project: { status: { in: ["confirmed", "deposit_paid"] } },
           },
           _sum: { rentalAmount: true, fnbAmount: true },
         })
         .then((r) => (r._sum.rentalAmount ?? 0) + (r._sum.fnbAmount ?? 0)),
       prisma.project.count({ where: { status: "negotiating" } }),
-      prisma.project.count({ where: { status: "deposit_paid" } }),
+      prisma.project.count({
+        where: { status: { in: ["confirmed", "deposit_paid"] } },
+      }),
       prisma.projectRental.count({ where: { date: todayStr } }),
     ]);
 
@@ -207,12 +413,12 @@ export async function updateProject(
     if (!r.spaceIds?.length) {
       throw new Error("每筆租借項目至少需選擇一個場域");
     }
-    const startTime = typeof r.startTime === "string" ? r.startTime : "";
-    const endTime = typeof r.endTime === "string" ? r.endTime : "";
-    if (!startTime || !endTime || endTime <= startTime) {
-      throw new Error("結束時間必須晚於開始時間");
-    }
   }
+  assertRentalWindowsValid(input.rentals);
+  assertNoInternalRentalOverlaps(input.rentals);
+  await assertNoExternalRentalConflicts(prisma, input.rentals, {
+    excludeProjectId: id,
+  });
 
   const updated = await prisma.$transaction(async (tx) => {
     await tx.projectRental.deleteMany({ where: { projectId: id } });
@@ -224,6 +430,9 @@ export async function updateProject(
         company: input.company ?? null,
         taxId: input.taxId ?? null,
         eventOrVenueUse: input.eventOrVenueUse,
+        ...(input.eventType !== undefined && {
+          eventType: input.eventType.trim() || "其他",
+        }),
         totalAttendees: input.totalAttendees ?? null,
         tables: input.tables ?? null,
         chairs: input.chairs ?? null,
@@ -232,6 +441,11 @@ export async function updateProject(
         collaPlayContactId: input.collaPlayContactId,
         internalNotes: input.internalNotes ?? null,
         ...(input.status != null && { status: input.status }),
+        ...(input.equipmentNeeds !== undefined && {
+          equipmentNeeds: equipmentNeedsToPrismaInput(
+            normalizeEquipmentNeedsForDb(input.equipmentNeeds),
+          ),
+        }),
       },
     });
     for (const r of input.rentals) {
@@ -239,6 +453,7 @@ export async function updateProject(
         data: {
           projectId: id,
           date: r.date,
+          endDate: normalizeEndDateForDb(r.date, r.endDate),
           startTime: r.startTime,
           endTime: r.endTime,
           setupMinutesBefore: r.setupMinutesBefore ?? 30,
@@ -300,15 +515,16 @@ export async function updateProjectRental(
   if (!input.spaceIds?.length) {
     throw new Error("每筆租借項目至少需選擇一個場域");
   }
-  const startTime = typeof input.startTime === "string" ? input.startTime : "";
-  const endTime = typeof input.endTime === "string" ? input.endTime : "";
-  if (!startTime || !endTime || endTime <= startTime) {
-    throw new Error("結束時間必須晚於開始時間");
-  }
+  assertRentalWindowsValid([input]);
+  await assertNoExternalRentalConflicts(prisma, [input], {
+    excludeRentalId: rentalId,
+  });
+
   const updated = await prisma.projectRental.update({
     where: { id: rentalId },
     data: {
       date: input.date,
+      endDate: normalizeEndDateForDb(input.date, input.endDate),
       startTime: input.startTime,
       endTime: input.endTime,
       setupMinutesBefore: input.setupMinutesBefore ?? 30,
@@ -343,6 +559,7 @@ export async function updateProjectStatus(
  *
  * 使用 transaction 先建立 Project，再建立所有 ProjectRental。
  * 日期／時間依表單格式存入（date: YYYY-MM-DD, startTime/endTime: HH:mm）。
+ * 任一段租借已付款項（正規化後）大於 0 時，專案狀態為已確定（confirmed），否則為洽談中（negotiating）。
  *
  * @param input 表單 payload（CreateProjectInput）
  * @returns Promise<ProjectWithRentals>
@@ -358,10 +575,14 @@ export async function createProject(
     if (!r.spaceIds?.length) {
       throw new Error("每筆租借項目至少需選擇一個場域");
     }
-    if (r.endTime <= r.startTime) {
-      throw new Error("結束時間必須晚於開始時間");
-    }
   }
+  assertRentalWindowsValid(input.rentals);
+  assertNoInternalRentalOverlaps(input.rentals);
+  await assertNoExternalRentalConflicts(prisma, input.rentals, {});
+
+  const hasPaidAmount = input.rentals.some(
+    (r) => Math.max(0, Math.round(r.paidAmount)) > 0,
+  );
 
   const project = await prisma.$transaction(async (tx) => {
     const created = await tx.project.create({
@@ -371,6 +592,7 @@ export async function createProject(
         company: input.company ?? null,
         taxId: input.taxId ?? null,
         eventOrVenueUse: input.eventOrVenueUse,
+        eventType: input.eventType.trim() || "其他",
         totalAttendees: input.totalAttendees ?? null,
         tables: input.tables ?? null,
         chairs: input.chairs ?? null,
@@ -378,6 +600,10 @@ export async function createProject(
         projectNotes: input.projectNotes ?? null,
         collaPlayContactId: input.collaPlayContactId,
         internalNotes: input.internalNotes ?? null,
+        equipmentNeeds: equipmentNeedsToPrismaInput(
+          normalizeEquipmentNeedsForDb(input.equipmentNeeds),
+        ),
+        status: hasPaidAmount ? "confirmed" : "negotiating",
       },
     });
 
@@ -386,6 +612,7 @@ export async function createProject(
         data: {
           projectId: created.id,
           date: r.date,
+          endDate: normalizeEndDateForDb(r.date, r.endDate),
           startTime: r.startTime,
           endTime: r.endTime,
           setupMinutesBefore: r.setupMinutesBefore ?? 30,

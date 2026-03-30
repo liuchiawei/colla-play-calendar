@@ -124,7 +124,7 @@ export const DASHBOARD_OVERVIEW = {
   noProjectsYet: "尚無專案",
   // 總覽統計四項
   statsMonthlyRentalLabel: "當月場租收入",
-  statsMonthlyRentalDescription: "僅計算已付訂專案",
+  statsMonthlyRentalDescription: "僅計算已確定專案（含已付訂）",
   statsNegotiatingLabel: "洽談中專案",
   statsNegotiatingDescription: "待確認訂金",
   statsConfirmedLabel: "已確認專案",
@@ -181,8 +181,20 @@ export const CREATE_PROJECT_PAGE = {
 
   sectionCustomer: "客戶資訊",
   sectionProject: "專案資訊",
+  sectionEquipment: "設備需求",
   sectionNotes: "專案備註",
   sectionRentals: "租借項目",
+
+  labelActivityType: "活動類型",
+  placeholderSelectActivityType: "選擇活動類型",
+  labelActivityTypeOtherDetail: "活動類型說明",
+  placeholderActivityTypeOtherDetail: "請輸入自訂活動類型…",
+
+  labelEquipmentExtras: "其他設備（可複選）",
+  labelEquipmentMicrophone: "麥克風",
+  labelEquipmentExtensionCord: "延長線",
+  labelEquipmentProjector: "投影設備",
+  labelEquipmentWhiteboard: "白板／白板筆",
 
   labelCustomerName: "客戶名稱",
   labelCustomerNameRequired: "客戶名稱 *",
@@ -217,6 +229,8 @@ export const CREATE_PROJECT_PAGE = {
   labelDate: "日期",
   labelDateRequired: "日期 *",
   dateFormat: "年 / 月 / 日",
+  labelEndDate: "結束日期",
+  labelEndDateHint: "跨日時選擇；未選則與開始日相同",
   labelStartTime: "開始時間",
   labelStartTimeRequired: "開始時間 *",
   placeholderSelectTime: "選擇時間…",
@@ -229,7 +243,10 @@ export const CREATE_PROJECT_PAGE = {
   labelRentalAmount: "場租金額 (NT$)",
   labelFnbAmount: "餐飲金額 (NT$)",
   labelPaidAmount: "已付款項 (NT$)",
-  labelPendingAmount: "待付金額 (NT$)（自動計算）",
+  /** 建立專案時：任一段已付款項大於 0 則狀態為已確定 */
+  hintPaidAmountSetsConfirmed:
+    "任一段已付款項大於 0 時，建立後專案狀態將為「已確定」。",
+  labelPendingAmount: "待付金額 (NT$)",
 
   submit: "建立專案",
   submitting: "儲存中…",
@@ -237,8 +254,13 @@ export const CREATE_PROJECT_PAGE = {
   removeRentalAria: "移除此筆租借",
 
   errorRequired: "此欄位為必填",
+  errorActivityTypeRequired: "請選擇活動類型",
+  errorActivityTypeOtherRequired: "選擇「其他」時請填寫說明",
   errorPhoneInvalid: "請輸入有效的聯絡電話",
   errorEndBeforeStart: "結束時間須晚於開始時間",
+  /** 同日須 end > start；跨日時結束日不可早於開始日 */
+  errorInvalidRentalWindow: "請確認日期與時間：同日時結束須晚於開始；跨日時結束日不可早於開始日。",
+  errorRentalOverlapInternal: "表單內有租借在相同空間時段重疊，請調整。",
 } as const;
 
 // Project Detail Page (專案詳情頁)
@@ -248,8 +270,21 @@ export const PROJECT_DETAIL_PAGE = {
 
   sectionCustomer: "客戶資訊",
   sectionProject: "專案資訊",
+  sectionEquipment: "設備需求",
   sectionNotes: "備註",
   sectionRentals: "租借項目",
+
+  labelActivityType: "活動類型",
+  placeholderSelectActivityType: "選擇活動類型",
+  labelActivityTypeOtherDetail: "活動類型說明",
+  placeholderActivityTypeOtherDetail: "請輸入自訂活動類型…",
+
+  labelEquipmentExtras: "其他設備（可複選）",
+  labelEquipmentMicrophone: "麥克風",
+  labelEquipmentExtensionCord: "延長線",
+  labelEquipmentProjector: "投影設備",
+  labelEquipmentWhiteboard: "白板／白板筆",
+  labelEquipmentSummary: "設備勾選",
 
   labelCustomerName: "客戶名稱",
   labelPhone: "聯絡電話",
@@ -273,7 +308,7 @@ export const PROJECT_DETAIL_PAGE = {
   labelRentalAmount: "場租",
   labelFnbAmount: "餐飲",
   labelPaidAmount: "已付",
-  labelPendingAmount: "待付（自動計算）",
+  labelPendingAmount: "待付",
   totalAmount: "總金額",
 
   buttonEdit: "編輯",

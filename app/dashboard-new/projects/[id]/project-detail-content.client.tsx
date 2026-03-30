@@ -23,6 +23,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -74,9 +75,10 @@ import {
 } from "@/lib/message";
 import { getSpaceNameById, ALL_SPACES } from "@/lib/config/config";
 import {
-  PROJECT_STATUS_OPTIONS,
+  PROJECT_STATUS_UI_SELECTABLE,
   getStatusLabel,
   getStatusColorClass,
+  normalizeProjectStatusForUi,
 } from "@/lib/config/project-status";
 import type {
   ProjectWithRentals,
@@ -91,7 +93,31 @@ import {
   updateRental,
 } from "./actions";
 import { cn } from "@/lib/utils";
+import { formatRentalDateRangeForTable } from "@/lib/utils/project";
 import { computeProjectRentalPendingAmount } from "@/lib/utils/project-rental-pending";
+import {
+  intervalsOverlap,
+  isValidRentalTimeWindow,
+  rentalBoundsMs,
+  spaceIdsIntersect,
+} from "@/lib/utils/project-rental-interval";
+import {
+  buildProjectDetailCsv,
+  getProjectDetailCsvFilename,
+} from "@/lib/services/project/project-detail-csv.service";
+import {
+  PROJECT_ACTIVITY_CUSTOM_SENTINEL,
+  PROJECT_ACTIVITY_TYPE_OPTIONS,
+  PROJECT_ACTIVITY_TYPE_OTHER,
+  isActivityTypePresetFieldValue,
+  resolveEventTypeFromForm,
+  splitActivityTypeForForm,
+} from "@/lib/constants/project-form";
+import {
+  defaultEquipmentNeedsForm,
+  parseEquipmentNeedsFromDb,
+} from "@/lib/utils/project-equipment-needs";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const CURRENCY_FORMATTER = new Intl.NumberFormat("zh-TW", {
   style: "currency",
@@ -105,163 +131,18 @@ function formatDateTime(value: string | Date): string {
   return format(d, "yyyy/MM/dd HH:mm", { locale: zhTW });
 }
 
-function escapeCsvCell(value: string): string {
-  const s = String(value);
-  if (/[,"\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-  return s;
-}
-
-function buildProjectDetailCsv(
-  project: ProjectWithRentals,
-  collaPlayContactDisplayName: string,
-): string {
-  const rows: string[] = [];
-
-  // Section 1: 專案／客戶摘要（欄位名, 值）
-  rows.push(
-    [PROJECT_DETAIL_PAGE.labelCustomerName, project.customerName]
-      .map(escapeCsvCell)
-      .join(","),
-  );
-  rows.push(
-    [PROJECT_DETAIL_PAGE.labelPhone, project.customerPhone]
-      .map(escapeCsvCell)
-      .join(","),
-  );
-  if (project.company) {
-    rows.push(
-      [PROJECT_DETAIL_PAGE.labelCompany, project.company]
-        .map(escapeCsvCell)
-        .join(","),
-    );
-  }
-  if (project.taxId) {
-    rows.push(
-      [PROJECT_DETAIL_PAGE.labelTaxId, project.taxId]
-        .map(escapeCsvCell)
-        .join(","),
-    );
-  }
-  rows.push(
-    [PROJECT_DETAIL_PAGE.labelEventOrVenueUse, project.eventOrVenueUse]
-      .map(escapeCsvCell)
-      .join(","),
-  );
-  if (project.totalAttendees != null) {
-    rows.push(
-      [PROJECT_DETAIL_PAGE.labelTotalAttendees, String(project.totalAttendees)]
-        .map(escapeCsvCell)
-        .join(","),
-    );
-  }
-  if (project.tables) {
-    rows.push(
-      [PROJECT_DETAIL_PAGE.labelTables, project.tables]
-        .map(escapeCsvCell)
-        .join(","),
-    );
-  }
-  if (project.chairs != null) {
-    rows.push(
-      [PROJECT_DETAIL_PAGE.labelChairs, String(project.chairs)]
-        .map(escapeCsvCell)
-        .join(","),
-    );
-  }
-  if (project.fnbItems) {
-    rows.push(
-      [PROJECT_DETAIL_PAGE.labelFnb, project.fnbItems]
-        .map(escapeCsvCell)
-        .join(","),
-    );
-  }
-  if (project.projectNotes) {
-    rows.push(
-      [PROJECT_DETAIL_PAGE.labelProjectNotes, project.projectNotes]
-        .map(escapeCsvCell)
-        .join(","),
-    );
-  }
-  rows.push(
-    [PROJECT_DETAIL_PAGE.labelCollaPlayContact, collaPlayContactDisplayName]
-      .map(escapeCsvCell)
-      .join(","),
-  );
-  rows.push(
-    [PROJECT_DETAIL_PAGE.labelStatus, getStatusLabel(project.status)]
-      .map(escapeCsvCell)
-      .join(","),
-  );
-  rows.push(
-    [PROJECT_DETAIL_PAGE.labelCreatedAt, formatDateTime(project.createdAt)]
-      .map(escapeCsvCell)
-      .join(","),
-  );
-  rows.push(
-    [PROJECT_DETAIL_PAGE.labelUpdatedAt, formatDateTime(project.updatedAt)]
-      .map(escapeCsvCell)
-      .join(","),
-  );
-  if (project.internalNotes) {
-    rows.push(
-      [PROJECT_DETAIL_PAGE.labelInternalNotes, project.internalNotes]
-        .map(escapeCsvCell)
-        .join(","),
-    );
-  }
-
-  rows.push(""); // 空行分隔
-
-  // Section 2: 租借項目表
-  const rentalHeaders = [
-    PROJECT_DETAIL_PAGE.labelDate,
-    PROJECT_DETAIL_PAGE.labelTimeRange,
-    PROJECT_DETAIL_PAGE.labelSpaces,
-    PROJECT_DETAIL_PAGE.labelRentalAmount,
-    PROJECT_DETAIL_PAGE.labelFnbAmount,
-    PROJECT_DETAIL_PAGE.labelPaidAmount,
-    PROJECT_DETAIL_PAGE.labelPendingAmount,
-  ];
-  rows.push(rentalHeaders.map(escapeCsvCell).join(","));
-
-  const totalAmount = project.rentals.reduce(
-    (sum, r) => sum + r.rentalAmount + r.fnbAmount,
-    0,
-  );
-  for (const r of project.rentals) {
-    const dateStr = DATE_FORMATTER.format(new Date(r.date + "T00:00:00"));
-    const timeRange = `${r.startTime} – ${r.endTime}`;
-    const spaces = r.spaceIds.map((id) => getSpaceNameById(id)).join("、");
-    rows.push(
-      [
-        dateStr,
-        timeRange,
-        spaces,
-        CURRENCY_FORMATTER.format(r.rentalAmount),
-        CURRENCY_FORMATTER.format(r.fnbAmount),
-        CURRENCY_FORMATTER.format(r.paidAmount),
-        CURRENCY_FORMATTER.format(r.pendingAmount),
-      ]
-        .map(escapeCsvCell)
-        .join(","),
-    );
-  }
-  rows.push(
-    [
-      "",
-      "",
-      PROJECT_DETAIL_PAGE.totalAmount,
-      CURRENCY_FORMATTER.format(totalAmount),
-      "",
-      "",
-      "",
-    ]
-      .map(escapeCsvCell)
-      .join(","),
-  );
-
-  const csvContent = rows.join("\r\n");
-  return "\uFEFF" + csvContent;
+/** 設備勾選：唯讀一行（詳情） */
+function formatEquipmentNeedsLine(
+  raw: ProjectWithRentals["equipmentNeeds"],
+): string | null {
+  const p = parseEquipmentNeedsFromDb(raw);
+  const parts: string[] = [];
+  if (p.microphone) parts.push(CREATE_PROJECT_PAGE.labelEquipmentMicrophone);
+  if (p.extensionCord)
+    parts.push(CREATE_PROJECT_PAGE.labelEquipmentExtensionCord);
+  if (p.projector) parts.push(CREATE_PROJECT_PAGE.labelEquipmentProjector);
+  if (p.whiteboard) parts.push(CREATE_PROJECT_PAGE.labelEquipmentWhiteboard);
+  return parts.length > 0 ? parts.join("、") : null;
 }
 
 // Form schema (aligned with create form)
@@ -269,6 +150,7 @@ const rentalItemSchema = z
   .object({
     spaceIds: z.array(z.string()).min(1, CREATE_PROJECT_PAGE.errorRequired),
     date: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
+    endDate: z.string().optional().default(""),
     startTime: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
     endTime: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
     setupMinutesBefore: z.number().min(0).optional(),
@@ -277,38 +159,105 @@ const rentalItemSchema = z
     fnbAmount: z.coerce.number().min(0),
     paidAmount: z.coerce.number().min(0),
   })
-  .refine((data) => data.endTime > data.startTime, {
-    message: CREATE_PROJECT_PAGE.errorEndBeforeStart,
-    path: ["endTime"],
-  });
+  .refine(
+    (data) =>
+      isValidRentalTimeWindow({
+        date: data.date,
+        endDate: data.endDate?.trim() || null,
+        startTime: data.startTime,
+        endTime: data.endTime,
+      }),
+    {
+      message: CREATE_PROJECT_PAGE.errorInvalidRentalWindow,
+      path: ["endTime"],
+    },
+  );
 
-const editProjectSchema = z.object({
-  customerName: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
-  customerPhone: z
-    .string()
-    .min(1, CREATE_PROJECT_PAGE.errorRequired)
-    .regex(/^[\d\s\-]+$/, CREATE_PROJECT_PAGE.errorPhoneInvalid),
-  company: z.string().optional(),
-  taxId: z.string().optional(),
-  eventOrVenueUse: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
-  totalAttendees: z.coerce.number().min(0).optional(),
-  tables: z.string().optional(),
-  chairs: z.coerce.number().min(0).optional(),
-  fnbItems: z.string().optional(),
-  projectNotes: z.string().optional(),
-  collaPlayContactId: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
-  internalNotes: z.string().optional(),
-  status: z
-    .enum([
-      "negotiating",
-      "confirmed",
-      "deposit_paid",
-      "completed",
-      "cancelled",
-    ])
-    .optional(),
-  rentals: z.array(rentalItemSchema).min(1, CREATE_PROJECT_PAGE.errorRequired),
+const editEquipmentNeedsFormSchema = z.object({
+  microphone: z.boolean(),
+  extensionCord: z.boolean(),
+  projector: z.boolean(),
+  whiteboard: z.boolean(),
 });
+
+const editProjectSchema = z
+  .object({
+    customerName: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
+    customerPhone: z
+      .string()
+      .min(1, CREATE_PROJECT_PAGE.errorRequired)
+      .regex(/^[\d\s\-]+$/, CREATE_PROJECT_PAGE.errorPhoneInvalid),
+    company: z.string().optional(),
+    taxId: z.string().optional(),
+    activityTypePreset: z
+      .string()
+      .min(1, CREATE_PROJECT_PAGE.errorActivityTypeRequired)
+      .refine((s) => isActivityTypePresetFieldValue(s), {
+        message: CREATE_PROJECT_PAGE.errorActivityTypeRequired,
+      }),
+    activityCustomDetail: z.string().optional().default(""),
+    eventOrVenueUse: z.string().trim().min(1, CREATE_PROJECT_PAGE.errorRequired),
+    totalAttendees: z.coerce.number().min(0).optional(),
+    tables: z.string().optional(),
+    chairs: z.coerce.number().min(0).optional(),
+    equipmentNeeds: editEquipmentNeedsFormSchema.default(() =>
+      defaultEquipmentNeedsForm(),
+    ),
+    fnbItems: z.string().optional(),
+    projectNotes: z.string().optional(),
+    collaPlayContactId: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
+    internalNotes: z.string().optional(),
+    status: z
+      .enum([
+        "negotiating",
+        "confirmed",
+        "completed",
+      ])
+      .optional(),
+    rentals: z.array(rentalItemSchema).min(1, CREATE_PROJECT_PAGE.errorRequired),
+  })
+  .superRefine((data, ctx) => {
+    const needsCustom =
+      data.activityTypePreset === PROJECT_ACTIVITY_CUSTOM_SENTINEL ||
+      data.activityTypePreset === PROJECT_ACTIVITY_TYPE_OTHER;
+    if (needsCustom && !data.activityCustomDetail.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: CREATE_PROJECT_PAGE.errorActivityTypeOtherRequired,
+        path: ["activityCustomDetail"],
+      });
+    }
+    const rentals = data.rentals;
+    for (let i = 0; i < rentals.length; i++) {
+      const a = rentals[i];
+      const boundsA = rentalBoundsMs({
+        date: a.date,
+        endDate: a.endDate?.trim() || null,
+        startTime: a.startTime,
+        endTime: a.endTime,
+      });
+      if (!boundsA) continue;
+      for (let j = i + 1; j < rentals.length; j++) {
+        const b = rentals[j];
+        if (!spaceIdsIntersect(a.spaceIds, b.spaceIds)) continue;
+        const boundsB = rentalBoundsMs({
+          date: b.date,
+          endDate: b.endDate?.trim() || null,
+          startTime: b.startTime,
+          endTime: b.endTime,
+        });
+        if (!boundsB) continue;
+        if (intervalsOverlap(boundsA, boundsB)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: CREATE_PROJECT_PAGE.errorRentalOverlapInternal,
+            path: ["rentals", i, "spaceIds"],
+          });
+          return;
+        }
+      }
+    }
+  });
 
 type EditFormValues = z.infer<typeof editProjectSchema>;
 
@@ -320,6 +269,7 @@ function rentalToEditFormValues(
   return {
     spaceIds: r.spaceIds,
     date: r.date,
+    endDate: r.endDate ?? "",
     startTime: r.startTime,
     endTime: r.endTime,
     setupMinutesBefore: r.setupMinutesBefore ?? 30,
@@ -333,6 +283,7 @@ function rentalToEditFormValues(
 const defaultRental: EditFormValues["rentals"][0] = {
   spaceIds: [],
   date: "",
+  endDate: "",
   startTime: "",
   endTime: "",
   setupMinutesBefore: 30,
@@ -343,25 +294,33 @@ const defaultRental: EditFormValues["rentals"][0] = {
 };
 
 function projectToFormValues(project: ProjectWithRentals): EditFormValues {
+  const { preset, customDetail } = splitActivityTypeForForm(
+    project.eventType,
+  );
+  const statusForUi = normalizeProjectStatusForUi(project.status);
   return {
     customerName: project.customerName,
     customerPhone: project.customerPhone,
     company: project.company ?? "",
     taxId: project.taxId ?? "",
+    activityTypePreset: preset,
+    activityCustomDetail: customDetail,
     eventOrVenueUse: project.eventOrVenueUse,
     totalAttendees: project.totalAttendees ?? undefined,
     tables: project.tables ?? "",
     chairs: project.chairs ?? undefined,
+    equipmentNeeds: parseEquipmentNeedsFromDb(project.equipmentNeeds),
     fnbItems: project.fnbItems ?? "",
     projectNotes: project.projectNotes ?? "",
     collaPlayContactId: project.collaPlayContactId,
     internalNotes: project.internalNotes ?? "",
-    status: project.status as ProjectStatus,
+    status: statusForUi ?? undefined,
     rentals:
       project.rentals.length > 0
         ? project.rentals.map((r) => ({
             spaceIds: r.spaceIds,
             date: r.date,
+            endDate: r.endDate ?? "",
             startTime: r.startTime,
             endTime: r.endTime,
             setupMinutesBefore: r.setupMinutesBefore ?? 30,
@@ -381,20 +340,29 @@ function formValuesToUpdateInput(values: EditFormValues): UpdateProjectInput {
     company: values.company || undefined,
     taxId: values.taxId || undefined,
     eventOrVenueUse: values.eventOrVenueUse,
+    eventType: resolveEventTypeFromForm(
+      values.activityTypePreset,
+      values.activityCustomDetail ?? "",
+    ),
     totalAttendees: values.totalAttendees,
     tables: values.tables || undefined,
     chairs: values.chairs,
+    equipmentNeeds: values.equipmentNeeds,
     fnbItems: values.fnbItems || undefined,
     projectNotes: values.projectNotes || undefined,
     collaPlayContactId: values.collaPlayContactId,
     internalNotes: values.internalNotes || undefined,
     status: values.status,
-    rentals: values.rentals.map((r) => ({
-      ...r,
-      setupMinutesBefore: r.setupMinutesBefore ?? 30,
-      teardownMinutesAfter: r.teardownMinutesAfter ?? 30,
-      pendingAmount: computeProjectRentalPendingAmount(r),
-    })),
+    rentals: values.rentals.map((r) => {
+      const endDateTrim = r.endDate?.trim() ?? "";
+      return {
+        ...r,
+        endDate: endDateTrim ? endDateTrim : undefined,
+        setupMinutesBefore: r.setupMinutesBefore ?? 30,
+        teardownMinutesAfter: r.teardownMinutesAfter ?? 30,
+        pendingAmount: computeProjectRentalPendingAmount(r),
+      };
+    }),
   };
 }
 
@@ -422,8 +390,10 @@ function EditRentalFormDialog({
 
   const handleSubmit = form.handleSubmit((data: EditRentalFormValues) => {
     startTransition(async () => {
+      const endTrim = data.endDate?.trim() ?? "";
       const result = await updateRental(rental.id, {
         ...data,
+        endDate: endTrim ? endTrim : undefined,
         setupMinutesBefore: data.setupMinutesBefore ?? 30,
         teardownMinutesAfter: data.teardownMinutesAfter ?? 30,
         pendingAmount: computeProjectRentalPendingAmount(data),
@@ -491,6 +461,64 @@ function EditRentalFormDialog({
                     <FormLabel>
                       {CREATE_PROJECT_PAGE.labelDateRequired}
                     </FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !field.value && "text-muted-foreground",
+                            )}
+                            type="button"
+                          >
+                            <CalendarIcon className="mr-2 size-4" />
+                            {field.value
+                              ? format(
+                                  new Date(field.value + "T00:00:00"),
+                                  "yyyy / MM / dd",
+                                  { locale: zhTW },
+                                )
+                              : CREATE_PROJECT_PAGE.dateFormat}
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={
+                            field.value
+                              ? new Date(field.value + "T00:00:00")
+                              : undefined
+                          }
+                          onSelect={(d) => {
+                            const next = d ? format(d, "yyyy-MM-dd") : "";
+                            field.onChange(next);
+                            const curEnd = form.getValues("endDate");
+                            if (!String(curEnd ?? "").trim()) {
+                              form.setValue("endDate", next, {
+                                shouldDirty: true,
+                                shouldValidate: true,
+                              });
+                            }
+                          }}
+                          locale={zhTW}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="endDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{CREATE_PROJECT_PAGE.labelEndDate}</FormLabel>
+                    <FormDescription className="text-xs">
+                      {CREATE_PROJECT_PAGE.labelEndDateHint}
+                    </FormDescription>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -688,6 +716,7 @@ function AddRentalFormDialog({
       ...defaultRental,
       spaceIds: [],
       date: "",
+      endDate: "",
       startTime: "",
       endTime: "",
     },
@@ -777,6 +806,64 @@ function AddRentalFormDialog({
                     <FormLabel>
                       {CREATE_PROJECT_PAGE.labelDateRequired}
                     </FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !field.value && "text-muted-foreground",
+                            )}
+                            type="button"
+                          >
+                            <CalendarIcon className="mr-2 size-4" />
+                            {field.value
+                              ? format(
+                                  new Date(field.value + "T00:00:00"),
+                                  "yyyy / MM / dd",
+                                  { locale: zhTW },
+                                )
+                              : CREATE_PROJECT_PAGE.dateFormat}
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={
+                            field.value
+                              ? new Date(field.value + "T00:00:00")
+                              : undefined
+                          }
+                          onSelect={(d) => {
+                            const next = d ? format(d, "yyyy-MM-dd") : "";
+                            field.onChange(next);
+                            const curEnd = form.getValues("endDate");
+                            if (!String(curEnd ?? "").trim()) {
+                              form.setValue("endDate", next, {
+                                shouldDirty: true,
+                                shouldValidate: true,
+                              });
+                            }
+                          }}
+                          locale={zhTW}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="endDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{CREATE_PROJECT_PAGE.labelEndDate}</FormLabel>
+                    <FormDescription className="text-xs">
+                      {CREATE_PROJECT_PAGE.labelEndDateHint}
+                    </FormDescription>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -988,6 +1075,7 @@ export function ProjectDetailContent({
   const collaPlayContactName =
     adminOptions.find((o) => o.id === project.collaPlayContactId)?.name ??
     project.collaPlayContactId;
+  const statusForUi = normalizeProjectStatusForUi(project.status);
 
   const form = useForm<EditFormValues>({
     resolver: zodResolver(editProjectSchema) as Resolver<EditFormValues>,
@@ -1000,6 +1088,13 @@ export function ProjectDetailContent({
   });
 
   const watchedEditRentals = useWatch({ control: form.control, name: "rentals" });
+  const watchedEditActivityPreset = useWatch({
+    control: form.control,
+    name: "activityTypePreset",
+  });
+  const showEditActivityCustomDetail =
+    watchedEditActivityPreset === PROJECT_ACTIVITY_CUSTOM_SENTINEL ||
+    watchedEditActivityPreset === PROJECT_ACTIVITY_TYPE_OTHER;
 
   const handleEdit = useCallback(() => {
     form.reset(projectToFormValues(project));
@@ -1034,11 +1129,7 @@ export function ProjectDetailContent({
       const csv = buildProjectDetailCsv(project, collaPlayContactName);
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
       const url = URL.createObjectURL(blob);
-      const safeName = (project.eventOrVenueUse || project.id)
-        .replace(/[/\\:*?"<>|]/g, "_")
-        .slice(0, 80);
-      const dateStr = format(new Date(), "yyyyMMdd", { locale: zhTW });
-      const filename = `專案詳情-${safeName}-${dateStr}.csv`;
+      const filename = getProjectDetailCsvFilename(project);
       const a = document.createElement("a");
       a.href = url;
       a.download = filename;
@@ -1158,24 +1249,180 @@ export function ProjectDetailContent({
             <CardContent className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
-                name="eventOrVenueUse"
+                name="activityTypePreset"
                 render={({ field }) => (
                   <FormItem className="sm:col-span-2">
                     <FormLabel>
+                      {CREATE_PROJECT_PAGE.labelActivityType}{" "}
+                      <span className="text-destructive">*</span>
+                    </FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value || undefined}
+                      name={field.name}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue
+                            placeholder={
+                              CREATE_PROJECT_PAGE.placeholderSelectActivityType
+                            }
+                          />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {PROJECT_ACTIVITY_TYPE_OPTIONS.map((opt) => (
+                          <SelectItem key={opt} value={opt}>
+                            {opt}
+                          </SelectItem>
+                        ))}
+                        <SelectItem value={PROJECT_ACTIVITY_CUSTOM_SENTINEL}>
+                          自訂（不在上列）
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {showEditActivityCustomDetail ? (
+                <FormField
+                  control={form.control}
+                  name="activityCustomDetail"
+                  render={({ field }) => (
+                    <FormItem className="sm:col-span-2">
+                      <FormLabel>
+                        {CREATE_PROJECT_PAGE.labelActivityTypeOtherDetail}{" "}
+                        <span className="text-destructive">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          placeholder={
+                            CREATE_PROJECT_PAGE.placeholderActivityTypeOtherDetail
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ) : null}
+              <FormField
+                control={form.control}
+                name="eventOrVenueUse"
+                render={({ field }) => (
+                  <FormItem className="sm:col-span-2">
+                    <FormLabel aria-required>
                       {CREATE_PROJECT_PAGE.labelEventOrVenueUseRequired}
                     </FormLabel>
                     <FormControl>
                       <Input
                         {...field}
-                        placeholder={
-                          CREATE_PROJECT_PAGE.placeholderEventOrVenueUse
-                        }
+                        placeholder={CREATE_PROJECT_PAGE.placeholderEventOrVenueUse}
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+              <FormField
+                control={form.control}
+                name="fnbItems"
+                render={({ field }) => (
+                  <FormItem className="sm:col-span-2">
+                    <FormLabel>{CREATE_PROJECT_PAGE.labelFnb}</FormLabel>
+                    <FormControl>
+                      <Textarea {...field} rows={2} className="resize-none" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="projectNotes"
+                render={({ field }) => (
+                  <FormItem className="sm:col-span-2">
+                    <FormLabel>
+                      {CREATE_PROJECT_PAGE.labelProjectNotes}
+                    </FormLabel>
+                    <FormControl>
+                      <Textarea {...field} rows={2} className="resize-none" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="collaPlayContactId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      {CREATE_PROJECT_PAGE.labelCollaPlayContactRequired}
+                    </FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={
+                              CREATE_PROJECT_PAGE.placeholderSelectContact
+                            }
+                          />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {adminOptions.map((opt) => (
+                          <SelectItem key={opt.id} value={opt.id}>
+                            {opt.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {statusForUi ? (
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{PROJECT_DETAIL_PAGE.labelStatus}</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {PROJECT_STATUS_UI_SELECTABLE.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {PROJECTS_PAGE[opt.labelKey]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ) : null}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <h2 className="text-lg font-semibold">
+                {PROJECT_DETAIL_PAGE.sectionEquipment}
+              </h2>
+            </CardHeader>
+            <CardContent className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="totalAttendees"
@@ -1241,88 +1488,93 @@ export function ProjectDetailContent({
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="fnbItems"
-                render={({ field }) => (
-                  <FormItem className="sm:col-span-2">
-                    <FormLabel>{CREATE_PROJECT_PAGE.labelFnb}</FormLabel>
-                    <FormControl>
-                      <Textarea {...field} rows={2} className="resize-none" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="projectNotes"
-                render={({ field }) => (
-                  <FormItem className="sm:col-span-2">
-                    <FormLabel>
-                      {CREATE_PROJECT_PAGE.labelProjectNotes}
-                    </FormLabel>
-                    <FormControl>
-                      <Textarea {...field} rows={2} className="resize-none" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="collaPlayContactId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      {CREATE_PROJECT_PAGE.labelCollaPlayContactRequired}
-                    </FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue
-                            placeholder={
-                              CREATE_PROJECT_PAGE.placeholderSelectContact
+              <div className="sm:col-span-2 space-y-3">
+                <p className="text-sm font-medium leading-none">
+                  {CREATE_PROJECT_PAGE.labelEquipmentExtras}
+                </p>
+                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                  <FormField
+                    control={form.control}
+                    name="equipmentNeeds.microphone"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center gap-2 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={(c) => field.onChange(c === true)}
+                            aria-label={
+                              CREATE_PROJECT_PAGE.labelEquipmentMicrophone
                             }
                           />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {adminOptions.map((opt) => (
-                          <SelectItem key={opt.id} value={opt.id}>
-                            {opt.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{PROJECT_DETAIL_PAGE.labelStatus}</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {PROJECT_STATUS_OPTIONS.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {PROJECTS_PAGE[opt.labelKey]}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                        </FormControl>
+                        <FormLabel className="font-normal leading-none">
+                          {CREATE_PROJECT_PAGE.labelEquipmentMicrophone}
+                        </FormLabel>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="equipmentNeeds.extensionCord"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center gap-2 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={(c) => field.onChange(c === true)}
+                            aria-label={
+                              CREATE_PROJECT_PAGE.labelEquipmentExtensionCord
+                            }
+                          />
+                        </FormControl>
+                        <FormLabel className="font-normal leading-none">
+                          {CREATE_PROJECT_PAGE.labelEquipmentExtensionCord}
+                        </FormLabel>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="equipmentNeeds.projector"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center gap-2 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={(c) => field.onChange(c === true)}
+                            aria-label={
+                              CREATE_PROJECT_PAGE.labelEquipmentProjector
+                            }
+                          />
+                        </FormControl>
+                        <FormLabel className="font-normal leading-none">
+                          {CREATE_PROJECT_PAGE.labelEquipmentProjector}
+                        </FormLabel>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="equipmentNeeds.whiteboard"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center gap-2 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={(c) => field.onChange(c === true)}
+                            aria-label={
+                              CREATE_PROJECT_PAGE.labelEquipmentWhiteboard
+                            }
+                          />
+                        </FormControl>
+                        <FormLabel className="font-normal leading-none">
+                          {CREATE_PROJECT_PAGE.labelEquipmentWhiteboard}
+                        </FormLabel>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
             </CardContent>
           </Card>
 
@@ -1426,7 +1678,7 @@ export function ProjectDetailContent({
                       </FormItem>
                     )}
                   />
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
                     <FormField
                       control={form.control}
                       name={`rentals.${index}.date`}
@@ -1435,6 +1687,71 @@ export function ProjectDetailContent({
                           <FormLabel>
                             {CREATE_PROJECT_PAGE.labelDateRequired}
                           </FormLabel>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant="outline"
+                                  className={cn(
+                                    "w-full justify-start text-left font-normal",
+                                    !field.value && "text-muted-foreground",
+                                  )}
+                                  type="button"
+                                >
+                                  <CalendarIcon className="mr-2 size-4" />
+                                  {field.value
+                                    ? format(
+                                        new Date(field.value + "T00:00:00"),
+                                        "yyyy / MM / dd",
+                                        { locale: zhTW },
+                                      )
+                                    : CREATE_PROJECT_PAGE.dateFormat}
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent
+                              className="w-auto p-0"
+                              align="start"
+                            >
+                              <Calendar
+                                mode="single"
+                                selected={
+                                  field.value
+                                    ? new Date(field.value + "T00:00:00")
+                                    : undefined
+                                }
+                                onSelect={(d) => {
+                                  const next = d ? format(d, "yyyy-MM-dd") : "";
+                                  field.onChange(next);
+                                  const endPath =
+                                    `rentals.${index}.endDate` as const;
+                                  const curEnd = form.getValues(endPath);
+                                  if (!String(curEnd ?? "").trim()) {
+                                    form.setValue(endPath, next, {
+                                      shouldDirty: true,
+                                      shouldValidate: true,
+                                    });
+                                  }
+                                }}
+                                locale={zhTW}
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`rentals.${index}.endDate`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            {CREATE_PROJECT_PAGE.labelEndDate}
+                          </FormLabel>
+                          <FormDescription className="text-xs">
+                            {CREATE_PROJECT_PAGE.labelEndDateHint}
+                          </FormDescription>
                           <Popover>
                             <PopoverTrigger asChild>
                               <FormControl>
@@ -1678,37 +1995,39 @@ export function ProjectDetailContent({
       ) : null}
       <div className="flex justify-between">
         {/* Status Selector */}
-        <div className="flex items-center gap-2">
-          <Select
-            value={project.status}
-            onValueChange={(v) => handleStatusChange(v as ProjectStatus)}
-            disabled={isPendingStatus}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PROJECT_STATUS_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  <span
-                    className={cn(
-                      "mr-2 inline-block size-2 rounded-full",
-                      opt.colorClass,
-                    )}
-                    aria-hidden
-                  />
-                  {PROJECTS_PAGE[opt.labelKey]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {isPendingStatus ? (
-            <Loader2
-              className="size-4 animate-spin text-muted-foreground"
-              aria-hidden
-            />
-          ) : null}
-        </div>
+        {statusForUi ? (
+          <div className="flex items-center gap-2">
+            <Select
+              value={statusForUi}
+              onValueChange={(v) => handleStatusChange(v as ProjectStatus)}
+              disabled={isPendingStatus}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PROJECT_STATUS_UI_SELECTABLE.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    <span
+                      className={cn(
+                        "mr-2 inline-block size-2 rounded-full",
+                        opt.colorClass,
+                      )}
+                      aria-hidden
+                    />
+                    {PROJECTS_PAGE[opt.labelKey]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {isPendingStatus ? (
+              <Loader2
+                className="size-4 animate-spin text-muted-foreground"
+                aria-hidden
+              />
+            ) : null}
+          </div>
+        ) : null}
         {/* Header Buttons */}
         <div className="flex flex-wrap justify-end gap-2">
           {/* Edit Button */}
@@ -1840,51 +2159,36 @@ export function ProjectDetailContent({
             </h2>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
-            {/* Event Title */}
+            <div className="sm:col-span-2">
+              <p className="text-sm text-muted-foreground">
+                {PROJECT_DETAIL_PAGE.labelActivityType}
+              </p>
+              <p className="font-medium">{project.eventType}</p>
+            </div>
             <div className="sm:col-span-2">
               <p className="text-sm text-muted-foreground">
                 {PROJECT_DETAIL_PAGE.labelEventOrVenueUse}
               </p>
-              <p className="font-medium">{project.eventOrVenueUse}</p>
+              <p className="font-medium whitespace-pre-wrap">
+                {project.eventOrVenueUse}
+              </p>
             </div>
             {/* Status */}
-            <div>
-              <p className="text-sm text-muted-foreground">
-                {PROJECT_DETAIL_PAGE.labelStatus}
-              </p>
-              <p className="font-medium flex items-center gap-2">
-                <span
-                  className={cn(
-                    "size-2.5 shrink-0 rounded-full",
-                    getStatusColorClass(project.status),
-                  )}
-                  aria-hidden
-                />
-                {getStatusLabel(project.status)}
-              </p>
-            </div>
-            {project.totalAttendees != null ? (
+            {statusForUi ? (
               <div>
                 <p className="text-sm text-muted-foreground">
-                  {PROJECT_DETAIL_PAGE.labelTotalAttendees}
+                  {PROJECT_DETAIL_PAGE.labelStatus}
                 </p>
-                <p className="font-medium">{project.totalAttendees}</p>
-              </div>
-            ) : null}
-            {project.tables ? (
-              <div>
-                <p className="text-sm text-muted-foreground">
-                  {PROJECT_DETAIL_PAGE.labelTables}
+                <p className="font-medium flex items-center gap-2">
+                  <span
+                    className={cn(
+                      "size-2.5 shrink-0 rounded-full",
+                      getStatusColorClass(statusForUi),
+                    )}
+                    aria-hidden
+                  />
+                  {getStatusLabel(statusForUi)}
                 </p>
-                <p className="font-medium">{project.tables}</p>
-              </div>
-            ) : null}
-            {project.chairs != null ? (
-              <div>
-                <p className="text-sm text-muted-foreground">
-                  {PROJECT_DETAIL_PAGE.labelChairs}
-                </p>
-                <p className="font-medium">{project.chairs}</p>
               </div>
             ) : null}
             {project.fnbItems ? (
@@ -1927,6 +2231,49 @@ export function ProjectDetailContent({
               </p>
               <p className="font-medium tabular-nums">
                 {formatDateTime(project.updatedAt)}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 設備需求（唯讀） */}
+        <Card className="min-w-0">
+          <CardHeader>
+            <h2 className="text-lg font-semibold">
+              {PROJECT_DETAIL_PAGE.sectionEquipment}
+            </h2>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            {project.totalAttendees != null ? (
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  {PROJECT_DETAIL_PAGE.labelTotalAttendees}
+                </p>
+                <p className="font-medium">{project.totalAttendees}</p>
+              </div>
+            ) : null}
+            {project.tables ? (
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  {PROJECT_DETAIL_PAGE.labelTables}
+                </p>
+                <p className="font-medium">{project.tables}</p>
+              </div>
+            ) : null}
+            {project.chairs != null ? (
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  {PROJECT_DETAIL_PAGE.labelChairs}
+                </p>
+                <p className="font-medium">{project.chairs}</p>
+              </div>
+            ) : null}
+            <div className="sm:col-span-2">
+              <p className="text-sm text-muted-foreground">
+                {PROJECT_DETAIL_PAGE.labelEquipmentSummary}
+              </p>
+              <p className="font-medium">
+                {formatEquipmentNeedsLine(project.equipmentNeeds) ?? "—"}
               </p>
             </div>
           </CardContent>
@@ -2006,7 +2353,9 @@ export function ProjectDetailContent({
                   {project.rentals.map((r) => (
                     <TableRow key={r.id}>
                       <TableCell className="tabular-nums">
-                        {DATE_FORMATTER.format(new Date(r.date + "T00:00:00"))}
+                        {formatRentalDateRangeForTable(r, (d) =>
+                          DATE_FORMATTER.format(d),
+                        )}
                       </TableCell>
                       <TableCell className="tabular-nums">
                         {r.startTime} – {r.endTime}
@@ -2075,7 +2424,7 @@ export function ProjectDetailContent({
                                     {
                                       PROJECT_DETAIL_PAGE.deleteRentalConfirmDescription
                                     }
-                                    {` （${DATE_FORMATTER.format(new Date(r.date + "T00:00:00"))} ${r.startTime}–${r.endTime}）`}
+                                    {` （${formatRentalDateRangeForTable(r, (d) => DATE_FORMATTER.format(d))} ${r.startTime}–${r.endTime}）`}
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>

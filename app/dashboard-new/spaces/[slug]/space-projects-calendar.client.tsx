@@ -7,11 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SPACE_DETAIL_PAGE, PROJECTS_PAGE } from "@/lib/message";
 import {
-  PROJECT_STATUS_OPTIONS,
+  PROJECT_STATUS_UI_SELECTABLE,
   getStatusColorClass,
+  normalizeProjectStatusForUi,
 } from "@/lib/config/project-status";
 import type { Project, ProjectStatus } from "@/lib/types/project";
 import { getProjectTimeRange } from "@/lib/utils/project";
+import { expandRentalDateKeys } from "@/lib/utils/project-rental-interval";
 import { ALL_SPACES, getSpaceNameById } from "@/lib/config/config";
 import { formatMonthYear } from "@/lib/date-utils";
 import {
@@ -52,10 +54,12 @@ function getUniqueSpaceNames(
 }
 
 function badgeClassNameByStatus(status: ProjectStatus): string {
+  const statusForUi = normalizeProjectStatusForUi(status);
+  if (!statusForUi) return cn("border-0 bg-muted text-foreground");
   return cn(
     "border-0",
-    getStatusColorClass(status),
-    status !== "cancelled" ? "text-white" : "",
+    getStatusColorClass(statusForUi),
+    "text-white",
   );
 }
 
@@ -197,6 +201,13 @@ export function SpaceProjectsCalendar({
   spaceBorderColors,
   spaceLegend,
 }: SpaceProjectsCalendarProps) {
+  const visibleProjects = React.useMemo(() => {
+    return projects.filter((p) => {
+      const statusForUi = normalizeProjectStatusForUi(p.status);
+      return statusForUi === "negotiating" || statusForUi === "confirmed";
+    });
+  }, [projects]);
+
   const [currentDate, setCurrentDate] = React.useState(() =>
     startOfMonth(new Date()),
   );
@@ -215,34 +226,40 @@ export function SpaceProjectsCalendar({
     [monthDateKeys],
   );
 
-  const hasRentals = projects.some((p) => p.rentals && p.rentals.length > 0);
+  const hasRentals = visibleProjects.some(
+    (p) => p.rentals && p.rentals.length > 0,
+  );
 
   const projectsBySpaceAndDate = React.useMemo(() => {
     if (!hasRentals) return null;
     const spaceToDateToProjects = new Map<string, Map<string, Project[]>>();
-    for (const p of projects) {
+    for (const p of visibleProjects) {
       const rentals = p.rentals;
       if (!rentals?.length) continue;
       for (const r of rentals) {
-        const dateKey = r.date.slice(0, 10);
-        if (!monthDateKeySet.has(dateKey)) continue;
-        for (const spaceId of r.spaceIds) {
-          let dateMap = spaceToDateToProjects.get(spaceId);
-          if (!dateMap) {
-            dateMap = new Map<string, Project[]>();
-            spaceToDateToProjects.set(spaceId, dateMap);
+        for (const dateKey of expandRentalDateKeys({
+          date: r.date,
+          endDate: r.endDate,
+        })) {
+          if (!monthDateKeySet.has(dateKey)) continue;
+          for (const spaceId of r.spaceIds) {
+            let dateMap = spaceToDateToProjects.get(spaceId);
+            if (!dateMap) {
+              dateMap = new Map<string, Project[]>();
+              spaceToDateToProjects.set(spaceId, dateMap);
+            }
+            let list = dateMap.get(dateKey);
+            if (!list) {
+              list = [];
+              dateMap.set(dateKey, list);
+            }
+            if (!list.includes(p)) list.push(p);
           }
-          let list = dateMap.get(dateKey);
-          if (!list) {
-            list = [];
-            dateMap.set(dateKey, list);
-          }
-          if (!list.includes(p)) list.push(p);
         }
       }
     }
     return spaceToDateToProjects;
-  }, [projects, hasRentals, monthDateKeySet]);
+  }, [visibleProjects, hasRentals, monthDateKeySet]);
 
   const spacesToDisplay = React.useMemo(() => {
     const spaceIdsWithActivity = new Set(projectsBySpaceAndDate?.keys() ?? []);
@@ -252,7 +269,7 @@ export function SpaceProjectsCalendar({
     );
   }, [projectsBySpaceAndDate]);
 
-  const hasAnyProjects = projects.length > 0;
+  const hasAnyProjects = visibleProjects.length > 0;
   const showMonthGrid =
     hasAnyProjects && (spacesToDisplay.length > 0 || !hasRentals);
 
@@ -307,7 +324,7 @@ export function SpaceProjectsCalendar({
                     <tr className="border-b border-border/50">
                       <th
                         scope="col"
-                        className="p-2 text-left font-medium text-xs md:text-sm text-muted-foreground min-w-[100px] shrink-0 border-r border-border/30"
+                        className="sticky left-0 z-30 bg-card p-2 text-left font-medium text-xs md:text-sm text-muted-foreground min-w-[100px] shrink-0 border-r border-border/30"
                       >
                         空間
                       </th>
@@ -334,7 +351,7 @@ export function SpaceProjectsCalendar({
                         key={space.id}
                         className="border-b border-border/30 last:border-b-0"
                       >
-                        <td className="p-2 font-medium text-xs md:text-sm min-w-0 border-r border-border/30 align-top">
+                        <td className="sticky left-0 z-20 bg-card p-2 font-medium text-xs md:text-sm min-w-0 border-r border-border/30 align-top">
                           {space.name}
                         </td>
                         {monthDateKeys.map((dateKey) => {
@@ -413,7 +430,7 @@ export function SpaceProjectsCalendar({
               </div>
             )}
           <div className="flex flex-wrap items-center justify-center gap-4">
-            {PROJECT_STATUS_OPTIONS.map((opt) => (
+            {PROJECT_STATUS_UI_SELECTABLE.map((opt) => (
               <span
                 key={opt.value}
                 className="flex items-center gap-1.5 md:hidden"
@@ -424,7 +441,7 @@ export function SpaceProjectsCalendar({
               </span>
             ))}
             <span className="hidden md:flex flex-wrap items-center gap-2">
-              {PROJECT_STATUS_OPTIONS.map((opt) => (
+              {PROJECT_STATUS_UI_SELECTABLE.map((opt) => (
                 <Badge
                   key={opt.value}
                   className={cn(
