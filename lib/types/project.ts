@@ -42,6 +42,8 @@ export interface Project {
   /** 選填：每筆租借的日期與場域（週曆依空間分組用） */
   rentals?: {
     date: string;
+    /** 結束日；未傳視同與 date 同日 */
+    endDate?: string | null;
     spaceIds: string[];
     startTime?: string;
     endTime?: string;
@@ -54,6 +56,8 @@ export interface Project {
 export interface RentalItem {
   spaceIds: string[];
   date: string; // ISO date YYYY-MM-DD
+  /** 結束日 YYYY-MM-DD；與 date 相同或未填時可省略，DB 存 null */
+  endDate?: string | null;
   startTime: string; // HH:mm 24h
   endTime: string; // HH:mm 24h
   setupMinutesBefore?: number; // 場佈提前分鐘數，預設 30

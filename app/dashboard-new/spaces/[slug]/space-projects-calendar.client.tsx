@@ -7,11 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SPACE_DETAIL_PAGE, PROJECTS_PAGE } from "@/lib/message";
 import {
-  PROJECT_STATUS_OPTIONS,
+  PROJECT_STATUS_UI_SELECTABLE,
   getStatusColorClass,
 } from "@/lib/config/project-status";
 import type { Project, ProjectStatus } from "@/lib/types/project";
 import { getProjectTimeRange } from "@/lib/utils/project";
+import { expandRentalDateKeys } from "@/lib/utils/project-rental-interval";
 import { ALL_SPACES, getSpaceNameById } from "@/lib/config/config";
 import { formatMonthYear } from "@/lib/date-utils";
 import {
@@ -224,20 +225,24 @@ export function SpaceProjectsCalendar({
       const rentals = p.rentals;
       if (!rentals?.length) continue;
       for (const r of rentals) {
-        const dateKey = r.date.slice(0, 10);
-        if (!monthDateKeySet.has(dateKey)) continue;
-        for (const spaceId of r.spaceIds) {
-          let dateMap = spaceToDateToProjects.get(spaceId);
-          if (!dateMap) {
-            dateMap = new Map<string, Project[]>();
-            spaceToDateToProjects.set(spaceId, dateMap);
+        for (const dateKey of expandRentalDateKeys({
+          date: r.date,
+          endDate: r.endDate,
+        })) {
+          if (!monthDateKeySet.has(dateKey)) continue;
+          for (const spaceId of r.spaceIds) {
+            let dateMap = spaceToDateToProjects.get(spaceId);
+            if (!dateMap) {
+              dateMap = new Map<string, Project[]>();
+              spaceToDateToProjects.set(spaceId, dateMap);
+            }
+            let list = dateMap.get(dateKey);
+            if (!list) {
+              list = [];
+              dateMap.set(dateKey, list);
+            }
+            if (!list.includes(p)) list.push(p);
           }
-          let list = dateMap.get(dateKey);
-          if (!list) {
-            list = [];
-            dateMap.set(dateKey, list);
-          }
-          if (!list.includes(p)) list.push(p);
         }
       }
     }
@@ -413,7 +418,7 @@ export function SpaceProjectsCalendar({
               </div>
             )}
           <div className="flex flex-wrap items-center justify-center gap-4">
-            {PROJECT_STATUS_OPTIONS.map((opt) => (
+            {PROJECT_STATUS_UI_SELECTABLE.map((opt) => (
               <span
                 key={opt.value}
                 className="flex items-center gap-1.5 md:hidden"
@@ -424,7 +429,7 @@ export function SpaceProjectsCalendar({
               </span>
             ))}
             <span className="hidden md:flex flex-wrap items-center gap-2">
-              {PROJECT_STATUS_OPTIONS.map((opt) => (
+              {PROJECT_STATUS_UI_SELECTABLE.map((opt) => (
                 <Badge
                   key={opt.value}
                   className={cn(

@@ -23,6 +23,136 @@ import {
   normalizeEquipmentNeedsForDb,
   parseEquipmentNeedsFromDb,
 } from "@/lib/utils/project-equipment-needs";
+import { CREATE_PROJECT_PAGE } from "@/lib/message";
+import {
+  intervalsOverlap,
+  isValidRentalTimeWindow,
+  rentalBoundsMs,
+  spaceIdsIntersect,
+} from "@/lib/utils/project-rental-interval";
+
+/** 與其他專案租借時段衝突（API 可回 409） */
+export class ProjectRentalConflictError extends Error {
+  override readonly name = "ProjectRentalConflictError";
+  constructor(message: string) {
+    super(message);
+  }
+}
+
+/** 寫入 DB：與開始日相同或未填則 null */
+function normalizeEndDateForDb(
+  date: string,
+  endDate: string | null | undefined,
+): string | null {
+  const d = date.slice(0, 10);
+  const e = (endDate ?? "").trim().slice(0, 10);
+  if (!e || e === d) return null;
+  return e;
+}
+
+type RentalWindowInput = {
+  spaceIds: string[];
+  date: string;
+  endDate?: string | null;
+  startTime: string;
+  endTime: string;
+};
+
+function assertRentalWindowsValid(rentals: RentalWindowInput[]) {
+  for (const r of rentals) {
+    if (
+      !isValidRentalTimeWindow({
+        date: r.date,
+        endDate: r.endDate,
+        startTime: r.startTime,
+        endTime: r.endTime,
+      })
+    ) {
+      throw new Error(CREATE_PROJECT_PAGE.errorInvalidRentalWindow);
+    }
+  }
+}
+
+function assertNoInternalRentalOverlaps(rentals: RentalWindowInput[]) {
+  for (let i = 0; i < rentals.length; i++) {
+    const a = rentals[i];
+    const boundsA = rentalBoundsMs({
+      date: a.date,
+      endDate: a.endDate,
+      startTime: a.startTime,
+      endTime: a.endTime,
+    });
+    if (!boundsA) continue;
+    for (let j = i + 1; j < rentals.length; j++) {
+      const b = rentals[j];
+      if (!spaceIdsIntersect(a.spaceIds, b.spaceIds)) continue;
+      const boundsB = rentalBoundsMs({
+        date: b.date,
+        endDate: b.endDate,
+        startTime: b.startTime,
+        endTime: b.endTime,
+      });
+      if (!boundsB) continue;
+      if (intervalsOverlap(boundsA, boundsB)) {
+        throw new ProjectRentalConflictError(
+          CREATE_PROJECT_PAGE.errorRentalOverlapInternal,
+        );
+      }
+    }
+  }
+}
+
+async function assertNoExternalRentalConflicts(
+  db: { projectRental: typeof prisma.projectRental },
+  rentals: RentalWindowInput[],
+  options: { excludeProjectId?: string; excludeRentalId?: string },
+) {
+  for (const r of rentals) {
+    const bounds = rentalBoundsMs({
+      date: r.date,
+      endDate: r.endDate,
+      startTime: r.startTime,
+      endTime: r.endTime,
+    });
+    if (!bounds) {
+      throw new Error(CREATE_PROJECT_PAGE.errorInvalidRentalWindow);
+    }
+
+    const rows = await db.projectRental.findMany({
+      where: {
+        ...(options.excludeRentalId
+          ? { id: { not: options.excludeRentalId } }
+          : {}),
+        spaceIds: { hasSome: r.spaceIds },
+        project: {
+          status: { not: "cancelled" },
+          ...(options.excludeProjectId
+            ? { id: { not: options.excludeProjectId } }
+            : {}),
+        },
+      },
+      include: {
+        project: { select: { eventOrVenueUse: true } },
+      },
+    });
+
+    for (const row of rows) {
+      if (!spaceIdsIntersect(r.spaceIds, row.spaceIds)) continue;
+      const rowBounds = rentalBoundsMs({
+        date: row.date,
+        endDate: row.endDate,
+        startTime: row.startTime,
+        endTime: row.endTime,
+      });
+      if (!rowBounds) continue;
+      if (intervalsOverlap(bounds, rowBounds)) {
+        throw new ProjectRentalConflictError(
+          `與既有專案「${row.project.eventOrVenueUse}」在相同空間時段重疊，請調整。`,
+        );
+      }
+    }
+  }
+}
 
 function equipmentNeedsToPrismaInput(
   normalized: Record<string, boolean> | null,
@@ -47,6 +177,7 @@ function mapRowToProject(
     rentals: Array<{
       spaceIds: string[];
       date: string;
+      endDate: string | null;
       startTime: string;
       endTime: string;
       setupMinutesBefore: number;
@@ -87,6 +218,7 @@ function mapRowToProject(
         : parseEquipmentNeedsFromDb(row.equipmentNeeds),
     rentals: row.rentals.map((r) => ({
       date: r.date,
+      endDate: r.endDate ?? undefined,
       spaceIds: r.spaceIds,
       startTime: r.startTime,
       endTime: r.endTime,
@@ -224,12 +356,12 @@ export async function updateProject(
     if (!r.spaceIds?.length) {
       throw new Error("每筆租借項目至少需選擇一個場域");
     }
-    const startTime = typeof r.startTime === "string" ? r.startTime : "";
-    const endTime = typeof r.endTime === "string" ? r.endTime : "";
-    if (!startTime || !endTime || endTime <= startTime) {
-      throw new Error("結束時間必須晚於開始時間");
-    }
   }
+  assertRentalWindowsValid(input.rentals);
+  assertNoInternalRentalOverlaps(input.rentals);
+  await assertNoExternalRentalConflicts(prisma, input.rentals, {
+    excludeProjectId: id,
+  });
 
   const updated = await prisma.$transaction(async (tx) => {
     await tx.projectRental.deleteMany({ where: { projectId: id } });
@@ -261,6 +393,7 @@ export async function updateProject(
         data: {
           projectId: id,
           date: r.date,
+          endDate: normalizeEndDateForDb(r.date, r.endDate),
           startTime: r.startTime,
           endTime: r.endTime,
           setupMinutesBefore: r.setupMinutesBefore ?? 30,
@@ -322,15 +455,16 @@ export async function updateProjectRental(
   if (!input.spaceIds?.length) {
     throw new Error("每筆租借項目至少需選擇一個場域");
   }
-  const startTime = typeof input.startTime === "string" ? input.startTime : "";
-  const endTime = typeof input.endTime === "string" ? input.endTime : "";
-  if (!startTime || !endTime || endTime <= startTime) {
-    throw new Error("結束時間必須晚於開始時間");
-  }
+  assertRentalWindowsValid([input]);
+  await assertNoExternalRentalConflicts(prisma, [input], {
+    excludeRentalId: rentalId,
+  });
+
   const updated = await prisma.projectRental.update({
     where: { id: rentalId },
     data: {
       date: input.date,
+      endDate: normalizeEndDateForDb(input.date, input.endDate),
       startTime: input.startTime,
       endTime: input.endTime,
       setupMinutesBefore: input.setupMinutesBefore ?? 30,
@@ -381,10 +515,10 @@ export async function createProject(
     if (!r.spaceIds?.length) {
       throw new Error("每筆租借項目至少需選擇一個場域");
     }
-    if (r.endTime <= r.startTime) {
-      throw new Error("結束時間必須晚於開始時間");
-    }
   }
+  assertRentalWindowsValid(input.rentals);
+  assertNoInternalRentalOverlaps(input.rentals);
+  await assertNoExternalRentalConflicts(prisma, input.rentals, {});
 
   const hasPaidAmount = input.rentals.some(
     (r) => Math.max(0, Math.round(r.paidAmount)) > 0,
@@ -417,6 +551,7 @@ export async function createProject(
         data: {
           projectId: created.id,
           date: r.date,
+          endDate: normalizeEndDateForDb(r.date, r.endDate),
           startTime: r.startTime,
           endTime: r.endTime,
           setupMinutesBefore: r.setupMinutesBefore ?? 30,

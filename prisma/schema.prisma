@@ -307,7 +307,8 @@ model Project {
 model ProjectRental {
   id                    String   @id @default(cuid())
   projectId             String
-  date                  String   @db.VarChar(10) // YYYY-MM-DD
+  date                  String   @db.VarChar(10) // YYYY-MM-DD（開始日）
+  endDate               String?  @db.VarChar(10) // YYYY-MM-DD（結束日，null 視同與 date 同日）
   startTime             String   @db.VarChar(5) // HH:mm
   endTime               String   @db.VarChar(5) // HH:mm
   setupMinutesBefore   Int      @default(30)

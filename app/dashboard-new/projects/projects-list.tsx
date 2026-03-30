@@ -32,6 +32,7 @@ import {
 import { addMinutesToTime, subtractMinutesFromTime } from "@/lib/date-utils";
 import type { Project } from "@/lib/types/project";
 import { cn } from "@/lib/utils";
+import { formatRentalDateRangeForTable } from "@/lib/utils/project";
 import { deleteProject } from "./[id]/actions";
 
 const DATE_FORMATTER = new Intl.DateTimeFormat("zh-TW", {
@@ -172,7 +173,12 @@ export function ProjectsList({ projects }: ProjectsListProps) {
                     {project.space}
                   </TableCell>
                   <TableCell className="tabular-nums whitespace-nowrap">
-                    {DATE_FORMATTER.format(new Date(project.date))}
+                    {project.rentals?.[0]
+                      ? formatRentalDateRangeForTable(
+                          project.rentals[0],
+                          (d) => DATE_FORMATTER.format(d),
+                        )
+                      : DATE_FORMATTER.format(new Date(project.date))}
                   </TableCell>
                   <TableCell className="tabular-nums whitespace-nowrap">
                     {project.rentals?.[0]?.startTime ?? "—"}

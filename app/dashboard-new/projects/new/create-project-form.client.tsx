@@ -54,11 +54,18 @@ import {
 } from "@/lib/constants/project-form";
 import { defaultEquipmentNeedsForm } from "@/lib/utils/project-equipment-needs";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  intervalsOverlap,
+  isValidRentalTimeWindow,
+  rentalBoundsMs,
+  spaceIdsIntersect,
+} from "@/lib/utils/project-rental-interval";
 
 const rentalItemSchema = z
   .object({
     spaceIds: z.array(z.string()).min(1, CREATE_PROJECT_PAGE.errorRequired),
     date: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
+    endDate: z.string().optional().default(""),
     startTime: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
     endTime: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
     setupMinutesBefore: z.number().min(0).optional(),
@@ -67,10 +74,19 @@ const rentalItemSchema = z
     fnbAmount: z.coerce.number().min(0),
     paidAmount: z.coerce.number().min(0),
   })
-  .refine((data) => data.endTime > data.startTime, {
-    message: CREATE_PROJECT_PAGE.errorEndBeforeStart,
-    path: ["endTime"],
-  });
+  .refine(
+    (data) =>
+      isValidRentalTimeWindow({
+        date: data.date,
+        endDate: data.endDate?.trim() || null,
+        startTime: data.startTime,
+        endTime: data.endTime,
+      }),
+    {
+      message: CREATE_PROJECT_PAGE.errorInvalidRentalWindow,
+      path: ["endTime"],
+    },
+  );
 
 const equipmentNeedsFormSchema = z.object({
   microphone: z.boolean(),
@@ -121,6 +137,36 @@ const createProjectSchema = z
         path: ["activityCustomDetail"],
       });
     }
+    const rentals = data.rentals;
+    for (let i = 0; i < rentals.length; i++) {
+      const a = rentals[i];
+      const boundsA = rentalBoundsMs({
+        date: a.date,
+        endDate: a.endDate?.trim() || null,
+        startTime: a.startTime,
+        endTime: a.endTime,
+      });
+      if (!boundsA) continue;
+      for (let j = i + 1; j < rentals.length; j++) {
+        const b = rentals[j];
+        if (!spaceIdsIntersect(a.spaceIds, b.spaceIds)) continue;
+        const boundsB = rentalBoundsMs({
+          date: b.date,
+          endDate: b.endDate?.trim() || null,
+          startTime: b.startTime,
+          endTime: b.endTime,
+        });
+        if (!boundsB) continue;
+        if (intervalsOverlap(boundsA, boundsB)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: CREATE_PROJECT_PAGE.errorRentalOverlapInternal,
+            path: ["rentals", i, "spaceIds"],
+          });
+          return;
+        }
+      }
+    }
   });
 
 type CreateProjectFormValues = z.infer<typeof createProjectSchema>;
@@ -128,6 +174,7 @@ type CreateProjectFormValues = z.infer<typeof createProjectSchema>;
 const defaultRental: CreateProjectFormValues["rentals"][0] = {
   spaceIds: [],
   date: "",
+  endDate: "",
   startTime: "",
   endTime: "",
   setupMinutesBefore: 30,
@@ -197,12 +244,16 @@ export function CreateProjectForm({
       ),
       customerPhone: data.customerPhone ?? "",
       equipmentNeeds,
-      rentals: data.rentals.map((r) => ({
-        ...r,
-        setupMinutesBefore: r.setupMinutesBefore ?? 30,
-        teardownMinutesAfter: r.teardownMinutesAfter ?? 30,
-        pendingAmount: computeProjectRentalPendingAmount(r),
-      })),
+      rentals: data.rentals.map((r) => {
+        const endDateTrim = r.endDate?.trim() ?? "";
+        return {
+          ...r,
+          endDate: endDateTrim ? endDateTrim : undefined,
+          setupMinutesBefore: r.setupMinutesBefore ?? 30,
+          teardownMinutesAfter: r.teardownMinutesAfter ?? 30,
+          pendingAmount: computeProjectRentalPendingAmount(r),
+        };
+      }),
     };
     startTransition(async () => {
       try {
@@ -793,7 +844,7 @@ export function CreateProjectForm({
                   )}
                 />
 
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-4 sm:grid-cols-2">
                   <FormField
                     control={form.control}
                     name={`rentals.${index}.date`}
@@ -813,6 +864,70 @@ export function CreateProjectForm({
                                 )}
                                 type="button"
                                 aria-label={CREATE_PROJECT_PAGE.labelDate}
+                              >
+                                <CalendarIcon
+                                  className="mr-2 size-4"
+                                  aria-hidden
+                                />
+                                {field.value
+                                  ? format(
+                                      new Date(field.value + "T00:00:00"),
+                                      "yyyy / MM / dd",
+                                      { locale: zhTW },
+                                    )
+                                  : CREATE_PROJECT_PAGE.dateFormat}
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={
+                                field.value
+                                  ? new Date(field.value + "T00:00:00")
+                                  : undefined
+                              }
+                              onSelect={(d) => {
+                                const next = d ? format(d, "yyyy-MM-dd") : "";
+                                field.onChange(next);
+                                const endPath =
+                                  `rentals.${index}.endDate` as const;
+                                const curEnd = form.getValues(endPath);
+                                if (!String(curEnd ?? "").trim()) {
+                                  form.setValue(endPath, next, {
+                                    shouldDirty: true,
+                                    shouldValidate: true,
+                                  });
+                                }
+                              }}
+                              locale={zhTW}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={`rentals.${index}.endDate`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{CREATE_PROJECT_PAGE.labelEndDate}</FormLabel>
+                        <FormDescription className="text-xs">
+                          {CREATE_PROJECT_PAGE.labelEndDateHint}
+                        </FormDescription>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  "w-full justify-start text-left font-normal",
+                                  !field.value && "text-muted-foreground",
+                                )}
+                                type="button"
+                                aria-label={CREATE_PROJECT_PAGE.labelEndDate}
                               >
                                 <CalendarIcon
                                   className="mr-2 size-4"

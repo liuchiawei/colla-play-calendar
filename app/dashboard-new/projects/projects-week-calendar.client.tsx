@@ -21,11 +21,12 @@ import {
 import { startOfDay, isSameDay } from "date-fns";
 import { PROJECTS_PAGE } from "@/lib/message";
 import {
-  PROJECT_STATUS_OPTIONS,
+  PROJECT_STATUS_UI_SELECTABLE,
   getStatusColorClass,
 } from "@/lib/config/project-status";
 import type { Project, ProjectStatus } from "@/lib/types/project";
 import { getProjectTimeRange } from "@/lib/utils/project";
+import { expandRentalDateKeys } from "@/lib/utils/project-rental-interval";
 import { cn } from "@/lib/utils";
 
 function toDateKey(d: Date): string {
@@ -157,13 +158,32 @@ export function ProjectsWeekCalendar({ projects }: ProjectsWeekCalendarProps) {
   const projectsByDate = React.useMemo(() => {
     const m = new Map<string, Project[]>();
     for (const p of projects) {
-      const key = projectDateKey(p);
-      const list = m.get(key);
-      if (list) list.push(p);
-      else m.set(key, [p]);
+      const rentals = p.rentals;
+      if (rentals?.length) {
+        const seenDays = new Set<string>();
+        for (const r of rentals) {
+          for (const dk of expandRentalDateKeys({
+            date: r.date,
+            endDate: r.endDate,
+          })) {
+            if (!weekDateKeySet.has(dk)) continue;
+            if (seenDays.has(dk)) continue;
+            seenDays.add(dk);
+            const list = m.get(dk);
+            if (list) list.push(p);
+            else m.set(dk, [p]);
+          }
+        }
+      } else {
+        const key = projectDateKey(p);
+        if (!weekDateKeySet.has(key)) continue;
+        const list = m.get(key);
+        if (list) list.push(p);
+        else m.set(key, [p]);
+      }
     }
     return m;
-  }, [projects]);
+  }, [projects, weekDateKeySet]);
 
   const projectsBySpaceAndDate = React.useMemo(() => {
     if (!hasRentals) return null;
@@ -172,20 +192,24 @@ export function ProjectsWeekCalendar({ projects }: ProjectsWeekCalendarProps) {
       const rentals = p.rentals;
       if (!rentals?.length) continue;
       for (const r of rentals) {
-        const dateKey = r.date.slice(0, 10);
-        if (!weekDateKeySet.has(dateKey)) continue;
-        for (const spaceId of r.spaceIds) {
-          let dateMap = spaceToDateToProjects.get(spaceId);
-          if (!dateMap) {
-            dateMap = new Map<string, Project[]>();
-            spaceToDateToProjects.set(spaceId, dateMap);
+        for (const dateKey of expandRentalDateKeys({
+          date: r.date,
+          endDate: r.endDate,
+        })) {
+          if (!weekDateKeySet.has(dateKey)) continue;
+          for (const spaceId of r.spaceIds) {
+            let dateMap = spaceToDateToProjects.get(spaceId);
+            if (!dateMap) {
+              dateMap = new Map<string, Project[]>();
+              spaceToDateToProjects.set(spaceId, dateMap);
+            }
+            let list = dateMap.get(dateKey);
+            if (!list) {
+              list = [];
+              dateMap.set(dateKey, list);
+            }
+            if (!list.includes(p)) list.push(p);
           }
-          let list = dateMap.get(dateKey);
-          if (!list) {
-            list = [];
-            dateMap.set(dateKey, list);
-          }
-          if (!list.includes(p)) list.push(p);
         }
       }
     }
@@ -370,7 +394,7 @@ export function ProjectsWeekCalendar({ projects }: ProjectsWeekCalendarProps) {
       {/* 圖例 */}
       {projects.length > 0 ? (
         <div className="mt-3 flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground border-t border-border/50 pt-3 pb-2">
-          {PROJECT_STATUS_OPTIONS.map((opt) => (
+          {PROJECT_STATUS_UI_SELECTABLE.map((opt) => (
             <span
               key={opt.value}
               className="flex items-center gap-1.5 md:hidden"
@@ -381,7 +405,7 @@ export function ProjectsWeekCalendar({ projects }: ProjectsWeekCalendarProps) {
             </span>
           ))}
           <span className="hidden md:flex flex-wrap items-center gap-2">
-            {PROJECT_STATUS_OPTIONS.map((opt) => (
+            {PROJECT_STATUS_UI_SELECTABLE.map((opt) => (
               <Badge
                 key={opt.value}
                 className={cn(

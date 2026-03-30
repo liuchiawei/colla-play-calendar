@@ -229,6 +229,8 @@ export const CREATE_PROJECT_PAGE = {
   labelDate: "日期",
   labelDateRequired: "日期 *",
   dateFormat: "年 / 月 / 日",
+  labelEndDate: "結束日期",
+  labelEndDateHint: "跨日時選擇；未選則與開始日相同",
   labelStartTime: "開始時間",
   labelStartTimeRequired: "開始時間 *",
   placeholderSelectTime: "選擇時間…",
@@ -256,6 +258,9 @@ export const CREATE_PROJECT_PAGE = {
   errorActivityTypeOtherRequired: "選擇「其他」時請填寫說明",
   errorPhoneInvalid: "請輸入有效的聯絡電話",
   errorEndBeforeStart: "結束時間須晚於開始時間",
+  /** 同日須 end > start；跨日時結束日不可早於開始日 */
+  errorInvalidRentalWindow: "請確認日期與時間：同日時結束須晚於開始；跨日時結束日不可早於開始日。",
+  errorRentalOverlapInternal: "表單內有租借在相同空間時段重疊，請調整。",
 } as const;
 
 // Project Detail Page (專案詳情頁)

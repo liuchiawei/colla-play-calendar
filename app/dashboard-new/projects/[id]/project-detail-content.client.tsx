@@ -23,6 +23,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -74,9 +75,10 @@ import {
 } from "@/lib/message";
 import { getSpaceNameById, ALL_SPACES } from "@/lib/config/config";
 import {
-  PROJECT_STATUS_OPTIONS,
+  PROJECT_STATUS_UI_SELECTABLE,
   getStatusLabel,
   getStatusColorClass,
+  isProjectStatusUiSelectable,
 } from "@/lib/config/project-status";
 import type {
   ProjectWithRentals,
@@ -91,7 +93,14 @@ import {
   updateRental,
 } from "./actions";
 import { cn } from "@/lib/utils";
+import { formatRentalDateRangeForTable } from "@/lib/utils/project";
 import { computeProjectRentalPendingAmount } from "@/lib/utils/project-rental-pending";
+import {
+  intervalsOverlap,
+  isValidRentalTimeWindow,
+  rentalBoundsMs,
+  spaceIdsIntersect,
+} from "@/lib/utils/project-rental-interval";
 import {
   PROJECT_ACTIVITY_CUSTOM_SENTINEL,
   PROJECT_ACTIVITY_TYPE_OPTIONS,
@@ -264,7 +273,9 @@ function buildProjectDetailCsv(
     0,
   );
   for (const r of project.rentals) {
-    const dateStr = DATE_FORMATTER.format(new Date(r.date + "T00:00:00"));
+    const dateStr = formatRentalDateRangeForTable(r, (d) =>
+      DATE_FORMATTER.format(d),
+    );
     const timeRange = `${r.startTime} – ${r.endTime}`;
     const spaces = r.spaceIds.map((id) => getSpaceNameById(id)).join("、");
     rows.push(
@@ -304,6 +315,7 @@ const rentalItemSchema = z
   .object({
     spaceIds: z.array(z.string()).min(1, CREATE_PROJECT_PAGE.errorRequired),
     date: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
+    endDate: z.string().optional().default(""),
     startTime: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
     endTime: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
     setupMinutesBefore: z.number().min(0).optional(),
@@ -312,10 +324,19 @@ const rentalItemSchema = z
     fnbAmount: z.coerce.number().min(0),
     paidAmount: z.coerce.number().min(0),
   })
-  .refine((data) => data.endTime > data.startTime, {
-    message: CREATE_PROJECT_PAGE.errorEndBeforeStart,
-    path: ["endTime"],
-  });
+  .refine(
+    (data) =>
+      isValidRentalTimeWindow({
+        date: data.date,
+        endDate: data.endDate?.trim() || null,
+        startTime: data.startTime,
+        endTime: data.endTime,
+      }),
+    {
+      message: CREATE_PROJECT_PAGE.errorInvalidRentalWindow,
+      path: ["endTime"],
+    },
+  );
 
 const editEquipmentNeedsFormSchema = z.object({
   microphone: z.boolean(),
@@ -372,6 +393,36 @@ const editProjectSchema = z
         path: ["activityCustomDetail"],
       });
     }
+    const rentals = data.rentals;
+    for (let i = 0; i < rentals.length; i++) {
+      const a = rentals[i];
+      const boundsA = rentalBoundsMs({
+        date: a.date,
+        endDate: a.endDate?.trim() || null,
+        startTime: a.startTime,
+        endTime: a.endTime,
+      });
+      if (!boundsA) continue;
+      for (let j = i + 1; j < rentals.length; j++) {
+        const b = rentals[j];
+        if (!spaceIdsIntersect(a.spaceIds, b.spaceIds)) continue;
+        const boundsB = rentalBoundsMs({
+          date: b.date,
+          endDate: b.endDate?.trim() || null,
+          startTime: b.startTime,
+          endTime: b.endTime,
+        });
+        if (!boundsB) continue;
+        if (intervalsOverlap(boundsA, boundsB)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: CREATE_PROJECT_PAGE.errorRentalOverlapInternal,
+            path: ["rentals", i, "spaceIds"],
+          });
+          return;
+        }
+      }
+    }
   });
 
 type EditFormValues = z.infer<typeof editProjectSchema>;
@@ -384,6 +435,7 @@ function rentalToEditFormValues(
   return {
     spaceIds: r.spaceIds,
     date: r.date,
+    endDate: r.endDate ?? "",
     startTime: r.startTime,
     endTime: r.endTime,
     setupMinutesBefore: r.setupMinutesBefore ?? 30,
@@ -397,6 +449,7 @@ function rentalToEditFormValues(
 const defaultRental: EditFormValues["rentals"][0] = {
   spaceIds: [],
   date: "",
+  endDate: "",
   startTime: "",
   endTime: "",
   setupMinutesBefore: 30,
@@ -431,6 +484,7 @@ function projectToFormValues(project: ProjectWithRentals): EditFormValues {
         ? project.rentals.map((r) => ({
             spaceIds: r.spaceIds,
             date: r.date,
+            endDate: r.endDate ?? "",
             startTime: r.startTime,
             endTime: r.endTime,
             setupMinutesBefore: r.setupMinutesBefore ?? 30,
@@ -462,12 +516,16 @@ function formValuesToUpdateInput(values: EditFormValues): UpdateProjectInput {
     collaPlayContactId: values.collaPlayContactId,
     internalNotes: values.internalNotes || undefined,
     status: values.status,
-    rentals: values.rentals.map((r) => ({
-      ...r,
-      setupMinutesBefore: r.setupMinutesBefore ?? 30,
-      teardownMinutesAfter: r.teardownMinutesAfter ?? 30,
-      pendingAmount: computeProjectRentalPendingAmount(r),
-    })),
+    rentals: values.rentals.map((r) => {
+      const endDateTrim = r.endDate?.trim() ?? "";
+      return {
+        ...r,
+        endDate: endDateTrim ? endDateTrim : undefined,
+        setupMinutesBefore: r.setupMinutesBefore ?? 30,
+        teardownMinutesAfter: r.teardownMinutesAfter ?? 30,
+        pendingAmount: computeProjectRentalPendingAmount(r),
+      };
+    }),
   };
 }
 
@@ -495,8 +553,10 @@ function EditRentalFormDialog({
 
   const handleSubmit = form.handleSubmit((data: EditRentalFormValues) => {
     startTransition(async () => {
+      const endTrim = data.endDate?.trim() ?? "";
       const result = await updateRental(rental.id, {
         ...data,
+        endDate: endTrim ? endTrim : undefined,
         setupMinutesBefore: data.setupMinutesBefore ?? 30,
         teardownMinutesAfter: data.teardownMinutesAfter ?? 30,
         pendingAmount: computeProjectRentalPendingAmount(data),
@@ -564,6 +624,64 @@ function EditRentalFormDialog({
                     <FormLabel>
                       {CREATE_PROJECT_PAGE.labelDateRequired}
                     </FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !field.value && "text-muted-foreground",
+                            )}
+                            type="button"
+                          >
+                            <CalendarIcon className="mr-2 size-4" />
+                            {field.value
+                              ? format(
+                                  new Date(field.value + "T00:00:00"),
+                                  "yyyy / MM / dd",
+                                  { locale: zhTW },
+                                )
+                              : CREATE_PROJECT_PAGE.dateFormat}
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={
+                            field.value
+                              ? new Date(field.value + "T00:00:00")
+                              : undefined
+                          }
+                          onSelect={(d) => {
+                            const next = d ? format(d, "yyyy-MM-dd") : "";
+                            field.onChange(next);
+                            const curEnd = form.getValues("endDate");
+                            if (!String(curEnd ?? "").trim()) {
+                              form.setValue("endDate", next, {
+                                shouldDirty: true,
+                                shouldValidate: true,
+                              });
+                            }
+                          }}
+                          locale={zhTW}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="endDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{CREATE_PROJECT_PAGE.labelEndDate}</FormLabel>
+                    <FormDescription className="text-xs">
+                      {CREATE_PROJECT_PAGE.labelEndDateHint}
+                    </FormDescription>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -761,6 +879,7 @@ function AddRentalFormDialog({
       ...defaultRental,
       spaceIds: [],
       date: "",
+      endDate: "",
       startTime: "",
       endTime: "",
     },
@@ -850,6 +969,64 @@ function AddRentalFormDialog({
                     <FormLabel>
                       {CREATE_PROJECT_PAGE.labelDateRequired}
                     </FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !field.value && "text-muted-foreground",
+                            )}
+                            type="button"
+                          >
+                            <CalendarIcon className="mr-2 size-4" />
+                            {field.value
+                              ? format(
+                                  new Date(field.value + "T00:00:00"),
+                                  "yyyy / MM / dd",
+                                  { locale: zhTW },
+                                )
+                              : CREATE_PROJECT_PAGE.dateFormat}
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={
+                            field.value
+                              ? new Date(field.value + "T00:00:00")
+                              : undefined
+                          }
+                          onSelect={(d) => {
+                            const next = d ? format(d, "yyyy-MM-dd") : "";
+                            field.onChange(next);
+                            const curEnd = form.getValues("endDate");
+                            if (!String(curEnd ?? "").trim()) {
+                              form.setValue("endDate", next, {
+                                shouldDirty: true,
+                                shouldValidate: true,
+                              });
+                            }
+                          }}
+                          locale={zhTW}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="endDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{CREATE_PROJECT_PAGE.labelEndDate}</FormLabel>
+                    <FormDescription className="text-xs">
+                      {CREATE_PROJECT_PAGE.labelEndDateHint}
+                    </FormDescription>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -1368,7 +1545,15 @@ export function ProjectDetailContent({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {PROJECT_STATUS_OPTIONS.map((opt) => (
+                        {field.value &&
+                        !isProjectStatusUiSelectable(
+                          field.value as ProjectStatus,
+                        ) ? (
+                          <SelectItem value={field.value}>
+                            {getStatusLabel(field.value as ProjectStatus)}
+                          </SelectItem>
+                        ) : null}
+                        {PROJECT_STATUS_UI_SELECTABLE.map((opt) => (
                           <SelectItem key={opt.value} value={opt.value}>
                             {PROJECTS_PAGE[opt.labelKey]}
                           </SelectItem>
@@ -1644,7 +1829,7 @@ export function ProjectDetailContent({
                       </FormItem>
                     )}
                   />
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
                     <FormField
                       control={form.control}
                       name={`rentals.${index}.date`}
@@ -1653,6 +1838,71 @@ export function ProjectDetailContent({
                           <FormLabel>
                             {CREATE_PROJECT_PAGE.labelDateRequired}
                           </FormLabel>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant="outline"
+                                  className={cn(
+                                    "w-full justify-start text-left font-normal",
+                                    !field.value && "text-muted-foreground",
+                                  )}
+                                  type="button"
+                                >
+                                  <CalendarIcon className="mr-2 size-4" />
+                                  {field.value
+                                    ? format(
+                                        new Date(field.value + "T00:00:00"),
+                                        "yyyy / MM / dd",
+                                        { locale: zhTW },
+                                      )
+                                    : CREATE_PROJECT_PAGE.dateFormat}
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent
+                              className="w-auto p-0"
+                              align="start"
+                            >
+                              <Calendar
+                                mode="single"
+                                selected={
+                                  field.value
+                                    ? new Date(field.value + "T00:00:00")
+                                    : undefined
+                                }
+                                onSelect={(d) => {
+                                  const next = d ? format(d, "yyyy-MM-dd") : "";
+                                  field.onChange(next);
+                                  const endPath =
+                                    `rentals.${index}.endDate` as const;
+                                  const curEnd = form.getValues(endPath);
+                                  if (!String(curEnd ?? "").trim()) {
+                                    form.setValue(endPath, next, {
+                                      shouldDirty: true,
+                                      shouldValidate: true,
+                                    });
+                                  }
+                                }}
+                                locale={zhTW}
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`rentals.${index}.endDate`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            {CREATE_PROJECT_PAGE.labelEndDate}
+                          </FormLabel>
+                          <FormDescription className="text-xs">
+                            {CREATE_PROJECT_PAGE.labelEndDateHint}
+                          </FormDescription>
                           <Popover>
                             <PopoverTrigger asChild>
                               <FormControl>
@@ -1906,7 +2156,19 @@ export function ProjectDetailContent({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {PROJECT_STATUS_OPTIONS.map((opt) => (
+              {!isProjectStatusUiSelectable(project.status) ? (
+                <SelectItem value={project.status}>
+                  <span
+                    className={cn(
+                      "mr-2 inline-block size-2 rounded-full",
+                      getStatusColorClass(project.status),
+                    )}
+                    aria-hidden
+                  />
+                  {getStatusLabel(project.status)}
+                </SelectItem>
+              ) : null}
+              {PROJECT_STATUS_UI_SELECTABLE.map((opt) => (
                 <SelectItem key={opt.value} value={opt.value}>
                   <span
                     className={cn(
@@ -2243,7 +2505,9 @@ export function ProjectDetailContent({
                   {project.rentals.map((r) => (
                     <TableRow key={r.id}>
                       <TableCell className="tabular-nums">
-                        {DATE_FORMATTER.format(new Date(r.date + "T00:00:00"))}
+                        {formatRentalDateRangeForTable(r, (d) =>
+                          DATE_FORMATTER.format(d),
+                        )}
                       </TableCell>
                       <TableCell className="tabular-nums">
                         {r.startTime} – {r.endTime}
@@ -2312,7 +2576,7 @@ export function ProjectDetailContent({
                                     {
                                       PROJECT_DETAIL_PAGE.deleteRentalConfirmDescription
                                     }
-                                    {` （${DATE_FORMATTER.format(new Date(r.date + "T00:00:00"))} ${r.startTime}–${r.endTime}）`}
+                                    {` （${formatRentalDateRangeForTable(r, (d) => DATE_FORMATTER.format(d))} ${r.startTime}–${r.endTime}）`}
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>

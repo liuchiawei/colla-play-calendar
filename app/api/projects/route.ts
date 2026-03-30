@@ -2,7 +2,13 @@
 // GET /api/projects - 專案列表
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/services/auth/auth-server.service";
-import { createProject, getProjectsForList } from "@/lib/services/project/project.service";
+import {
+  createProject,
+  getProjectsForList,
+  ProjectRentalConflictError,
+} from "@/lib/services/project/project.service";
+import { CREATE_PROJECT_PAGE } from "@/lib/message";
+import { isValidRentalTimeWindow } from "@/lib/utils/project-rental-interval";
 import type { ApiResponse } from "@/lib/types";
 import type { CreateProjectInput, ProjectWithRentals } from "@/lib/types/project";
 import type { Project } from "@/lib/types/project";
@@ -46,8 +52,25 @@ function validateCreateProjectInput(
     }
     const startTime = typeof rental.startTime === "string" ? rental.startTime : "";
     const endTime = typeof rental.endTime === "string" ? rental.endTime : "";
-    if (!startTime || !endTime || endTime <= startTime) {
-      return { ok: false, error: `第 ${i + 1} 筆租借項目：結束時間必須晚於開始時間` };
+    const dateStr = typeof rental.date === "string" ? rental.date : "";
+    const endDateRaw = rental.endDate;
+    const endDate =
+      endDateRaw == null || typeof endDateRaw !== "string"
+        ? null
+        : endDateRaw.trim().slice(0, 10) || null;
+    if (
+      !dateStr ||
+      !isValidRentalTimeWindow({
+        date: dateStr,
+        endDate,
+        startTime,
+        endTime,
+      })
+    ) {
+      return {
+        ok: false,
+        error: `第 ${i + 1} 筆租借項目：${CREATE_PROJECT_PAGE.errorInvalidRentalWindow}`,
+      };
     }
   }
 
@@ -128,10 +151,18 @@ export async function POST(request: NextRequest) {
     console.error("Failed to create project:", error);
     const message =
       error instanceof Error ? error.message : "專案建立失敗";
+    if (error instanceof ProjectRentalConflictError) {
+      return NextResponse.json<ApiResponse<null>>(
+        { success: false, error: message },
+        { status: 409 },
+      );
+    }
     const isValidation =
       message.includes("至少需一筆") ||
       message.includes("至少需選擇一個場域") ||
-      message.includes("結束時間必須晚於開始時間");
+      message.includes("結束時間必須晚於開始時間") ||
+      message.includes(CREATE_PROJECT_PAGE.errorInvalidRentalWindow) ||
+      message.includes(CREATE_PROJECT_PAGE.errorRentalOverlapInternal);
     return NextResponse.json<ApiResponse<null>>(
       { success: false, error: message },
       { status: isValidation ? 400 : 500 }
