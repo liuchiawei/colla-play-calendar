@@ -103,10 +103,9 @@ const createProjectSchema = z
     customerPhone: z
       .string()
       .optional()
-      .refine(
-        (val) => !val || /^[\d\s\-]+$/.test(val),
-        { message: CREATE_PROJECT_PAGE.errorPhoneInvalid },
-      ),
+      .refine((val) => !val || /^[\d\s\-]+$/.test(val), {
+        message: CREATE_PROJECT_PAGE.errorPhoneInvalid,
+      }),
     company: z.string().optional(),
     taxId: z.string().optional(),
     activityTypePreset: z
@@ -126,7 +125,9 @@ const createProjectSchema = z
     projectNotes: z.string().optional(),
     collaPlayContactId: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
     internalNotes: z.string().optional(),
-    rentals: z.array(rentalItemSchema).min(1, CREATE_PROJECT_PAGE.errorRequired),
+    rentals: z
+      .array(rentalItemSchema)
+      .min(1, CREATE_PROJECT_PAGE.errorRequired),
   })
   .superRefine((data, ctx) => {
     const needsCustom =
@@ -660,7 +661,9 @@ export function CreateProjectForm({
                         <Checkbox
                           checked={field.value}
                           onCheckedChange={(c) => field.onChange(c === true)}
-                          aria-label={CREATE_PROJECT_PAGE.labelEquipmentMicrophone}
+                          aria-label={
+                            CREATE_PROJECT_PAGE.labelEquipmentMicrophone
+                          }
                         />
                       </FormControl>
                       <FormLabel className="font-normal leading-none">
@@ -698,7 +701,9 @@ export function CreateProjectForm({
                         <Checkbox
                           checked={field.value}
                           onCheckedChange={(c) => field.onChange(c === true)}
-                          aria-label={CREATE_PROJECT_PAGE.labelEquipmentProjector}
+                          aria-label={
+                            CREATE_PROJECT_PAGE.labelEquipmentProjector
+                          }
                         />
                       </FormControl>
                       <FormLabel className="font-normal leading-none">
@@ -916,7 +921,9 @@ export function CreateProjectForm({
                     render={({ field }) => (
                       // 結束日期
                       <FormItem>
-                        <FormLabel>{CREATE_PROJECT_PAGE.labelEndDate}</FormLabel>
+                        <FormLabel>
+                          {CREATE_PROJECT_PAGE.labelEndDate}
+                        </FormLabel>
                         {/* <FormDescription className="text-xs">
                           {CREATE_PROJECT_PAGE.labelEndDateHint}
                         </FormDescription> */}
