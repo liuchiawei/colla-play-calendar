@@ -102,6 +102,10 @@ import {
   spaceIdsIntersect,
 } from "@/lib/utils/project-rental-interval";
 import {
+  buildProjectDetailCsv,
+  getProjectDetailCsvFilename,
+} from "@/lib/services/project/project-detail-csv.service";
+import {
   PROJECT_ACTIVITY_CUSTOM_SENTINEL,
   PROJECT_ACTIVITY_TYPE_OPTIONS,
   PROJECT_ACTIVITY_TYPE_OTHER,
@@ -127,13 +131,7 @@ function formatDateTime(value: string | Date): string {
   return format(d, "yyyy/MM/dd HH:mm", { locale: zhTW });
 }
 
-function escapeCsvCell(value: string): string {
-  const s = String(value);
-  if (/[,"\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-  return s;
-}
-
-/** 設備勾選：唯讀一行（CSV／詳情） */
+/** 設備勾選：唯讀一行（詳情） */
 function formatEquipmentNeedsLine(
   raw: ProjectWithRentals["equipmentNeeds"],
 ): string | null {
@@ -145,172 +143,6 @@ function formatEquipmentNeedsLine(
   if (p.projector) parts.push(CREATE_PROJECT_PAGE.labelEquipmentProjector);
   if (p.whiteboard) parts.push(CREATE_PROJECT_PAGE.labelEquipmentWhiteboard);
   return parts.length > 0 ? parts.join("、") : null;
-}
-
-function buildProjectDetailCsv(
-  project: ProjectWithRentals,
-  collaPlayContactDisplayName: string,
-): string {
-  const rows: string[] = [];
-
-  // Section 1: 專案／客戶摘要（欄位名, 值）
-  rows.push(
-    [PROJECT_DETAIL_PAGE.labelCustomerName, project.customerName]
-      .map(escapeCsvCell)
-      .join(","),
-  );
-  rows.push(
-    [PROJECT_DETAIL_PAGE.labelPhone, project.customerPhone]
-      .map(escapeCsvCell)
-      .join(","),
-  );
-  if (project.company) {
-    rows.push(
-      [PROJECT_DETAIL_PAGE.labelCompany, project.company]
-        .map(escapeCsvCell)
-        .join(","),
-    );
-  }
-  if (project.taxId) {
-    rows.push(
-      [PROJECT_DETAIL_PAGE.labelTaxId, project.taxId]
-        .map(escapeCsvCell)
-        .join(","),
-    );
-  }
-  rows.push(
-    [PROJECT_DETAIL_PAGE.labelEventOrVenueUse, project.eventOrVenueUse]
-      .map(escapeCsvCell)
-      .join(","),
-  );
-  if (project.totalAttendees != null) {
-    rows.push(
-      [PROJECT_DETAIL_PAGE.labelTotalAttendees, String(project.totalAttendees)]
-        .map(escapeCsvCell)
-        .join(","),
-    );
-  }
-  if (project.tables) {
-    rows.push(
-      [PROJECT_DETAIL_PAGE.labelTables, project.tables]
-        .map(escapeCsvCell)
-        .join(","),
-    );
-  }
-  if (project.chairs != null) {
-    rows.push(
-      [PROJECT_DETAIL_PAGE.labelChairs, String(project.chairs)]
-        .map(escapeCsvCell)
-        .join(","),
-    );
-  }
-  const equipmentLine = formatEquipmentNeedsLine(project.equipmentNeeds);
-  if (equipmentLine) {
-    rows.push(
-      [PROJECT_DETAIL_PAGE.labelEquipmentSummary, equipmentLine]
-        .map(escapeCsvCell)
-        .join(","),
-    );
-  }
-  if (project.fnbItems) {
-    rows.push(
-      [PROJECT_DETAIL_PAGE.labelFnb, project.fnbItems]
-        .map(escapeCsvCell)
-        .join(","),
-    );
-  }
-  if (project.projectNotes) {
-    rows.push(
-      [PROJECT_DETAIL_PAGE.labelProjectNotes, project.projectNotes]
-        .map(escapeCsvCell)
-        .join(","),
-    );
-  }
-  rows.push(
-    [PROJECT_DETAIL_PAGE.labelCollaPlayContact, collaPlayContactDisplayName]
-      .map(escapeCsvCell)
-      .join(","),
-  );
-  const statusForUi = normalizeProjectStatusForUi(project.status);
-  if (statusForUi) {
-    rows.push(
-      [PROJECT_DETAIL_PAGE.labelStatus, getStatusLabel(statusForUi)]
-        .map(escapeCsvCell)
-        .join(","),
-    );
-  }
-  rows.push(
-    [PROJECT_DETAIL_PAGE.labelCreatedAt, formatDateTime(project.createdAt)]
-      .map(escapeCsvCell)
-      .join(","),
-  );
-  rows.push(
-    [PROJECT_DETAIL_PAGE.labelUpdatedAt, formatDateTime(project.updatedAt)]
-      .map(escapeCsvCell)
-      .join(","),
-  );
-  if (project.internalNotes) {
-    rows.push(
-      [PROJECT_DETAIL_PAGE.labelInternalNotes, project.internalNotes]
-        .map(escapeCsvCell)
-        .join(","),
-    );
-  }
-
-  rows.push(""); // 空行分隔
-
-  // Section 2: 租借項目表
-  const rentalHeaders = [
-    PROJECT_DETAIL_PAGE.labelDate,
-    PROJECT_DETAIL_PAGE.labelTimeRange,
-    PROJECT_DETAIL_PAGE.labelSpaces,
-    PROJECT_DETAIL_PAGE.labelRentalAmount,
-    PROJECT_DETAIL_PAGE.labelFnbAmount,
-    PROJECT_DETAIL_PAGE.labelPaidAmount,
-    PROJECT_DETAIL_PAGE.labelPendingAmount,
-  ];
-  rows.push(rentalHeaders.map(escapeCsvCell).join(","));
-
-  const totalAmount = project.rentals.reduce(
-    (sum, r) => sum + r.rentalAmount + r.fnbAmount,
-    0,
-  );
-  for (const r of project.rentals) {
-    const dateStr = formatRentalDateRangeForTable(r, (d) =>
-      DATE_FORMATTER.format(d),
-    );
-    const timeRange = `${r.startTime} – ${r.endTime}`;
-    const spaces = r.spaceIds.map((id) => getSpaceNameById(id)).join("、");
-    rows.push(
-      [
-        dateStr,
-        timeRange,
-        spaces,
-        CURRENCY_FORMATTER.format(r.rentalAmount),
-        CURRENCY_FORMATTER.format(r.fnbAmount),
-        CURRENCY_FORMATTER.format(r.paidAmount),
-        CURRENCY_FORMATTER.format(r.pendingAmount),
-      ]
-        .map(escapeCsvCell)
-        .join(","),
-    );
-  }
-  rows.push(
-    [
-      "",
-      "",
-      PROJECT_DETAIL_PAGE.totalAmount,
-      CURRENCY_FORMATTER.format(totalAmount),
-      "",
-      "",
-      "",
-    ]
-      .map(escapeCsvCell)
-      .join(","),
-  );
-
-  const csvContent = rows.join("\r\n");
-  return "\uFEFF" + csvContent;
 }
 
 // Form schema (aligned with create form)
@@ -1297,11 +1129,7 @@ export function ProjectDetailContent({
       const csv = buildProjectDetailCsv(project, collaPlayContactName);
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
       const url = URL.createObjectURL(blob);
-      const safeName = (project.eventOrVenueUse || project.id)
-        .replace(/[/\\:*?"<>|]/g, "_")
-        .slice(0, 80);
-      const dateStr = format(new Date(), "yyyyMMdd", { locale: zhTW });
-      const filename = `專案詳情-${safeName}-${dateStr}.csv`;
+      const filename = getProjectDetailCsvFilename(project);
       const a = document.createElement("a");
       a.href = url;
       a.download = filename;

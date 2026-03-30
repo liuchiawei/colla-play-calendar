@@ -1,8 +1,16 @@
 "use client";
 
-import { useMemo, useTransition, useState } from "react";
+import { useCallback, useMemo, useTransition, useState } from "react";
 import Link from "next/link";
-import { ArrowDown, ArrowUp, ArrowUpDown, Pencil, Trash2 } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Download,
+  Loader2,
+  Pencil,
+  Trash2,
+} from "lucide-react";
 import {
   Table,
   TableCaption,
@@ -33,7 +41,7 @@ import {
 import type { Project } from "@/lib/types/project";
 import { cn } from "@/lib/utils";
 import { formatRentalDateRangeForTable } from "@/lib/utils/project";
-import { deleteProject } from "./[id]/actions";
+import { deleteProject, downloadProjectDetailCsv } from "./[id]/actions";
 
 const DATE_FORMATTER = new Intl.DateTimeFormat("zh-TW", {
   dateStyle: "short",
@@ -131,6 +139,7 @@ export function ProjectsList({ projects }: ProjectsListProps) {
   const [, startTransition] = useTransition();
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [sort, setSort] = useState<SortState>(null);
 
   const sortedProjects = useMemo(() => {
@@ -237,6 +246,25 @@ export function ProjectsList({ projects }: ProjectsListProps) {
       }
     });
   }
+
+  const handleDownloadCsv = useCallback((projectId: string) => {
+    setDownloadingId(projectId);
+    startTransition(async () => {
+      const result = await downloadProjectDetailCsv(projectId);
+      if (!result.success) {
+        setDownloadingId(null);
+        return;
+      }
+      const blob = new Blob([result.csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = result.filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      setDownloadingId(null);
+    });
+  }, []);
 
   return (
     <section
@@ -543,6 +571,20 @@ export function ProjectsList({ projects }: ProjectsListProps) {
                   </TableCell>
                   <TableCell className="w-0 whitespace-nowrap">
                     <div className="flex items-center gap-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={PROJECT_DETAIL_PAGE.buttonDownloadCsv}
+                        onClick={() => handleDownloadCsv(project.id)}
+                        disabled={downloadingId === project.id}
+                      >
+                        {downloadingId === project.id ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          <Download className="size-4" />
+                        )}
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon-sm"
