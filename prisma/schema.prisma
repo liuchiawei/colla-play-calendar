@@ -287,6 +287,7 @@ model Project {
   company             String? // 公司（選填）
   taxId               String? // 統編（選填）
   eventOrVenueUse     String // 活動或場地用途
+  eventType           String         @default("其他") // 活動類型（舊資料預設其他）
   totalAttendees      Int? // 預計人數
   tables              String? // 桌數等
   chairs              Int? // 椅子數

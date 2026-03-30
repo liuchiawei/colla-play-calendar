@@ -20,7 +20,10 @@ export interface Project {
   id: string;
   /** 對應 DB customerName（客戶姓名） */
   customer: string;
+  /** 活動名稱（歷史欄位名沿用） */
   eventOrVenueUse: string;
+  /** 活動類型（新欄位；舊資料預設「其他」） */
+  eventType: string;
   space: string;
   date: string; // ISO date string
   /** 對應 DB collaPlayContactId（CollaPlay 窗口） */
@@ -76,7 +79,10 @@ export interface CreateProjectInput {
   customerPhone: string;
   company?: string;
   taxId?: string;
+  /** 活動名稱（歷史欄位名沿用） */
   eventOrVenueUse: string;
+  /** 活動類型（新欄位；API 會對舊 payload 補預設「其他」） */
+  eventType: string;
   totalAttendees?: number;
   tables?: string;
   chairs?: number;
@@ -95,7 +101,10 @@ export interface UpdateProjectInput {
   customerPhone: string;
   company?: string;
   taxId?: string;
+  /** 活動名稱（歷史欄位名沿用） */
   eventOrVenueUse: string;
+  /** 活動類型（新欄位；未傳則不更新，向後相容舊客戶端） */
+  eventType?: string;
   totalAttendees?: number;
   tables?: string;
   chairs?: number;
@@ -111,8 +120,8 @@ export interface UpdateProjectInput {
 
 // API / service 回傳：建立後的專案含租借項目
 export type ProjectWithRentals =
-  import("@/lib/generated/prisma/client").Project & {
-    rentals: import("@/lib/generated/prisma/client").ProjectRental[];
+  import("@/lib/generated/prisma/models/Project").ProjectModel & {
+    rentals: import("@/lib/generated/prisma/models/ProjectRental").ProjectRentalModel[];
   };
 
 /** 總覽統計資料（與 overview-stats 的 data prop 一致） */

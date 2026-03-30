@@ -219,6 +219,7 @@ function mapRowToProject(
     id: string;
     customerName: string;
     eventOrVenueUse: string;
+    eventType: string;
     collaPlayContactId: string;
     status: string;
     tables: string | null;
@@ -254,6 +255,7 @@ function mapRowToProject(
     id: row.id,
     customer: row.customerName,
     eventOrVenueUse: row.eventOrVenueUse,
+    eventType: row.eventType,
     space,
     date,
     contactPerson:
@@ -428,6 +430,9 @@ export async function updateProject(
         company: input.company ?? null,
         taxId: input.taxId ?? null,
         eventOrVenueUse: input.eventOrVenueUse,
+        ...(input.eventType !== undefined && {
+          eventType: input.eventType.trim() || "其他",
+        }),
         totalAttendees: input.totalAttendees ?? null,
         tables: input.tables ?? null,
         chairs: input.chairs ?? null,
@@ -587,6 +592,7 @@ export async function createProject(
         company: input.company ?? null,
         taxId: input.taxId ?? null,
         eventOrVenueUse: input.eventOrVenueUse,
+        eventType: input.eventType.trim() || "其他",
         totalAttendees: input.totalAttendees ?? null,
         tables: input.tables ?? null,
         chairs: input.chairs ?? null,

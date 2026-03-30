@@ -21,7 +21,6 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -50,7 +49,7 @@ import {
   PROJECT_ACTIVITY_TYPE_OPTIONS,
   PROJECT_ACTIVITY_TYPE_OTHER,
   isActivityTypePresetFieldValue,
-  resolveEventOrVenueUseFromForm,
+  resolveEventTypeFromForm,
 } from "@/lib/constants/project-form";
 import { defaultEquipmentNeedsForm } from "@/lib/utils/project-equipment-needs";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -115,6 +114,7 @@ const createProjectSchema = z
         message: CREATE_PROJECT_PAGE.errorActivityTypeRequired,
       }),
     activityCustomDetail: z.string().optional().default(""),
+    eventOrVenueUse: z.string().trim().min(1, CREATE_PROJECT_PAGE.errorRequired),
     totalAttendees: z.coerce.number().min(0).optional(),
     tables: z.string().optional(),
     chairs: z.coerce.number().min(0).optional(),
@@ -206,6 +206,7 @@ export function CreateProjectForm({
       taxId: "",
       activityTypePreset: "",
       activityCustomDetail: "",
+      eventOrVenueUse: "",
       totalAttendees: undefined,
       tables: "",
       chairs: undefined,
@@ -237,11 +238,13 @@ export function CreateProjectForm({
       activityTypePreset,
       activityCustomDetail,
       equipmentNeeds,
+      eventOrVenueUse,
       ...rest
     } = data;
     const payload: CreateProjectInput = {
       ...rest,
-      eventOrVenueUse: resolveEventOrVenueUseFromForm(
+      eventOrVenueUse,
+      eventType: resolveEventTypeFromForm(
         activityTypePreset,
         activityCustomDetail ?? "",
       ),
@@ -488,6 +491,25 @@ export function CreateProjectForm({
                 )}
               />
             ) : null}
+            <FormField
+              control={form.control}
+              name="eventOrVenueUse"
+              render={({ field }) => (
+                <FormItem className="sm:col-span-2">
+                  <FormLabel aria-required>
+                    {CREATE_PROJECT_PAGE.labelEventOrVenueUseRequired}
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      name={field.name}
+                      placeholder={CREATE_PROJECT_PAGE.placeholderEventOrVenueUse}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="fnbItems"

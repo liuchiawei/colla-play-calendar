@@ -106,7 +106,7 @@ import {
   PROJECT_ACTIVITY_TYPE_OPTIONS,
   PROJECT_ACTIVITY_TYPE_OTHER,
   isActivityTypePresetFieldValue,
-  resolveEventOrVenueUseFromForm,
+  resolveEventTypeFromForm,
   splitActivityTypeForForm,
 } from "@/lib/constants/project-form";
 import {
@@ -364,6 +364,7 @@ const editProjectSchema = z
         message: CREATE_PROJECT_PAGE.errorActivityTypeRequired,
       }),
     activityCustomDetail: z.string().optional().default(""),
+    eventOrVenueUse: z.string().trim().min(1, CREATE_PROJECT_PAGE.errorRequired),
     totalAttendees: z.coerce.number().min(0).optional(),
     tables: z.string().optional(),
     chairs: z.coerce.number().min(0).optional(),
@@ -462,7 +463,7 @@ const defaultRental: EditFormValues["rentals"][0] = {
 
 function projectToFormValues(project: ProjectWithRentals): EditFormValues {
   const { preset, customDetail } = splitActivityTypeForForm(
-    project.eventOrVenueUse,
+    project.eventType,
   );
   const statusForUi = normalizeProjectStatusForUi(project.status);
   return {
@@ -472,6 +473,7 @@ function projectToFormValues(project: ProjectWithRentals): EditFormValues {
     taxId: project.taxId ?? "",
     activityTypePreset: preset,
     activityCustomDetail: customDetail,
+    eventOrVenueUse: project.eventOrVenueUse,
     totalAttendees: project.totalAttendees ?? undefined,
     tables: project.tables ?? "",
     chairs: project.chairs ?? undefined,
@@ -505,7 +507,8 @@ function formValuesToUpdateInput(values: EditFormValues): UpdateProjectInput {
     customerPhone: values.customerPhone,
     company: values.company || undefined,
     taxId: values.taxId || undefined,
-    eventOrVenueUse: resolveEventOrVenueUseFromForm(
+    eventOrVenueUse: values.eventOrVenueUse,
+    eventType: resolveEventTypeFromForm(
       values.activityTypePreset,
       values.activityCustomDetail ?? "",
     ),
@@ -1479,6 +1482,24 @@ export function ProjectDetailContent({
               ) : null}
               <FormField
                 control={form.control}
+                name="eventOrVenueUse"
+                render={({ field }) => (
+                  <FormItem className="sm:col-span-2">
+                    <FormLabel aria-required>
+                      {CREATE_PROJECT_PAGE.labelEventOrVenueUseRequired}
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder={CREATE_PROJECT_PAGE.placeholderEventOrVenueUse}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
                 name="fnbItems"
                 render={({ field }) => (
                   <FormItem className="sm:col-span-2">
@@ -2310,12 +2331,19 @@ export function ProjectDetailContent({
             </h2>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
-            {/* 活動類型（存於 eventOrVenueUse） */}
             <div className="sm:col-span-2">
               <p className="text-sm text-muted-foreground">
                 {PROJECT_DETAIL_PAGE.labelActivityType}
               </p>
-              <p className="font-medium">{project.eventOrVenueUse}</p>
+              <p className="font-medium">{project.eventType}</p>
+            </div>
+            <div className="sm:col-span-2">
+              <p className="text-sm text-muted-foreground">
+                {PROJECT_DETAIL_PAGE.labelEventOrVenueUse}
+              </p>
+              <p className="font-medium whitespace-pre-wrap">
+                {project.eventOrVenueUse}
+              </p>
             </div>
             {/* Status */}
             {statusForUi ? (

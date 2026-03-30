@@ -35,6 +35,11 @@ function validateCreateProjectInput(
   if (!b.eventOrVenueUse || typeof b.eventOrVenueUse !== "string" || !b.eventOrVenueUse.trim()) {
     return { ok: false, error: "活動或場地用途為必填" };
   }
+  const rawEventType = b.eventType;
+  const eventType =
+    rawEventType == null || typeof rawEventType !== "string"
+      ? "其他"
+      : rawEventType.trim() || "其他";
   if (!b.collaPlayContactId || typeof b.collaPlayContactId !== "string" || !b.collaPlayContactId.trim()) {
     return { ok: false, error: "CollaPlay 窗口為必填" };
   }
@@ -94,6 +99,7 @@ function validateCreateProjectInput(
   const data: CreateProjectInput = {
     ...raw,
     customerPhone,
+    eventType,
     ...(Object.prototype.hasOwnProperty.call(b, "equipmentNeeds") && {
       equipmentNeeds,
     }),
