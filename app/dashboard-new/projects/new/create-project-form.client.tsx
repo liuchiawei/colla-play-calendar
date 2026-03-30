@@ -61,6 +61,8 @@ import {
   spaceIdsIntersect,
 } from "@/lib/utils/project-rental-interval";
 
+const SHOW_SETUP_TEARDOWN_FIELDS = false;
+
 const rentalItemSchema = z
   .object({
     spaceIds: z.array(z.string()).min(1, CREATE_PROJECT_PAGE.errorRequired),
@@ -177,8 +179,8 @@ const defaultRental: CreateProjectFormValues["rentals"][0] = {
   endDate: "",
   startTime: "",
   endTime: "",
-  setupMinutesBefore: 30,
-  teardownMinutesAfter: 30,
+  setupMinutesBefore: 0,
+  teardownMinutesAfter: 0,
   rentalAmount: 0,
   fnbAmount: 0,
   paidAmount: 0,
@@ -249,8 +251,8 @@ export function CreateProjectForm({
         return {
           ...r,
           endDate: endDateTrim ? endDateTrim : undefined,
-          setupMinutesBefore: r.setupMinutesBefore ?? 30,
-          teardownMinutesAfter: r.teardownMinutesAfter ?? 30,
+          setupMinutesBefore: r.setupMinutesBefore ?? 0,
+          teardownMinutesAfter: r.teardownMinutesAfter ?? 0,
           pendingAmount: computeProjectRentalPendingAmount(r),
         };
       }),
@@ -1010,70 +1012,72 @@ export function CreateProjectForm({
                   />
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <FormField
-                    control={form.control}
-                    name={`rentals.${index}.setupMinutesBefore`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          {CREATE_PROJECT_PAGE.labelSetupTime}{" "}
-                          <span className="text-muted-foreground font-normal text-xs">
-                            ({CREATE_PROJECT_PAGE.setupDefault})
-                          </span>
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            type="number"
-                            min={0}
-                            name={field.name}
-                            value={field.value ?? 30}
-                            onChange={(e) =>
-                              field.onChange(
-                                e.target.value === ""
-                                  ? undefined
-                                  : Number(e.target.value),
-                              )
-                            }
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name={`rentals.${index}.teardownMinutesAfter`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          {CREATE_PROJECT_PAGE.labelTeardownTime}{" "}
-                          <span className="text-muted-foreground font-normal text-xs">
-                            ({CREATE_PROJECT_PAGE.teardownDefault})
-                          </span>
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            type="number"
-                            min={0}
-                            name={field.name}
-                            value={field.value ?? 30}
-                            onChange={(e) =>
-                              field.onChange(
-                                e.target.value === ""
-                                  ? undefined
-                                  : Number(e.target.value),
-                              )
-                            }
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                {SHOW_SETUP_TEARDOWN_FIELDS ? (
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <FormField
+                      control={form.control}
+                      name={`rentals.${index}.setupMinutesBefore`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            {CREATE_PROJECT_PAGE.labelSetupTime}{" "}
+                            <span className="text-muted-foreground font-normal text-xs">
+                              ({CREATE_PROJECT_PAGE.setupDefault})
+                            </span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              type="number"
+                              min={0}
+                              name={field.name}
+                              value={field.value ?? 30}
+                              onChange={(e) =>
+                                field.onChange(
+                                  e.target.value === ""
+                                    ? undefined
+                                    : Number(e.target.value),
+                                )
+                              }
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`rentals.${index}.teardownMinutesAfter`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            {CREATE_PROJECT_PAGE.labelTeardownTime}{" "}
+                            <span className="text-muted-foreground font-normal text-xs">
+                              ({CREATE_PROJECT_PAGE.teardownDefault})
+                            </span>
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              type="number"
+                              min={0}
+                              name={field.name}
+                              value={field.value ?? 30}
+                              onChange={(e) =>
+                                field.onChange(
+                                  e.target.value === ""
+                                    ? undefined
+                                    : Number(e.target.value),
+                                )
+                              }
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                ) : null}
 
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   <FormField
