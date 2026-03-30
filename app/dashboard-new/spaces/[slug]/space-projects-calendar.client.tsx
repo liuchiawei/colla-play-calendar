@@ -315,7 +315,7 @@ export function SpaceProjectsCalendar({
                     <tr className="border-b border-border/50">
                       <th
                         scope="col"
-                        className="p-2 text-left font-medium text-xs md:text-sm text-muted-foreground min-w-[100px] shrink-0 border-r border-border/30"
+                        className="sticky left-0 z-30 bg-card p-2 text-left font-medium text-xs md:text-sm text-muted-foreground min-w-[100px] shrink-0 border-r border-border/30"
                       >
                         空間
                       </th>
@@ -342,7 +342,7 @@ export function SpaceProjectsCalendar({
                         key={space.id}
                         className="border-b border-border/30 last:border-b-0"
                       >
-                        <td className="p-2 font-medium text-xs md:text-sm min-w-0 border-r border-border/30 align-top">
+                        <td className="sticky left-0 z-20 bg-card p-2 font-medium text-xs md:text-sm min-w-0 border-r border-border/30 align-top">
                           {space.name}
                         </td>
                         {monthDateKeys.map((dateKey) => {
