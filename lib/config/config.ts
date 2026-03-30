@@ -126,29 +126,28 @@ function spaceFromSlug(
   };
 }
 
-export const SPACES_3F: Space[] = [
+/** 場域分頁與清單順序（與營運約定一致，非依樓層數字排序） */
+export const ALL_SPACES: Space[] = [
+  spaceFromSlug("5F", "exhibition-hall"),
+  spaceFromSlug("4F", "event-lounge"),
+  spaceFromSlug("4F", "multipurpose-room"),
+  spaceFromSlug("4F", "tik-&-sip"),
+  spaceFromSlug("4F", "podcast-studio"),
+  spaceFromSlug("4F", "screening-room"),
+  spaceFromSlug("4F", "product-photo"),
   spaceFromSlug("3F", "community-cafe"),
   spaceFromSlug("3F", "focus-area"),
 ];
 
-export const SPACES_4F: Space[] = [
-  spaceFromSlug("4F", "multipurpose-room"),
-  spaceFromSlug("4F", "podcast-studio"),
-  spaceFromSlug("4F", "product-photo"),
-  spaceFromSlug("4F", "event-lounge"),
-  spaceFromSlug("4F", "screening-room"),
-  spaceFromSlug("4F", "tik-&-sip"),
-];
-
-export const SPACES_5F: Space[] = [spaceFromSlug("5F", "exhibition-hall")];
+export const SPACES_3F: Space[] = ALL_SPACES.filter((s) => s.floor === "3F");
+export const SPACES_4F: Space[] = ALL_SPACES.filter((s) => s.floor === "4F");
+export const SPACES_5F: Space[] = ALL_SPACES.filter((s) => s.floor === "5F");
 
 export const SPACES_BY_FLOOR: Record<FloorKey, Space[]> = {
   "3F": SPACES_3F,
   "4F": SPACES_4F,
   "5F": SPACES_5F,
 };
-
-export const ALL_SPACES: Space[] = [...SPACES_3F, ...SPACES_4F, ...SPACES_5F];
 
 /** 已廢除的場域 id（room1/room2 合併為 multipurpose-room），顯示名稱統一回傳多功能教室 */
 const DEPRECATED_SPACE_ID_TO_NAME: Record<string, string> = {

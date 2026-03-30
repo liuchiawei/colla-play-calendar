@@ -1,24 +1,32 @@
 # TODO list
 
-- [x] Auth: User Name
-  1. 更改註冊時 Name 邏輯，讓用戶必須提供 name (id)
-  2. 用戶註冊時增加對 name 唯一性的檢查
-- [X] User profile hover card
-- [ ] Design: Profile page
-- [ ] Design: User page
-- [ ] Design: calendar page
-- [ ] Design: event page
-- [ ] 心理測驗
-  - 前端
-    - 心理測驗頁面 explore/mbti-test, explore/holland-code
-    - 結果顯示在item組件(ex. explore-score-item)
-    - section組件(ex. explore-scores)
-    - section組件顯示在 profile page, user page
-  - 後端
-    - 將結果記錄到資料庫
-    - 結果和 User 連動
-    - User 可以決定要不要顯示在個人頁面
-    - Prisma Schema
-    - 相關 API 和 Service 檔案
-    - 快取/效能/記憶體負擔/載入速度
-- [X] Google Auth 登入整合
+- 已付款項填了之後將專案狀態自動更改為「已確定」
+- 設備需求要再增加：
+  ＊桌子
+  ＊椅子
+  ＊麥克風
+  ＊延長線
+  （下面這個是多選打勾就可以了）
+  ＊投影設備
+  ＊白板/白板筆
+- 新增活動類型：
+  - 場租
+  - 空間企劃
+  - 分潤合作
+  - 場地贊助
+  - 店內活動
+  - 商業攝影
+  - 酒吧包場
+  - 其他
+- 專案管理頁
+  1. 可以選擇按照日期順序來排列嗎？
+  2. 可以做成篩選器嗎？
+    想要以「活動狀態」、「客戶」、「接洽人」、「場域」來篩選。
+    固定應該都只會列出尚未舉辦的活動（這樣是不是就需要一個「已完成」的分類？）
+  3. 可以下載報表嗎？
+- Bug Fix (create new project)
+  如果是12:30就會顯示必填/12:31就不會有提示 (只要是30分就會顯示必填 不管幾點）
+- Create New Project
+  - 活動有時候會跨日，有沒有機會是結束時間也可以設定日期？
+  - 防呆機制：同一時段 同一空間 出現重複專案時會提醒
+  - 狀態修改：只保留 "洽談中","已確定, "完成" 三種狀態

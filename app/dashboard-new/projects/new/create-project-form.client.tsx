@@ -3,7 +3,12 @@
 import * as React from "react";
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { useForm, useFieldArray, type Resolver } from "react-hook-form";
+import {
+  useForm,
+  useFieldArray,
+  useWatch,
+  type Resolver,
+} from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
@@ -38,6 +43,7 @@ import { CREATE_PROJECT_PAGE } from "@/lib/message";
 import { ALL_SPACES } from "@/lib/config/config";
 import type { CreateProjectInput } from "@/lib/types/project";
 import { cn } from "@/lib/utils";
+import { computeProjectRentalPendingAmount } from "@/lib/utils/project-rental-pending";
 
 const rentalItemSchema = z
   .object({
@@ -50,7 +56,6 @@ const rentalItemSchema = z
     rentalAmount: z.coerce.number().min(0),
     fnbAmount: z.coerce.number().min(0),
     paidAmount: z.coerce.number().min(0),
-    pendingAmount: z.coerce.number().min(0),
   })
   .refine((data) => data.endTime > data.startTime, {
     message: CREATE_PROJECT_PAGE.errorEndBeforeStart,
@@ -91,7 +96,6 @@ const defaultRental: CreateProjectFormValues["rentals"][0] = {
   rentalAmount: 0,
   fnbAmount: 0,
   paidAmount: 0,
-  pendingAmount: 0,
 };
 
 export function CreateProjectForm({
@@ -128,6 +132,8 @@ export function CreateProjectForm({
     name: "rentals",
   });
 
+  const watchedRentals = useWatch({ control: form.control, name: "rentals" });
+
   const onSubmit = form.handleSubmit((data: CreateProjectFormValues) => {
     const payload: CreateProjectInput = {
       ...data,
@@ -136,6 +142,7 @@ export function CreateProjectForm({
         ...r,
         setupMinutesBefore: r.setupMinutesBefore ?? 30,
         teardownMinutesAfter: r.teardownMinutesAfter ?? 30,
+        pendingAmount: computeProjectRentalPendingAmount(r),
       })),
     };
     startTransition(async () => {
@@ -820,27 +827,25 @@ export function CreateProjectForm({
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name={`rentals.${index}.pendingAmount`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          {CREATE_PROJECT_PAGE.labelPendingAmount}
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            type="number"
-                            min={0}
-                            name={field.name}
-                            className="tabular-nums"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <FormItem>
+                    <FormLabel>
+                      {CREATE_PROJECT_PAGE.labelPendingAmount}
+                    </FormLabel>
+                    <div
+                      className={cn(
+                        "flex h-9 w-full min-w-0 items-center rounded-md border border-input bg-muted/50 px-3 py-1 text-sm tabular-nums shadow-xs",
+                      )}
+                      aria-live="polite"
+                    >
+                      {computeProjectRentalPendingAmount(
+                        watchedRentals?.[index] ?? {
+                          rentalAmount: 0,
+                          fnbAmount: 0,
+                          paidAmount: 0,
+                        },
+                      )}
+                    </div>
+                  </FormItem>
                 </div>
               </div>
             ))}

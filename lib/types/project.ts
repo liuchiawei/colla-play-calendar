@@ -92,9 +92,10 @@ export interface UpdateProjectInput {
 }
 
 // API / service 回傳：建立後的專案含租借項目
-export type ProjectWithRentals = import("@/lib/generated/prisma/client").Project & {
-  rentals: import("@/lib/generated/prisma/client").ProjectRental[];
-};
+export type ProjectWithRentals =
+  import("@/lib/generated/prisma/client").Project & {
+    rentals: import("@/lib/generated/prisma/client").ProjectRental[];
+  };
 
 /** 總覽統計資料（與 overview-stats 的 data prop 一致） */
 export interface OverviewStatsData {

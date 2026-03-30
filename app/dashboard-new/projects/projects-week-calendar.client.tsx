@@ -110,13 +110,13 @@ function DayColumnContent({
 }) {
   if (projects.length === 0) {
     return (
-      <div className="p-2 text-muted-foreground text-xs text-center min-h-[4rem] flex items-center justify-center">
+      <div className="p-2 text-muted-foreground text-xs text-center min-h-16 flex items-center justify-center">
         —
       </div>
     );
   }
   return (
-    <div className="p-2 flex flex-col gap-1.5 min-h-[4rem]">
+    <div className="p-2 flex flex-col gap-1.5 min-h-16">
       {projects.map((project) => (
         <ProjectBadgeLink
           key={project.id}

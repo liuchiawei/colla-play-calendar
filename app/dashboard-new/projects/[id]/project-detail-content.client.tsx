@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useTransition, useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm, useFieldArray, type Resolver } from "react-hook-form";
+import { useForm, useFieldArray, useWatch, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
@@ -83,8 +83,15 @@ import type {
   UpdateProjectInput,
   ProjectStatus,
 } from "@/lib/types/project";
-import { updateProject, deleteProject, updateProjectStatus, deleteRental, updateRental } from "./actions";
+import {
+  updateProject,
+  deleteProject,
+  updateProjectStatus,
+  deleteRental,
+  updateRental,
+} from "./actions";
 import { cn } from "@/lib/utils";
+import { computeProjectRentalPendingAmount } from "@/lib/utils/project-rental-pending";
 
 const CURRENCY_FORMATTER = new Intl.NumberFormat("zh-TW", {
   style: "currency",
@@ -269,7 +276,6 @@ const rentalItemSchema = z
     rentalAmount: z.coerce.number().min(0),
     fnbAmount: z.coerce.number().min(0),
     paidAmount: z.coerce.number().min(0),
-    pendingAmount: z.coerce.number().min(0),
   })
   .refine((data) => data.endTime > data.startTime, {
     message: CREATE_PROJECT_PAGE.errorEndBeforeStart,
@@ -321,7 +327,6 @@ function rentalToEditFormValues(
     rentalAmount: r.rentalAmount,
     fnbAmount: r.fnbAmount,
     paidAmount: r.paidAmount,
-    pendingAmount: r.pendingAmount,
   };
 }
 
@@ -335,7 +340,6 @@ const defaultRental: EditFormValues["rentals"][0] = {
   rentalAmount: 0,
   fnbAmount: 0,
   paidAmount: 0,
-  pendingAmount: 0,
 };
 
 function projectToFormValues(project: ProjectWithRentals): EditFormValues {
@@ -365,7 +369,6 @@ function projectToFormValues(project: ProjectWithRentals): EditFormValues {
             rentalAmount: r.rentalAmount,
             fnbAmount: r.fnbAmount,
             paidAmount: r.paidAmount,
-            pendingAmount: r.pendingAmount,
           }))
         : [{ ...defaultRental }],
   };
@@ -390,6 +393,7 @@ function formValuesToUpdateInput(values: EditFormValues): UpdateProjectInput {
       ...r,
       setupMinutesBefore: r.setupMinutesBefore ?? 30,
       teardownMinutesAfter: r.teardownMinutesAfter ?? 30,
+      pendingAmount: computeProjectRentalPendingAmount(r),
     })),
   };
 }
@@ -411,12 +415,18 @@ function EditRentalFormDialog({
     defaultValues: rentalToEditFormValues(rental),
   });
 
+  const watchedAmounts = useWatch({
+    control: form.control,
+    name: ["rentalAmount", "fnbAmount", "paidAmount"],
+  });
+
   const handleSubmit = form.handleSubmit((data: EditRentalFormValues) => {
     startTransition(async () => {
       const result = await updateRental(rental.id, {
         ...data,
         setupMinutesBefore: data.setupMinutesBefore ?? 30,
         teardownMinutesAfter: data.teardownMinutesAfter ?? 30,
+        pendingAmount: computeProjectRentalPendingAmount(data),
       });
       if (result.success) {
         onSuccess();
@@ -439,7 +449,9 @@ function EditRentalFormDialog({
               name="spaceIds"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{CREATE_PROJECT_PAGE.labelSpacesRequired}</FormLabel>
+                  <FormLabel>
+                    {CREATE_PROJECT_PAGE.labelSpacesRequired}
+                  </FormLabel>
                   <FormControl>
                     <fieldset className="flex flex-wrap gap-3 rounded-md border border-input bg-background px-3 py-2">
                       {ALL_SPACES.map((space) => {
@@ -476,7 +488,9 @@ function EditRentalFormDialog({
                 name="date"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{CREATE_PROJECT_PAGE.labelDateRequired}</FormLabel>
+                    <FormLabel>
+                      {CREATE_PROJECT_PAGE.labelDateRequired}
+                    </FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -555,7 +569,9 @@ function EditRentalFormDialog({
                 name="rentalAmount"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{CREATE_PROJECT_PAGE.labelRentalAmount}</FormLabel>
+                    <FormLabel>
+                      {CREATE_PROJECT_PAGE.labelRentalAmount}
+                    </FormLabel>
                     <FormControl>
                       <Input
                         {...field}
@@ -604,26 +620,23 @@ function EditRentalFormDialog({
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="pendingAmount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      {CREATE_PROJECT_PAGE.labelPendingAmount}
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        type="number"
-                        min={0}
-                        className="tabular-nums"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <FormItem>
+                <FormLabel>
+                  {CREATE_PROJECT_PAGE.labelPendingAmount}
+                </FormLabel>
+                <div
+                  className={cn(
+                    "flex h-9 w-full min-w-0 items-center rounded-md border border-input bg-muted/50 px-3 py-1 text-sm tabular-nums shadow-xs",
+                  )}
+                  aria-live="polite"
+                >
+                  {computeProjectRentalPendingAmount({
+                    rentalAmount: watchedAmounts?.[0],
+                    fnbAmount: watchedAmounts?.[1],
+                    paidAmount: watchedAmounts?.[2],
+                  })}
+                </div>
+              </FormItem>
             </div>
             {form.formState.errors.root?.message ? (
               <p className="text-sm text-destructive" role="alert">
@@ -680,6 +693,11 @@ function AddRentalFormDialog({
     },
   });
 
+  const addRentalWatchedAmounts = useWatch({
+    control: form.control,
+    name: ["rentalAmount", "fnbAmount", "paidAmount"],
+  });
+
   const handleSubmit = form.handleSubmit((data: EditRentalFormValues) => {
     startTransition(async () => {
       const baseValues = projectToFormValues(project);
@@ -717,7 +735,9 @@ function AddRentalFormDialog({
               name="spaceIds"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{CREATE_PROJECT_PAGE.labelSpacesRequired}</FormLabel>
+                  <FormLabel>
+                    {CREATE_PROJECT_PAGE.labelSpacesRequired}
+                  </FormLabel>
                   <FormControl>
                     <fieldset className="flex flex-wrap gap-3 rounded-md border border-input bg-background px-3 py-2">
                       {ALL_SPACES.map((space) => {
@@ -754,7 +774,9 @@ function AddRentalFormDialog({
                 name="date"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{CREATE_PROJECT_PAGE.labelDateRequired}</FormLabel>
+                    <FormLabel>
+                      {CREATE_PROJECT_PAGE.labelDateRequired}
+                    </FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -833,7 +855,9 @@ function AddRentalFormDialog({
                 name="rentalAmount"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{CREATE_PROJECT_PAGE.labelRentalAmount}</FormLabel>
+                    <FormLabel>
+                      {CREATE_PROJECT_PAGE.labelRentalAmount}
+                    </FormLabel>
                     <FormControl>
                       <Input
                         {...field}
@@ -882,26 +906,23 @@ function AddRentalFormDialog({
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="pendingAmount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      {CREATE_PROJECT_PAGE.labelPendingAmount}
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        type="number"
-                        min={0}
-                        className="tabular-nums"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <FormItem>
+                <FormLabel>
+                  {CREATE_PROJECT_PAGE.labelPendingAmount}
+                </FormLabel>
+                <div
+                  className={cn(
+                    "flex h-9 w-full min-w-0 items-center rounded-md border border-input bg-muted/50 px-3 py-1 text-sm tabular-nums shadow-xs",
+                  )}
+                  aria-live="polite"
+                >
+                  {computeProjectRentalPendingAmount({
+                    rentalAmount: addRentalWatchedAmounts?.[0],
+                    fnbAmount: addRentalWatchedAmounts?.[1],
+                    paidAmount: addRentalWatchedAmounts?.[2],
+                  })}
+                </div>
+              </FormItem>
             </div>
             {form.formState.errors.root?.message ? (
               <p className="text-sm text-destructive" role="alert">
@@ -953,7 +974,9 @@ export function ProjectDetailContent({
   const [isPendingStatus, startStatusTransition] = useTransition();
   const [editingRentalId, setEditingRentalId] = useState<string | null>(null);
   const [deletingRentalId, setDeletingRentalId] = useState<string | null>(null);
-  const [deleteRentalError, setDeleteRentalError] = useState<string | null>(null);
+  const [deleteRentalError, setDeleteRentalError] = useState<string | null>(
+    null,
+  );
   const [isAddRentalOpen, setIsAddRentalOpen] = useState(false);
   const [isPendingDeleteRental, startDeleteRentalTransition] = useTransition();
 
@@ -975,6 +998,8 @@ export function ProjectDetailContent({
     control: form.control,
     name: "rentals",
   });
+
+  const watchedEditRentals = useWatch({ control: form.control, name: "rentals" });
 
   const handleEdit = useCallback(() => {
     form.reset(projectToFormValues(project));
@@ -1548,26 +1573,25 @@ export function ProjectDetailContent({
                         </FormItem>
                       )}
                     />
-                    <FormField
-                      control={form.control}
-                      name={`rentals.${index}.pendingAmount`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>
-                            {CREATE_PROJECT_PAGE.labelPendingAmount}
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              type="number"
-                              min={0}
-                              className="tabular-nums"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    <FormItem>
+                      <FormLabel>
+                        {CREATE_PROJECT_PAGE.labelPendingAmount}
+                      </FormLabel>
+                      <div
+                        className={cn(
+                          "flex h-9 w-full min-w-0 items-center rounded-md border border-input bg-muted/50 px-3 py-1 text-sm tabular-nums shadow-xs",
+                        )}
+                        aria-live="polite"
+                      >
+                        {computeProjectRentalPendingAmount(
+                          watchedEditRentals?.[index] ?? {
+                            rentalAmount: 0,
+                            fnbAmount: 0,
+                            paidAmount: 0,
+                          },
+                        )}
+                      </div>
+                    </FormItem>
                   </div>
                 </div>
               ))}
@@ -2024,10 +2048,16 @@ export function ProjectDetailContent({
                                   variant="ghost"
                                   size="icon"
                                   className="size-8 text-destructive hover:text-destructive"
-                                  aria-label={CREATE_PROJECT_PAGE.removeRentalAria}
-                                  disabled={deletingRentalId === r.id || isPendingDeleteRental}
+                                  aria-label={
+                                    CREATE_PROJECT_PAGE.removeRentalAria
+                                  }
+                                  disabled={
+                                    deletingRentalId === r.id ||
+                                    isPendingDeleteRental
+                                  }
                                 >
-                                  {deletingRentalId === r.id || isPendingDeleteRental ? (
+                                  {deletingRentalId === r.id ||
+                                  isPendingDeleteRental ? (
                                     <Loader2 className="size-4 animate-spin" />
                                   ) : (
                                     <Trash2 className="size-4" />
@@ -2037,10 +2067,14 @@ export function ProjectDetailContent({
                               <AlertDialogContent>
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>
-                                    {PROJECT_DETAIL_PAGE.deleteRentalConfirmTitle}
+                                    {
+                                      PROJECT_DETAIL_PAGE.deleteRentalConfirmTitle
+                                    }
                                   </AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    {PROJECT_DETAIL_PAGE.deleteRentalConfirmDescription}
+                                    {
+                                      PROJECT_DETAIL_PAGE.deleteRentalConfirmDescription
+                                    }
                                     {` （${DATE_FORMATTER.format(new Date(r.date + "T00:00:00"))} ${r.startTime}–${r.endTime}）`}
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
@@ -2067,7 +2101,9 @@ export function ProjectDetailContent({
                                     {isPendingDeleteRental ? (
                                       <>
                                         <Loader2 className="size-4 animate-spin mr-2" />
-                                        {PROJECT_DETAIL_PAGE.deleteConfirmConfirm}
+                                        {
+                                          PROJECT_DETAIL_PAGE.deleteConfirmConfirm
+                                        }
                                       </>
                                     ) : (
                                       PROJECT_DETAIL_PAGE.deleteConfirmConfirm
