@@ -58,6 +58,19 @@ type RentalWindowInput = {
   endTime: string;
 };
 
+export type ExternalRentalConflict = {
+  projectId: string;
+  eventOrVenueUse: string;
+  rental: {
+    id: string;
+    spaceIds: string[];
+    date: string;
+    endDate: string | null;
+    startTime: string;
+    endTime: string;
+  };
+};
+
 function assertRentalWindowsValid(rentals: RentalWindowInput[]) {
   for (const r of rentals) {
     if (
@@ -102,11 +115,12 @@ function assertNoInternalRentalOverlaps(rentals: RentalWindowInput[]) {
   }
 }
 
-async function assertNoExternalRentalConflicts(
+async function findExternalRentalConflicts(
   db: { projectRental: typeof prisma.projectRental },
   rentals: RentalWindowInput[],
   options: { excludeProjectId?: string; excludeRentalId?: string },
-) {
+): Promise<ExternalRentalConflict[][]> {
+  const conflictsByRental: ExternalRentalConflict[][] = [];
   for (const r of rentals) {
     const bounds = rentalBoundsMs({
       date: r.date,
@@ -136,6 +150,7 @@ async function assertNoExternalRentalConflicts(
       },
     });
 
+    const conflicts: ExternalRentalConflict[] = [];
     for (const row of rows) {
       if (!spaceIdsIntersect(r.spaceIds, row.spaceIds)) continue;
       const rowBounds = rentalBoundsMs({
@@ -146,12 +161,50 @@ async function assertNoExternalRentalConflicts(
       });
       if (!rowBounds) continue;
       if (intervalsOverlap(bounds, rowBounds)) {
-        throw new ProjectRentalConflictError(
-          `與既有專案「${row.project.eventOrVenueUse}」在相同空間時段重疊，請調整。`,
-        );
+        conflicts.push({
+          projectId: row.projectId,
+          eventOrVenueUse: row.project.eventOrVenueUse,
+          rental: {
+            id: row.id,
+            spaceIds: row.spaceIds,
+            date: row.date,
+            endDate: row.endDate,
+            startTime: row.startTime,
+            endTime: row.endTime,
+          },
+        });
       }
     }
+    conflictsByRental.push(conflicts);
   }
+  return conflictsByRental;
+}
+
+async function assertNoExternalRentalConflicts(
+  db: { projectRental: typeof prisma.projectRental },
+  rentals: RentalWindowInput[],
+  options: { excludeProjectId?: string; excludeRentalId?: string },
+) {
+  const conflictsByRental = await findExternalRentalConflicts(
+    db,
+    rentals,
+    options,
+  );
+  for (const conflicts of conflictsByRental) {
+    const conflict = conflicts[0];
+    if (!conflict) continue;
+    throw new ProjectRentalConflictError(
+      `與既有專案「${conflict.eventOrVenueUse}」在相同空間時段重疊，請調整。`,
+    );
+  }
+}
+
+export async function getExternalRentalConflicts(
+  rentals: RentalWindowInput[],
+  options: { excludeProjectId?: string; excludeRentalId?: string } = {},
+): Promise<ExternalRentalConflict[][]> {
+  assertRentalWindowsValid(rentals);
+  return findExternalRentalConflicts(prisma, rentals, options);
 }
 
 function equipmentNeedsToPrismaInput(
