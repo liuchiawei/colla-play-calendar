@@ -914,11 +914,12 @@ export function CreateProjectForm({
                     control={form.control}
                     name={`rentals.${index}.endDate`}
                     render={({ field }) => (
+                      // 結束日期
                       <FormItem>
                         <FormLabel>{CREATE_PROJECT_PAGE.labelEndDate}</FormLabel>
-                        <FormDescription className="text-xs">
+                        {/* <FormDescription className="text-xs">
                           {CREATE_PROJECT_PAGE.labelEndDateHint}
-                        </FormDescription>
+                        </FormDescription> */}
                         <Popover>
                           <PopoverTrigger asChild>
                             <FormControl>
@@ -1126,6 +1127,7 @@ export function CreateProjectForm({
                     control={form.control}
                     name={`rentals.${index}.paidAmount`}
                     render={({ field }) => (
+                      // 已付款項
                       <FormItem>
                         <FormLabel>
                           {CREATE_PROJECT_PAGE.labelPaidAmount}
@@ -1139,11 +1141,11 @@ export function CreateProjectForm({
                             className="tabular-nums"
                           />
                         </FormControl>
-                        {index === 0 ? (
+                        {/* {index === 0 ? (
                           <FormDescription>
                             {CREATE_PROJECT_PAGE.hintPaidAmountSetsConfirmed}
                           </FormDescription>
-                        ) : null}
+                        ) : null} */}
                         <FormMessage />
                       </FormItem>
                     )}
