@@ -1,8 +1,8 @@
 "use client";
 
-import { useTransition, useState } from "react";
+import { useMemo, useTransition, useState } from "react";
 import Link from "next/link";
-import { Pencil, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Pencil, Trash2 } from "lucide-react";
 import {
   Table,
   TableCaption,
@@ -44,14 +44,187 @@ const CURRENCY_FORMATTER = new Intl.NumberFormat("zh-TW", {
   currency: "TWD",
 });
 
+type SortDirection = "asc" | "desc";
+
+type SortKey =
+  | "customer"
+  | "eventOrVenueUse"
+  | "space"
+  | "date"
+  | "eventStartTime"
+  | "eventEndTime"
+  | "contactPerson"
+  | "amount"
+  | "status"
+  | "tables"
+  | "chairs"
+  | "fnbItems"
+  | "totalAttendees"
+  | "projectNotes";
+
+type SortState = { key: SortKey; dir: SortDirection } | null;
+
 interface ProjectsListProps {
   projects: Project[];
+}
+
+function parseTimeToMinutes(value: string | undefined): number | null {
+  if (!value) return null;
+  const match = /^(\d{1,2}):(\d{2})$/.exec(value.trim());
+  if (!match) return null;
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+  if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
+  return hours * 60 + minutes;
+}
+
+function parseDateToEpochMs(value: string | undefined): number | null {
+  if (!value) return null;
+  // 對 date-only 字串用 T12 避免時區偏移造成跨日
+  const d = /^\d{4}-\d{2}-\d{2}$/.test(value)
+    ? new Date(`${value}T12:00:00`)
+    : new Date(value);
+  const ms = d.getTime();
+  return Number.isFinite(ms) ? ms : null;
+}
+
+function parseIntIfNumeric(value: string | null | undefined): number | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!/^\d+$/.test(trimmed)) return null;
+  const n = Number.parseInt(trimmed, 10);
+  return Number.isFinite(n) ? n : null;
+}
+
+function getAriaSort(
+  sort: SortState,
+  key: SortKey,
+): React.AriaAttributes["aria-sort"] {
+  if (!sort || sort.key !== key) return "none";
+  return sort.dir === "asc" ? "ascending" : "descending";
+}
+
+function SortIcon({
+  active,
+  dir,
+}: {
+  active: boolean;
+  dir: SortDirection;
+}) {
+  if (!active) {
+    return (
+      <ArrowUpDown
+        className="size-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+        aria-hidden
+      />
+    );
+  }
+  return dir === "asc" ? (
+    <ArrowUp className="size-3.5 text-primary" aria-hidden />
+  ) : (
+    <ArrowDown className="size-3.5 text-primary" aria-hidden />
+  );
 }
 
 export function ProjectsList({ projects }: ProjectsListProps) {
   const [, startTransition] = useTransition();
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [sort, setSort] = useState<SortState>(null);
+
+  const sortedProjects = useMemo(() => {
+    if (!sort) return projects;
+
+    const localeCompareZhTw = (a: string, b: string) =>
+      a.localeCompare(b, "zh-TW", { sensitivity: "base" });
+
+    const getStatusLabelForSort = (project: Project) => {
+      const statusForUi = normalizeProjectStatusForUi(project.status);
+      return statusForUi ? getStatusLabel(statusForUi) : "";
+    };
+
+    const getSortValue = (project: Project): string | number | null => {
+      switch (sort.key) {
+        case "customer":
+          return project.customer ?? "";
+        case "eventOrVenueUse":
+          return project.eventOrVenueUse ?? "";
+        case "space":
+          return project.space ?? "";
+        case "date": {
+          const rentalDate = project.rentals?.[0]?.date;
+          return (
+            parseDateToEpochMs(rentalDate) ?? parseDateToEpochMs(project.date)
+          );
+        }
+        case "eventStartTime":
+          return parseTimeToMinutes(project.rentals?.[0]?.startTime);
+        case "eventEndTime":
+          return parseTimeToMinutes(project.rentals?.[0]?.endTime);
+        case "contactPerson":
+          return project.contactPerson ?? "";
+        case "amount":
+          return project.amount ?? null;
+        case "status":
+          return getStatusLabelForSort(project);
+        case "tables": {
+          const n = parseIntIfNumeric(project.tables);
+          return n ?? (project.tables ?? "");
+        }
+        case "chairs":
+          return project.chairs ?? null;
+        case "fnbItems":
+          return project.fnbItems ?? "";
+        case "totalAttendees":
+          return project.totalAttendees ?? null;
+        case "projectNotes":
+          return project.projectNotes ?? "";
+      }
+    };
+
+    const withIndex = projects.map((project, originalIndex) => ({
+      project,
+      originalIndex,
+      value: getSortValue(project),
+    }));
+
+    withIndex.sort((a, b) => {
+      const dirMultiplier = sort.dir === "asc" ? 1 : -1;
+      const aVal = a.value;
+      const bVal = b.value;
+
+      if (aVal == null && bVal == null) return a.originalIndex - b.originalIndex;
+      if (aVal == null) return 1;
+      if (bVal == null) return -1;
+
+      let result = 0;
+      if (typeof aVal === "number" && typeof bVal === "number") {
+        result = aVal - bVal;
+      } else if (typeof aVal === "string" && typeof bVal === "string") {
+        result = localeCompareZhTw(aVal, bVal);
+      } else if (typeof aVal === "number" && typeof bVal === "string") {
+        // 混合型別（例如 tables）：數字先排前，再排文字
+        result = -1;
+      } else if (typeof aVal === "string" && typeof bVal === "number") {
+        result = 1;
+      } else {
+        result = localeCompareZhTw(String(aVal), String(bVal));
+      }
+
+      if (result === 0) return a.originalIndex - b.originalIndex;
+      return result * dirMultiplier;
+    });
+
+    return withIndex.map((x) => x.project);
+  }, [projects, sort]);
+
+  function toggleSort(nextKey: SortKey) {
+    setSort((prev) => {
+      if (!prev || prev.key !== nextKey) return { key: nextKey, dir: "asc" };
+      return { key: nextKey, dir: prev.dir === "asc" ? "desc" : "asc" };
+    });
+  }
 
   function handleDeleteConfirm(projectId: string) {
     setDeleteError(null);
@@ -82,43 +255,216 @@ export function ProjectsList({ projects }: ProjectsListProps) {
             </TableCaption>
             <TableHeader>
               <TableRow>
-                <TableHead scope="col">
-                  {PROJECTS_PAGE.columnCustomer}
+                <TableHead scope="col" aria-sort={getAriaSort(sort, "customer")}>
+                  <button
+                    type="button"
+                    className="group inline-flex items-center gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                    onClick={() => toggleSort("customer")}
+                  >
+                    <span>{PROJECTS_PAGE.columnCustomer}</span>
+                    <SortIcon
+                      active={sort?.key === "customer"}
+                      dir={sort?.key === "customer" ? sort.dir : "asc"}
+                    />
+                  </button>
                 </TableHead>
-                <TableHead scope="col">
-                  {PROJECTS_PAGE.columnEventOrVenueUse}
+                <TableHead
+                  scope="col"
+                  aria-sort={getAriaSort(sort, "eventOrVenueUse")}
+                >
+                  <button
+                    type="button"
+                    className="group inline-flex items-center gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                    onClick={() => toggleSort("eventOrVenueUse")}
+                  >
+                    <span>{PROJECTS_PAGE.columnEventOrVenueUse}</span>
+                    <SortIcon
+                      active={sort?.key === "eventOrVenueUse"}
+                      dir={sort?.key === "eventOrVenueUse" ? sort.dir : "asc"}
+                    />
+                  </button>
                 </TableHead>
-                <TableHead scope="col">{PROJECTS_PAGE.columnSpace}</TableHead>
-                <TableHead scope="col">{PROJECTS_PAGE.columnDate}</TableHead>
+                <TableHead scope="col" aria-sort={getAriaSort(sort, "space")}>
+                  <button
+                    type="button"
+                    className="group inline-flex items-center gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                    onClick={() => toggleSort("space")}
+                  >
+                    <span>{PROJECTS_PAGE.columnSpace}</span>
+                    <SortIcon
+                      active={sort?.key === "space"}
+                      dir={sort?.key === "space" ? sort.dir : "asc"}
+                    />
+                  </button>
+                </TableHead>
+                <TableHead scope="col" aria-sort={getAriaSort(sort, "date")}>
+                  <button
+                    type="button"
+                    className="group inline-flex items-center gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                    onClick={() => toggleSort("date")}
+                  >
+                    <span>{PROJECTS_PAGE.columnDate}</span>
+                    <SortIcon
+                      active={sort?.key === "date"}
+                      dir={sort?.key === "date" ? sort.dir : "asc"}
+                    />
+                  </button>
+                </TableHead>
                 <TableHead
                   scope="col"
                   className="tabular-nums whitespace-nowrap"
+                  aria-sort={getAriaSort(sort, "eventStartTime")}
                 >
-                  {PROJECTS_PAGE.columnEventStartTime}
+                  <button
+                    type="button"
+                    className="group inline-flex items-center gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                    onClick={() => toggleSort("eventStartTime")}
+                  >
+                    <span>{PROJECTS_PAGE.columnEventStartTime}</span>
+                    <SortIcon
+                      active={sort?.key === "eventStartTime"}
+                      dir={sort?.key === "eventStartTime" ? sort.dir : "asc"}
+                    />
+                  </button>
                 </TableHead>
                 <TableHead
                   scope="col"
                   className="tabular-nums whitespace-nowrap"
+                  aria-sort={getAriaSort(sort, "eventEndTime")}
                 >
-                  {PROJECTS_PAGE.columnEventEndTime}
+                  <button
+                    type="button"
+                    className="group inline-flex items-center gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                    onClick={() => toggleSort("eventEndTime")}
+                  >
+                    <span>{PROJECTS_PAGE.columnEventEndTime}</span>
+                    <SortIcon
+                      active={sort?.key === "eventEndTime"}
+                      dir={sort?.key === "eventEndTime" ? sort.dir : "asc"}
+                    />
+                  </button>
                 </TableHead>
-                <TableHead scope="col">{PROJECTS_PAGE.columnContact}</TableHead>
-                <TableHead scope="col" className="text-right tabular-nums">
-                  {PROJECTS_PAGE.columnAmount}
+                <TableHead
+                  scope="col"
+                  aria-sort={getAriaSort(sort, "contactPerson")}
+                >
+                  <button
+                    type="button"
+                    className="group inline-flex items-center gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                    onClick={() => toggleSort("contactPerson")}
+                  >
+                    <span>{PROJECTS_PAGE.columnContact}</span>
+                    <SortIcon
+                      active={sort?.key === "contactPerson"}
+                      dir={sort?.key === "contactPerson" ? sort.dir : "asc"}
+                    />
+                  </button>
                 </TableHead>
-                <TableHead scope="col">{PROJECTS_PAGE.columnStatus}</TableHead>
-                <TableHead scope="col">{PROJECTS_PAGE.columnTables}</TableHead>
-                <TableHead scope="col" className="text-right tabular-nums">
-                  {PROJECTS_PAGE.columnChairs}
+                <TableHead
+                  scope="col"
+                  className="text-right tabular-nums"
+                  aria-sort={getAriaSort(sort, "amount")}
+                >
+                  <button
+                    type="button"
+                    className="group inline-flex w-full items-center justify-end gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                    onClick={() => toggleSort("amount")}
+                  >
+                    <span>{PROJECTS_PAGE.columnAmount}</span>
+                    <SortIcon
+                      active={sort?.key === "amount"}
+                      dir={sort?.key === "amount" ? sort.dir : "asc"}
+                    />
+                  </button>
                 </TableHead>
-                <TableHead scope="col">
-                  {PROJECTS_PAGE.columnFnbItems}
+                <TableHead scope="col" aria-sort={getAriaSort(sort, "status")}>
+                  <button
+                    type="button"
+                    className="group inline-flex items-center gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                    onClick={() => toggleSort("status")}
+                  >
+                    <span>{PROJECTS_PAGE.columnStatus}</span>
+                    <SortIcon
+                      active={sort?.key === "status"}
+                      dir={sort?.key === "status" ? sort.dir : "asc"}
+                    />
+                  </button>
                 </TableHead>
-                <TableHead scope="col" className="text-right tabular-nums">
-                  {PROJECTS_PAGE.columnTotalAttendees}
+                <TableHead scope="col" aria-sort={getAriaSort(sort, "tables")}>
+                  <button
+                    type="button"
+                    className="group inline-flex items-center gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                    onClick={() => toggleSort("tables")}
+                  >
+                    <span>{PROJECTS_PAGE.columnTables}</span>
+                    <SortIcon
+                      active={sort?.key === "tables"}
+                      dir={sort?.key === "tables" ? sort.dir : "asc"}
+                    />
+                  </button>
                 </TableHead>
-                <TableHead scope="col">
-                  {PROJECTS_PAGE.columnProjectNotes}
+                <TableHead
+                  scope="col"
+                  className="text-right tabular-nums"
+                  aria-sort={getAriaSort(sort, "chairs")}
+                >
+                  <button
+                    type="button"
+                    className="group inline-flex w-full items-center justify-end gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                    onClick={() => toggleSort("chairs")}
+                  >
+                    <span>{PROJECTS_PAGE.columnChairs}</span>
+                    <SortIcon
+                      active={sort?.key === "chairs"}
+                      dir={sort?.key === "chairs" ? sort.dir : "asc"}
+                    />
+                  </button>
+                </TableHead>
+                <TableHead scope="col" aria-sort={getAriaSort(sort, "fnbItems")}>
+                  <button
+                    type="button"
+                    className="group inline-flex items-center gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                    onClick={() => toggleSort("fnbItems")}
+                  >
+                    <span>{PROJECTS_PAGE.columnFnbItems}</span>
+                    <SortIcon
+                      active={sort?.key === "fnbItems"}
+                      dir={sort?.key === "fnbItems" ? sort.dir : "asc"}
+                    />
+                  </button>
+                </TableHead>
+                <TableHead
+                  scope="col"
+                  className="text-right tabular-nums"
+                  aria-sort={getAriaSort(sort, "totalAttendees")}
+                >
+                  <button
+                    type="button"
+                    className="group inline-flex w-full items-center justify-end gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                    onClick={() => toggleSort("totalAttendees")}
+                  >
+                    <span>{PROJECTS_PAGE.columnTotalAttendees}</span>
+                    <SortIcon
+                      active={sort?.key === "totalAttendees"}
+                      dir={sort?.key === "totalAttendees" ? sort.dir : "asc"}
+                    />
+                  </button>
+                </TableHead>
+                <TableHead
+                  scope="col"
+                  aria-sort={getAriaSort(sort, "projectNotes")}
+                >
+                  <button
+                    type="button"
+                    className="group inline-flex items-center gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                    onClick={() => toggleSort("projectNotes")}
+                  >
+                    <span>{PROJECTS_PAGE.columnProjectNotes}</span>
+                    <SortIcon
+                      active={sort?.key === "projectNotes"}
+                      dir={sort?.key === "projectNotes" ? sort.dir : "asc"}
+                    />
+                  </button>
                 </TableHead>
                 <TableHead scope="col" className="w-0">
                   {PROJECTS_PAGE.columnActions}
@@ -126,7 +472,7 @@ export function ProjectsList({ projects }: ProjectsListProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {projects.map((project) => {
+              {sortedProjects.map((project) => {
                 const statusForUi = normalizeProjectStatusForUi(project.status);
                 return (
                   <TableRow key={project.id}>
