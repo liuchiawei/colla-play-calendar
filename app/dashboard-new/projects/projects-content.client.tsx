@@ -85,7 +85,9 @@ function parseDateToDateOnly(value: string | undefined | null): Date | null {
   return d;
 }
 
-function rentalToDateRange(rental: Project["rentals"][number]): DateRange | null {
+function rentalToDateRange(
+  rental: NonNullable<Project["rentals"]>[number],
+): DateRange | null {
   const from = parseDateToDateOnly(rental.date);
   const to = parseDateToDateOnly(rental.endDate ?? rental.date);
   if (!from || !to) return null;
