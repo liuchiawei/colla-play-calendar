@@ -124,7 +124,7 @@ export const DASHBOARD_OVERVIEW = {
   noProjectsYet: "尚無專案",
   // 總覽統計四項
   statsMonthlyRentalLabel: "當月場租收入",
-  statsMonthlyRentalDescription: "僅計算已付訂專案",
+  statsMonthlyRentalDescription: "僅計算已確定專案（含已付訂）",
   statsNegotiatingLabel: "洽談中專案",
   statsNegotiatingDescription: "待確認訂金",
   statsConfirmedLabel: "已確認專案",

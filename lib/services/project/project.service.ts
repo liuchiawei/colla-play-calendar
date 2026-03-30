@@ -283,13 +283,15 @@ export const getOverviewStats = cache(async (): Promise<OverviewStatsData> => {
         .aggregate({
           where: {
             date: { gte: start, lte: end },
-            project: { status: "deposit_paid" },
+            project: { status: { in: ["confirmed", "deposit_paid"] } },
           },
           _sum: { rentalAmount: true, fnbAmount: true },
         })
         .then((r) => (r._sum.rentalAmount ?? 0) + (r._sum.fnbAmount ?? 0)),
       prisma.project.count({ where: { status: "negotiating" } }),
-      prisma.project.count({ where: { status: "deposit_paid" } }),
+      prisma.project.count({
+        where: { status: { in: ["confirmed", "deposit_paid"] } },
+      }),
       prisma.projectRental.count({ where: { date: todayStr } }),
     ]);
 

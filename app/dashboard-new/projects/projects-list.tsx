@@ -28,6 +28,7 @@ import { PROJECTS_PAGE, PROJECT_DETAIL_PAGE } from "@/lib/message";
 import {
   getStatusLabel,
   getStatusColorClass,
+  normalizeProjectStatusForUi,
 } from "@/lib/config/project-status";
 import { addMinutesToTime, subtractMinutesFromTime } from "@/lib/date-utils";
 import type { Project } from "@/lib/types/project";
@@ -156,8 +157,10 @@ export function ProjectsList({ projects }: ProjectsListProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {projects.map((project) => (
-                <TableRow key={project.id}>
+              {projects.map((project) => {
+                const statusForUi = normalizeProjectStatusForUi(project.status);
+                return (
+                  <TableRow key={project.id}>
                   <TableCell className="min-w-0 max-w-[120px] truncate">
                     {project.customer}
                   </TableCell>
@@ -205,16 +208,18 @@ export function ProjectsList({ projects }: ProjectsListProps) {
                     {CURRENCY_FORMATTER.format(project.amount)}
                   </TableCell>
                   <TableCell>
-                    <span className="flex items-center gap-2">
-                      <span
-                        className={cn(
-                          "size-2 shrink-0 rounded-full",
-                          getStatusColorClass(project.status),
-                        )}
-                        aria-hidden
-                      />
-                      {getStatusLabel(project.status)}
-                    </span>
+                    {statusForUi ? (
+                      <span className="flex items-center gap-2">
+                        <span
+                          className={cn(
+                            "size-2 shrink-0 rounded-full",
+                            getStatusColorClass(statusForUi),
+                          )}
+                          aria-hidden
+                        />
+                        {getStatusLabel(statusForUi)}
+                      </span>
+                    ) : null}
                   </TableCell>
                   <TableCell className="min-w-0 max-w-[80px] truncate">
                     {project.tables ?? "—"}
@@ -295,7 +300,8 @@ export function ProjectsList({ projects }: ProjectsListProps) {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
             </TableBody>
           </Table>
         </div>

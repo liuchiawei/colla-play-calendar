@@ -20,6 +20,7 @@ import { PROJECTS_PAGE, SPACE_DETAIL_PAGE } from "@/lib/message";
 import {
   getStatusLabel,
   getStatusColorClass,
+  normalizeProjectStatusForUi,
 } from "@/lib/config/project-status";
 import type { Project } from "@/lib/types/project";
 import { SpaceProjectsCalendar } from "./space-projects-calendar.client";
@@ -158,8 +159,10 @@ export function SpaceProjectsContent({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredProjects.map((project) => (
-                      <TableRow key={project.id}>
+                    {filteredProjects.map((project) => {
+                      const statusForUi = normalizeProjectStatusForUi(project.status);
+                      return (
+                        <TableRow key={project.id}>
                         <TableCell className="min-w-0 max-w-[120px] truncate">
                           {project.customer}
                         </TableCell>
@@ -184,19 +187,22 @@ export function SpaceProjectsContent({
                           {CURRENCY_FORMATTER.format(project.amount)}
                         </TableCell>
                         <TableCell>
+                        {statusForUi ? (
                           <span className="flex items-center gap-2">
                             <span
                               className={cn(
                                 "size-2 shrink-0 rounded-full",
-                                getStatusColorClass(project.status),
+                                getStatusColorClass(statusForUi),
                               )}
                               aria-hidden
                             />
-                            {getStatusLabel(project.status)}
+                            {getStatusLabel(statusForUi)}
                           </span>
+                        ) : null}
                         </TableCell>
-                      </TableRow>
-                    ))}
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               )}

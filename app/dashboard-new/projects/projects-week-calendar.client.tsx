@@ -23,6 +23,7 @@ import { PROJECTS_PAGE } from "@/lib/message";
 import {
   PROJECT_STATUS_UI_SELECTABLE,
   getStatusColorClass,
+  normalizeProjectStatusForUi,
 } from "@/lib/config/project-status";
 import type { Project, ProjectStatus } from "@/lib/types/project";
 import { getProjectTimeRange } from "@/lib/utils/project";
@@ -41,10 +42,12 @@ function projectDateKey(project: Project): string {
 }
 
 function badgeClassNameByStatus(status: ProjectStatus): string {
+  const statusForUi = normalizeProjectStatusForUi(status);
+  if (!statusForUi) return cn("rounded-sm border-0 bg-muted text-foreground");
   return cn(
     "rounded-sm border-0",
-    getStatusColorClass(status),
-    status !== "cancelled" ? "text-white" : "",
+    getStatusColorClass(statusForUi),
+    "text-white",
   );
 }
 

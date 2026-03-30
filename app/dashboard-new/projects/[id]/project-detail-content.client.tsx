@@ -78,7 +78,7 @@ import {
   PROJECT_STATUS_UI_SELECTABLE,
   getStatusLabel,
   getStatusColorClass,
-  isProjectStatusUiSelectable,
+  normalizeProjectStatusForUi,
 } from "@/lib/config/project-status";
 import type {
   ProjectWithRentals,
@@ -231,11 +231,14 @@ function buildProjectDetailCsv(
       .map(escapeCsvCell)
       .join(","),
   );
-  rows.push(
-    [PROJECT_DETAIL_PAGE.labelStatus, getStatusLabel(project.status)]
-      .map(escapeCsvCell)
-      .join(","),
-  );
+  const statusForUi = normalizeProjectStatusForUi(project.status);
+  if (statusForUi) {
+    rows.push(
+      [PROJECT_DETAIL_PAGE.labelStatus, getStatusLabel(statusForUi)]
+        .map(escapeCsvCell)
+        .join(","),
+    );
+  }
   rows.push(
     [PROJECT_DETAIL_PAGE.labelCreatedAt, formatDateTime(project.createdAt)]
       .map(escapeCsvCell)
@@ -375,9 +378,7 @@ const editProjectSchema = z
       .enum([
         "negotiating",
         "confirmed",
-        "deposit_paid",
         "completed",
-        "cancelled",
       ])
       .optional(),
     rentals: z.array(rentalItemSchema).min(1, CREATE_PROJECT_PAGE.errorRequired),
@@ -463,6 +464,7 @@ function projectToFormValues(project: ProjectWithRentals): EditFormValues {
   const { preset, customDetail } = splitActivityTypeForForm(
     project.eventOrVenueUse,
   );
+  const statusForUi = normalizeProjectStatusForUi(project.status);
   return {
     customerName: project.customerName,
     customerPhone: project.customerPhone,
@@ -478,7 +480,7 @@ function projectToFormValues(project: ProjectWithRentals): EditFormValues {
     projectNotes: project.projectNotes ?? "",
     collaPlayContactId: project.collaPlayContactId,
     internalNotes: project.internalNotes ?? "",
-    status: project.status as ProjectStatus,
+    status: statusForUi ?? undefined,
     rentals:
       project.rentals.length > 0
         ? project.rentals.map((r) => ({
@@ -1238,6 +1240,7 @@ export function ProjectDetailContent({
   const collaPlayContactName =
     adminOptions.find((o) => o.id === project.collaPlayContactId)?.name ??
     project.collaPlayContactId;
+  const statusForUi = normalizeProjectStatusForUi(project.status);
 
   const form = useForm<EditFormValues>({
     resolver: zodResolver(editProjectSchema) as Resolver<EditFormValues>,
@@ -1532,38 +1535,35 @@ export function ProjectDetailContent({
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{PROJECT_DETAIL_PAGE.labelStatus}</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {field.value &&
-                        !isProjectStatusUiSelectable(
-                          field.value as ProjectStatus,
-                        ) ? (
-                          <SelectItem value={field.value}>
-                            {getStatusLabel(field.value as ProjectStatus)}
-                          </SelectItem>
-                        ) : null}
-                        {PROJECT_STATUS_UI_SELECTABLE.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {PROJECTS_PAGE[opt.labelKey]}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {statusForUi ? (
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{PROJECT_DETAIL_PAGE.labelStatus}</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {PROJECT_STATUS_UI_SELECTABLE.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {PROJECTS_PAGE[opt.labelKey]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ) : null}
             </CardContent>
           </Card>
 
@@ -2146,49 +2146,39 @@ export function ProjectDetailContent({
       ) : null}
       <div className="flex justify-between">
         {/* Status Selector */}
-        <div className="flex items-center gap-2">
-          <Select
-            value={project.status}
-            onValueChange={(v) => handleStatusChange(v as ProjectStatus)}
-            disabled={isPendingStatus}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {!isProjectStatusUiSelectable(project.status) ? (
-                <SelectItem value={project.status}>
-                  <span
-                    className={cn(
-                      "mr-2 inline-block size-2 rounded-full",
-                      getStatusColorClass(project.status),
-                    )}
-                    aria-hidden
-                  />
-                  {getStatusLabel(project.status)}
-                </SelectItem>
-              ) : null}
-              {PROJECT_STATUS_UI_SELECTABLE.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  <span
-                    className={cn(
-                      "mr-2 inline-block size-2 rounded-full",
-                      opt.colorClass,
-                    )}
-                    aria-hidden
-                  />
-                  {PROJECTS_PAGE[opt.labelKey]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {isPendingStatus ? (
-            <Loader2
-              className="size-4 animate-spin text-muted-foreground"
-              aria-hidden
-            />
-          ) : null}
-        </div>
+        {statusForUi ? (
+          <div className="flex items-center gap-2">
+            <Select
+              value={statusForUi}
+              onValueChange={(v) => handleStatusChange(v as ProjectStatus)}
+              disabled={isPendingStatus}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PROJECT_STATUS_UI_SELECTABLE.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    <span
+                      className={cn(
+                        "mr-2 inline-block size-2 rounded-full",
+                        opt.colorClass,
+                      )}
+                      aria-hidden
+                    />
+                    {PROJECTS_PAGE[opt.labelKey]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {isPendingStatus ? (
+              <Loader2
+                className="size-4 animate-spin text-muted-foreground"
+                aria-hidden
+              />
+            ) : null}
+          </div>
+        ) : null}
         {/* Header Buttons */}
         <div className="flex flex-wrap justify-end gap-2">
           {/* Edit Button */}
@@ -2328,21 +2318,23 @@ export function ProjectDetailContent({
               <p className="font-medium">{project.eventOrVenueUse}</p>
             </div>
             {/* Status */}
-            <div>
-              <p className="text-sm text-muted-foreground">
-                {PROJECT_DETAIL_PAGE.labelStatus}
-              </p>
-              <p className="font-medium flex items-center gap-2">
-                <span
-                  className={cn(
-                    "size-2.5 shrink-0 rounded-full",
-                    getStatusColorClass(project.status),
-                  )}
-                  aria-hidden
-                />
-                {getStatusLabel(project.status)}
-              </p>
-            </div>
+            {statusForUi ? (
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  {PROJECT_DETAIL_PAGE.labelStatus}
+                </p>
+                <p className="font-medium flex items-center gap-2">
+                  <span
+                    className={cn(
+                      "size-2.5 shrink-0 rounded-full",
+                      getStatusColorClass(statusForUi),
+                    )}
+                    aria-hidden
+                  />
+                  {getStatusLabel(statusForUi)}
+                </p>
+              </div>
+            ) : null}
             {project.fnbItems ? (
               <div className="sm:col-span-2">
                 <p className="text-sm text-muted-foreground">
