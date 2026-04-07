@@ -59,9 +59,17 @@ const DATE_FORMATTER = new Intl.DateTimeFormat("zh-TW", {
   dateStyle: "short",
 });
 
-const CURRENCY_FORMATTER = new Intl.NumberFormat("zh-TW", {
+// const CURRENCY_FORMATTER = new Intl.NumberFormat("zh-TW", {
+//   style: "currency",
+//   currency: "TWD",
+// });
+
+/** 列表「金額」欄：僅顯示整數（無小數） */
+const CURRENCY_FORMATTER_INTEGER = new Intl.NumberFormat("zh-TW", {
   style: "currency",
   currency: "TWD",
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
 });
 
 /** 設備勾選一行顯示（與 CSV／詳情一致） */
@@ -279,7 +287,7 @@ function renderProjectsListCell(
     case "contactPerson":
       return project.contactPerson;
     case "amount":
-      return CURRENCY_FORMATTER.format(project.amount);
+      return CURRENCY_FORMATTER_INTEGER.format(project.amount);
     case "status":
       return statusForUi ? (
         <span className="flex items-center gap-2">
@@ -307,13 +315,13 @@ function renderProjectsListCell(
         ) ?? "—"
       );
     case "rentalAmountTotal":
-      return CURRENCY_FORMATTER.format(project.rentalAmountTotal);
+      return CURRENCY_FORMATTER_INTEGER.format(project.rentalAmountTotal);
     case "fnbAmountTotal":
-      return CURRENCY_FORMATTER.format(project.fnbAmountTotal);
+      return CURRENCY_FORMATTER_INTEGER.format(project.fnbAmountTotal);
     case "paidAmountTotal":
-      return CURRENCY_FORMATTER.format(project.paidAmountTotal);
+      return CURRENCY_FORMATTER_INTEGER.format(project.paidAmountTotal);
     case "pendingAmountTotal":
-      return CURRENCY_FORMATTER.format(project.pendingAmountTotal);
+      return CURRENCY_FORMATTER_INTEGER.format(project.pendingAmountTotal);
     case "fnbItems":
       return project.fnbItems ?? "—";
     case "projectNotes":
