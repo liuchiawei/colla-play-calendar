@@ -3,8 +3,6 @@ import {
   Tag,
   Users,
   Home,
-  Layout,
-  Settings,
   Instagram,
   Facebook,
   Info,

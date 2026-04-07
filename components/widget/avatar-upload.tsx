@@ -149,7 +149,7 @@ export function AvatarUpload({
         }
       }
     },
-    [onUploadSuccess, onUploadError, fetchUser]
+    [onUploadSuccess, onUploadError, fetchUser, user?.id]
   );
 
   // 處理移除檔案

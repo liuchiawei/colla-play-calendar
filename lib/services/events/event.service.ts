@@ -12,7 +12,6 @@ import type {
   EventWithCategory,
   EventInput,
   EventStatus,
-  EventReviewInput,
 } from "@/lib/types";
 
 /**
@@ -264,7 +263,6 @@ export async function getEventsByStatus(
 export async function reviewEvent(
   eventId: string,
   status: EventStatus,
-  adminId: string
 ): Promise<EventWithCategory> {
   if (!eventId || !status) {
     throw new Error("活動 ID 和狀態為必填");
