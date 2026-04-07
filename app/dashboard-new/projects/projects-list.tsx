@@ -37,6 +37,7 @@ import {
   CREATE_PROJECT_PAGE,
   PROJECTS_PAGE,
   PROJECT_DETAIL_PAGE,
+  FNB_AMOUNT_PENDING_LABEL,
 } from "@/lib/message";
 import {
   getStatusLabel,
@@ -155,7 +156,8 @@ const PROJECT_LIST_SORT_VALUE_GETTERS: {
     formatEquipmentNeedsLine(p.equipmentNeeds, EQUIPMENT_NEEDS_LINE_LABELS) ??
     "",
   rentalAmountTotal: (p) => p.rentalAmountTotal,
-  fnbAmountTotal: (p) => p.fnbAmountTotal,
+  fnbAmountTotal: (p) =>
+    p.hasFnbAmountPending ? null : p.fnbAmountTotal,
   paidAmountTotal: (p) => p.paidAmountTotal,
   pendingAmountTotal: (p) => p.pendingAmountTotal,
   totalAttendees: (p) => {
@@ -317,7 +319,9 @@ function renderProjectsListCell(
     case "rentalAmountTotal":
       return CURRENCY_FORMATTER_INTEGER.format(project.rentalAmountTotal);
     case "fnbAmountTotal":
-      return CURRENCY_FORMATTER_INTEGER.format(project.fnbAmountTotal);
+      return project.hasFnbAmountPending
+        ? FNB_AMOUNT_PENDING_LABEL
+        : CURRENCY_FORMATTER_INTEGER.format(project.fnbAmountTotal);
     case "paidAmountTotal":
       return CURRENCY_FORMATTER_INTEGER.format(project.paidAmountTotal);
     case "pendingAmountTotal":

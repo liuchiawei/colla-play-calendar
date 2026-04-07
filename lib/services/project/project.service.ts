@@ -50,6 +50,18 @@ function normalizeEndDateForDb(
   return e;
 }
 
+/** 待定時餐飲金額固定為 0，與列表加總／統計一致 */
+function rentalFnbFieldsForDb(r: {
+  fnbAmount: number;
+  fnbAmountPending?: boolean;
+}): { fnbAmount: number; fnbAmountPending: boolean } {
+  const pending = r.fnbAmountPending ?? false;
+  return {
+    fnbAmountPending: pending,
+    fnbAmount: pending ? 0 : Math.max(0, Math.round(r.fnbAmount)),
+  };
+}
+
 type RentalWindowInput = {
   spaceIds: string[];
   date: string;
@@ -238,6 +250,7 @@ function mapRowToProject(
       teardownMinutesAfter: number;
       rentalAmount: number;
       fnbAmount: number;
+      fnbAmountPending: boolean;
       paidAmount: number;
       pendingAmount: number;
     }>;
@@ -258,6 +271,7 @@ function mapRowToProject(
     0,
   );
   const fnbAmountTotal = row.rentals.reduce((sum, r) => sum + r.fnbAmount, 0);
+  const hasFnbAmountPending = row.rentals.some((r) => r.fnbAmountPending);
   const paidAmountTotal = row.rentals.reduce((sum, r) => sum + r.paidAmount, 0);
   const pendingAmountTotal = row.rentals.reduce(
     (sum, r) => sum + r.pendingAmount,
@@ -275,6 +289,7 @@ function mapRowToProject(
     amount,
     rentalAmountTotal,
     fnbAmountTotal,
+    hasFnbAmountPending,
     paidAmountTotal,
     pendingAmountTotal,
     status: row.status as Project["status"],
@@ -465,6 +480,7 @@ export async function updateProject(
       },
     });
     for (const r of input.rentals) {
+      const fnbFields = rentalFnbFieldsForDb(r);
       await tx.projectRental.create({
         data: {
           projectId: id,
@@ -475,9 +491,14 @@ export async function updateProject(
           setupMinutesBefore: r.setupMinutesBefore ?? 30,
           teardownMinutesAfter: r.teardownMinutesAfter ?? 30,
           rentalAmount: Math.max(0, Math.round(r.rentalAmount)),
-          fnbAmount: Math.max(0, Math.round(r.fnbAmount)),
+          ...fnbFields,
           paidAmount: Math.max(0, Math.round(r.paidAmount)),
-          pendingAmount: computeProjectRentalPendingAmount(r),
+          pendingAmount: computeProjectRentalPendingAmount({
+            rentalAmount: r.rentalAmount,
+            fnbAmount: fnbFields.fnbAmount,
+            paidAmount: r.paidAmount,
+            fnbAmountPending: fnbFields.fnbAmountPending,
+          }),
           spaceIds: r.spaceIds,
         },
       });
@@ -536,6 +557,7 @@ export async function updateProjectRental(
     excludeRentalId: rentalId,
   });
 
+  const fnbFields = rentalFnbFieldsForDb(input);
   const updated = await prisma.projectRental.update({
     where: { id: rentalId },
     data: {
@@ -546,9 +568,14 @@ export async function updateProjectRental(
       setupMinutesBefore: input.setupMinutesBefore ?? 30,
       teardownMinutesAfter: input.teardownMinutesAfter ?? 30,
       rentalAmount: Math.max(0, Math.round(input.rentalAmount)),
-      fnbAmount: Math.max(0, Math.round(input.fnbAmount)),
+      ...fnbFields,
       paidAmount: Math.max(0, Math.round(input.paidAmount)),
-      pendingAmount: computeProjectRentalPendingAmount(input),
+      pendingAmount: computeProjectRentalPendingAmount({
+        rentalAmount: input.rentalAmount,
+        fnbAmount: fnbFields.fnbAmount,
+        paidAmount: input.paidAmount,
+        fnbAmountPending: fnbFields.fnbAmountPending,
+      }),
       spaceIds: input.spaceIds,
     },
   });
@@ -624,6 +651,7 @@ export async function createProject(
     });
 
     for (const r of input.rentals) {
+      const fnbFields = rentalFnbFieldsForDb(r);
       await tx.projectRental.create({
         data: {
           projectId: created.id,
@@ -634,9 +662,14 @@ export async function createProject(
           setupMinutesBefore: r.setupMinutesBefore ?? 30,
           teardownMinutesAfter: r.teardownMinutesAfter ?? 30,
           rentalAmount: Math.max(0, Math.round(r.rentalAmount)),
-          fnbAmount: Math.max(0, Math.round(r.fnbAmount)),
+          ...fnbFields,
           paidAmount: Math.max(0, Math.round(r.paidAmount)),
-          pendingAmount: computeProjectRentalPendingAmount(r),
+          pendingAmount: computeProjectRentalPendingAmount({
+            rentalAmount: r.rentalAmount,
+            fnbAmount: fnbFields.fnbAmount,
+            paidAmount: r.paidAmount,
+            fnbAmountPending: fnbFields.fnbAmountPending,
+          }),
           spaceIds: r.spaceIds,
         },
       });

@@ -35,6 +35,8 @@ export interface Project {
   rentalAmountTotal: number;
   /** 列表用：各筆租借餐飲金額加總 */
   fnbAmountTotal: number;
+  /** 列表用：任一段租借為餐飲待定時，餐飲欄顯示「餐飲金額待定」 */
+  hasFnbAmountPending: boolean;
   /** 列表用：各筆租借已付加總 */
   paidAmountTotal: number;
   /** 列表用：各筆租借待付加總 */
@@ -77,6 +79,8 @@ export interface RentalItem {
   teardownMinutesAfter?: number; // 場復延後分鐘數，預設 30
   rentalAmount: number;
   fnbAmount: number;
+  /** 未傳視同 false（API 向前相容） */
+  fnbAmountPending?: boolean;
   paidAmount: number;
   pendingAmount: number;
 }

@@ -187,6 +187,9 @@ export const PROJECTS_PAGE = {
   downloadListCsvResetMonthAria: "將日期區間重設為目前月份",
 } as const;
 
+/** 餐飲金額尚未確定：列表／詳情／CSV 顯示與表單勾選（單一來源） */
+export const FNB_AMOUNT_PENDING_LABEL = "餐飲金額待定" as const;
+
 // Create Project Page (建立新專案表單)
 export const CREATE_PROJECT_PAGE = {
   pageTitle: "建立專案",
@@ -261,6 +264,8 @@ export const CREATE_PROJECT_PAGE = {
   teardownDefault: "預設：結束後 30 分鐘",
   labelRentalAmount: "場租金額 (NT$)",
   labelFnbAmount: "餐飲金額 (NT$)",
+  /** 與 {@link FNB_AMOUNT_PENDING_LABEL} 同文案，供勾選項使用 */
+  labelFnbAmountPending: FNB_AMOUNT_PENDING_LABEL,
   labelPaidAmount: "已付款項 (NT$)",
   /** 建立專案時：任一段已付款項大於 0 則狀態為已確定 */
   hintPaidAmountSetsConfirmed:

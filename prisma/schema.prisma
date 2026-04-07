@@ -316,6 +316,7 @@ model ProjectRental {
   teardownMinutesAfter Int      @default(30)
   rentalAmount         Int      @default(0) // 場地費
   fnbAmount            Int      @default(0) // 餐飲費
+  fnbAmountPending     Boolean  @default(false) // 餐飲金額待定（顯示用；待定時 fnbAmount 以 0 儲存）
   paidAmount           Int      @default(0) // 已付
   pendingAmount        Int      @default(0) // 待付
   spaceIds             String[] // 場域 ID 陣列（PostgreSQL）

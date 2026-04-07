@@ -16,7 +16,11 @@ import {
   getStatusLabel,
   normalizeProjectStatusForUi,
 } from "@/lib/config/project-status";
-import { CREATE_PROJECT_PAGE, PROJECT_DETAIL_PAGE } from "@/lib/message";
+import {
+  CREATE_PROJECT_PAGE,
+  PROJECT_DETAIL_PAGE,
+  FNB_AMOUNT_PENDING_LABEL,
+} from "@/lib/message";
 import type { ProjectWithRentals } from "@/lib/types/project";
 import { formatRentalDateRangeForTable } from "@/lib/utils/project";
 import { formatEquipmentNeedsLine } from "@/lib/utils/project-equipment-needs";
@@ -186,7 +190,10 @@ export function buildProjectDetailCsv(
   rows.push(rentalHeaders.map(escapeCsvCell).join(","));
 
   const totalAmount = project.rentals.reduce(
-    (sum, r) => sum + r.rentalAmount + r.fnbAmount,
+    (sum, r) =>
+      sum +
+      r.rentalAmount +
+      (r.fnbAmountPending ? 0 : r.fnbAmount),
     0,
   );
   for (const r of project.rentals) {
@@ -201,7 +208,9 @@ export function buildProjectDetailCsv(
         timeRange,
         spaces,
         CURRENCY_FORMATTER.format(r.rentalAmount),
-        CURRENCY_FORMATTER.format(r.fnbAmount),
+        r.fnbAmountPending
+          ? FNB_AMOUNT_PENDING_LABEL
+          : CURRENCY_FORMATTER.format(r.fnbAmount),
         CURRENCY_FORMATTER.format(r.paidAmount),
         CURRENCY_FORMATTER.format(r.pendingAmount),
       ]

@@ -13,7 +13,7 @@ import {
   getStatusLabel,
   normalizeProjectStatusForUi,
 } from "@/lib/config/project-status";
-import { CREATE_PROJECT_PAGE } from "@/lib/message";
+import { CREATE_PROJECT_PAGE, FNB_AMOUNT_PENDING_LABEL } from "@/lib/message";
 import type { Project } from "@/lib/types/project";
 import { formatRentalDateRangeForTable } from "@/lib/utils/project";
 import { formatEquipmentNeedsLine } from "@/lib/utils/project-equipment-needs";
@@ -138,7 +138,9 @@ function formatProjectCellPlain(
     case "rentalAmountTotal":
       return CURRENCY_FORMATTER_INTEGER.format(project.rentalAmountTotal);
     case "fnbAmountTotal":
-      return CURRENCY_FORMATTER_INTEGER.format(project.fnbAmountTotal);
+      return project.hasFnbAmountPending
+        ? FNB_AMOUNT_PENDING_LABEL
+        : CURRENCY_FORMATTER_INTEGER.format(project.fnbAmountTotal);
     case "paidAmountTotal":
       return CURRENCY_FORMATTER_INTEGER.format(project.paidAmountTotal);
     case "pendingAmountTotal":

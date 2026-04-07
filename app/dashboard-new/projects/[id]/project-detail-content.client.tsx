@@ -72,6 +72,7 @@ import {
   PROJECT_DETAIL_PAGE,
   CREATE_PROJECT_PAGE,
   PROJECTS_PAGE,
+  FNB_AMOUNT_PENDING_LABEL,
 } from "@/lib/message";
 import { getSpaceNameById, ALL_SPACES } from "@/lib/config/config";
 import {
@@ -153,6 +154,7 @@ const rentalItemSchema = z
     teardownMinutesAfter: z.number().min(0).optional(),
     rentalAmount: z.coerce.number().min(0),
     fnbAmount: z.coerce.number().min(0),
+    fnbAmountPending: z.boolean().default(false),
     paidAmount: z.coerce.number().min(0),
   })
   .refine(
@@ -273,6 +275,7 @@ function rentalToEditFormValues(
     teardownMinutesAfter: r.teardownMinutesAfter ?? 30,
     rentalAmount: r.rentalAmount,
     fnbAmount: r.fnbAmount,
+    fnbAmountPending: r.fnbAmountPending ?? false,
     paidAmount: r.paidAmount,
   };
 }
@@ -287,6 +290,7 @@ const defaultRental: EditFormValues["rentals"][0] = {
   teardownMinutesAfter: 30,
   rentalAmount: 0,
   fnbAmount: 0,
+  fnbAmountPending: false,
   paidAmount: 0,
 };
 
@@ -324,6 +328,7 @@ function projectToFormValues(project: ProjectWithRentals): EditFormValues {
             teardownMinutesAfter: r.teardownMinutesAfter ?? 30,
             rentalAmount: r.rentalAmount,
             fnbAmount: r.fnbAmount,
+            fnbAmountPending: r.fnbAmountPending ?? false,
             paidAmount: r.paidAmount,
           }))
         : [{ ...defaultRental }],
@@ -382,7 +387,11 @@ function EditRentalFormDialog({
 
   const watchedAmounts = useWatch({
     control: form.control,
-    name: ["rentalAmount", "fnbAmount", "paidAmount"],
+    name: ["rentalAmount", "fnbAmount", "paidAmount", "fnbAmountPending"],
+  });
+  const editRentalFnbPending = useWatch({
+    control: form.control,
+    name: "fnbAmountPending",
   });
 
   const handleSubmit = form.handleSubmit((data: EditRentalFormValues) => {
@@ -609,24 +618,56 @@ function EditRentalFormDialog({
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="fnbAmount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{CREATE_PROJECT_PAGE.labelFnbAmount}</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        type="number"
-                        min={0}
-                        className="tabular-nums"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="flex min-w-0 flex-col gap-2">
+                <FormField
+                  control={form.control}
+                  name="fnbAmount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        {CREATE_PROJECT_PAGE.labelFnbAmount}
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="number"
+                          min={0}
+                          className="tabular-nums"
+                          disabled={editRentalFnbPending === true}
+                          value={field.value ?? ""}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="fnbAmountPending"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center gap-2 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={(c) => {
+                            const checked = c === true;
+                            field.onChange(checked);
+                            if (checked) {
+                              form.setValue("fnbAmount", 0);
+                            }
+                          }}
+                          aria-label={
+                            CREATE_PROJECT_PAGE.labelFnbAmountPending
+                          }
+                        />
+                      </FormControl>
+                      <FormLabel className="font-normal leading-none">
+                        {CREATE_PROJECT_PAGE.labelFnbAmountPending}
+                      </FormLabel>
+                    </FormItem>
+                  )}
+                />
+              </div>
               <FormField
                 control={form.control}
                 name="paidAmount"
@@ -659,6 +700,7 @@ function EditRentalFormDialog({
                     rentalAmount: watchedAmounts?.[0],
                     fnbAmount: watchedAmounts?.[1],
                     paidAmount: watchedAmounts?.[2],
+                    fnbAmountPending: watchedAmounts?.[3],
                   })}
                 </div>
               </FormItem>
@@ -721,7 +763,11 @@ function AddRentalFormDialog({
 
   const addRentalWatchedAmounts = useWatch({
     control: form.control,
-    name: ["rentalAmount", "fnbAmount", "paidAmount"],
+    name: ["rentalAmount", "fnbAmount", "paidAmount", "fnbAmountPending"],
+  });
+  const addRentalFnbPending = useWatch({
+    control: form.control,
+    name: "fnbAmountPending",
   });
 
   const handleSubmit = form.handleSubmit((data: EditRentalFormValues) => {
@@ -954,24 +1000,56 @@ function AddRentalFormDialog({
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="fnbAmount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{CREATE_PROJECT_PAGE.labelFnbAmount}</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        type="number"
-                        min={0}
-                        className="tabular-nums"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="flex min-w-0 flex-col gap-2">
+                <FormField
+                  control={form.control}
+                  name="fnbAmount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        {CREATE_PROJECT_PAGE.labelFnbAmount}
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="number"
+                          min={0}
+                          className="tabular-nums"
+                          disabled={addRentalFnbPending === true}
+                          value={field.value ?? ""}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="fnbAmountPending"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center gap-2 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={(c) => {
+                            const checked = c === true;
+                            field.onChange(checked);
+                            if (checked) {
+                              form.setValue("fnbAmount", 0);
+                            }
+                          }}
+                          aria-label={
+                            CREATE_PROJECT_PAGE.labelFnbAmountPending
+                          }
+                        />
+                      </FormControl>
+                      <FormLabel className="font-normal leading-none">
+                        {CREATE_PROJECT_PAGE.labelFnbAmountPending}
+                      </FormLabel>
+                    </FormItem>
+                  )}
+                />
+              </div>
               <FormField
                 control={form.control}
                 name="paidAmount"
@@ -1004,6 +1082,7 @@ function AddRentalFormDialog({
                     rentalAmount: addRentalWatchedAmounts?.[0],
                     fnbAmount: addRentalWatchedAmounts?.[1],
                     paidAmount: addRentalWatchedAmounts?.[2],
+                    fnbAmountPending: addRentalWatchedAmounts?.[3],
                   })}
                 </div>
               </FormItem>
@@ -1924,26 +2003,64 @@ export function ProjectDetailContent({
                         </FormItem>
                       )}
                     />
-                    <FormField
-                      control={form.control}
-                      name={`rentals.${index}.fnbAmount`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>
-                            {CREATE_PROJECT_PAGE.labelFnbAmount}
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              type="number"
-                              min={0}
-                              className="tabular-nums"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    <div className="flex min-w-0 flex-col gap-2">
+                      <FormField
+                        control={form.control}
+                        name={`rentals.${index}.fnbAmount`}
+                        render={({ field }) => {
+                          const pending =
+                            watchedEditRentals?.[index]?.fnbAmountPending ===
+                            true;
+                          return (
+                            <FormItem>
+                              <FormLabel>
+                                {CREATE_PROJECT_PAGE.labelFnbAmount}
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  type="number"
+                                  min={0}
+                                  className="tabular-nums"
+                                  disabled={pending}
+                                  value={field.value ?? ""}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          );
+                        }}
+                      />
+                      <FormField
+                        control={form.control}
+                        name={`rentals.${index}.fnbAmountPending`}
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center gap-2 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={(c) => {
+                                  const checked = c === true;
+                                  field.onChange(checked);
+                                  if (checked) {
+                                    form.setValue(
+                                      `rentals.${index}.fnbAmount`,
+                                      0,
+                                    );
+                                  }
+                                }}
+                                aria-label={
+                                  CREATE_PROJECT_PAGE.labelFnbAmountPending
+                                }
+                              />
+                            </FormControl>
+                            <FormLabel className="font-normal leading-none">
+                              {CREATE_PROJECT_PAGE.labelFnbAmountPending}
+                            </FormLabel>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
                     <FormField
                       control={form.control}
                       name={`rentals.${index}.paidAmount`}
@@ -1979,6 +2096,7 @@ export function ProjectDetailContent({
                             rentalAmount: 0,
                             fnbAmount: 0,
                             paidAmount: 0,
+                            fnbAmountPending: false,
                           },
                         )}
                       </div>
@@ -2445,8 +2563,17 @@ export function ProjectDetailContent({
                       <TableCell className="text-right tabular-nums">
                         {CURRENCY_FORMATTER.format(r.rentalAmount)}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {CURRENCY_FORMATTER.format(r.fnbAmount)}
+                      <TableCell
+                        className={cn(
+                          "text-right",
+                          r.fnbAmountPending
+                            ? "text-muted-foreground"
+                            : "tabular-nums",
+                        )}
+                      >
+                        {r.fnbAmountPending
+                          ? FNB_AMOUNT_PENDING_LABEL
+                          : CURRENCY_FORMATTER.format(r.fnbAmount)}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
                         {CURRENCY_FORMATTER.format(r.paidAmount)}
