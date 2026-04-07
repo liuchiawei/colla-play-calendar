@@ -114,13 +114,7 @@ function getAriaSort(
   return sort.dir === "asc" ? "ascending" : "descending";
 }
 
-function SortIcon({
-  active,
-  dir,
-}: {
-  active: boolean;
-  dir: SortDirection;
-}) {
+function SortIcon({ active, dir }: { active: boolean; dir: SortDirection }) {
   if (!active) {
     return (
       <ArrowUpDown
@@ -182,7 +176,7 @@ export function ProjectsList({ projects }: ProjectsListProps) {
           return getStatusLabelForSort(project);
         case "tables": {
           const n = parseIntIfNumeric(project.tables);
-          return n ?? (project.tables ?? "");
+          return n ?? project.tables ?? "";
         }
         case "chairs":
           return project.chairs ?? null;
@@ -206,7 +200,8 @@ export function ProjectsList({ projects }: ProjectsListProps) {
       const aVal = a.value;
       const bVal = b.value;
 
-      if (aVal == null && bVal == null) return a.originalIndex - b.originalIndex;
+      if (aVal == null && bVal == null)
+        return a.originalIndex - b.originalIndex;
       if (aVal == null) return 1;
       if (bVal == null) return -1;
 
@@ -286,6 +281,7 @@ export function ProjectsList({ projects }: ProjectsListProps) {
             </TableCaption>
             <TableHeader>
               <TableRow>
+                {/* 活動類型 */}
                 <TableHead
                   scope="col"
                   aria-sort={getAriaSort(sort, "eventType")}
@@ -302,19 +298,7 @@ export function ProjectsList({ projects }: ProjectsListProps) {
                     />
                   </button>
                 </TableHead>
-                <TableHead scope="col" aria-sort={getAriaSort(sort, "customer")}>
-                  <button
-                    type="button"
-                    className="group inline-flex items-center gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-                    onClick={() => toggleSort("customer")}
-                  >
-                    <span>{PROJECTS_PAGE.columnCustomer}</span>
-                    <SortIcon
-                      active={sort?.key === "customer"}
-                      dir={sort?.key === "customer" ? sort.dir : "asc"}
-                    />
-                  </button>
-                </TableHead>
+                {/* 活動名稱 */}
                 <TableHead
                   scope="col"
                   aria-sort={getAriaSort(sort, "eventOrVenueUse")}
@@ -331,6 +315,24 @@ export function ProjectsList({ projects }: ProjectsListProps) {
                     />
                   </button>
                 </TableHead>
+                {/* 客戶 */}
+                <TableHead
+                  scope="col"
+                  aria-sort={getAriaSort(sort, "customer")}
+                >
+                  <button
+                    type="button"
+                    className="group inline-flex items-center gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                    onClick={() => toggleSort("customer")}
+                  >
+                    <span>{PROJECTS_PAGE.columnCustomer}</span>
+                    <SortIcon
+                      active={sort?.key === "customer"}
+                      dir={sort?.key === "customer" ? sort.dir : "asc"}
+                    />
+                  </button>
+                </TableHead>
+                {/* 場域 */}
                 <TableHead scope="col" aria-sort={getAriaSort(sort, "space")}>
                   <button
                     type="button"
@@ -344,6 +346,7 @@ export function ProjectsList({ projects }: ProjectsListProps) {
                     />
                   </button>
                 </TableHead>
+                {/* 日期 */}
                 <TableHead scope="col" aria-sort={getAriaSort(sort, "date")}>
                   <button
                     type="button"
@@ -357,6 +360,7 @@ export function ProjectsList({ projects }: ProjectsListProps) {
                     />
                   </button>
                 </TableHead>
+                {/* 開始時間 */}
                 <TableHead
                   scope="col"
                   className="tabular-nums whitespace-nowrap"
@@ -374,6 +378,7 @@ export function ProjectsList({ projects }: ProjectsListProps) {
                     />
                   </button>
                 </TableHead>
+                {/* 結束時間 */}
                 <TableHead
                   scope="col"
                   className="tabular-nums whitespace-nowrap"
@@ -391,6 +396,7 @@ export function ProjectsList({ projects }: ProjectsListProps) {
                     />
                   </button>
                 </TableHead>
+                {/* 接洽人 */}
                 <TableHead
                   scope="col"
                   aria-sort={getAriaSort(sort, "contactPerson")}
@@ -407,6 +413,7 @@ export function ProjectsList({ projects }: ProjectsListProps) {
                     />
                   </button>
                 </TableHead>
+                {/* 金額 */}
                 <TableHead
                   scope="col"
                   className="text-right tabular-nums"
@@ -424,6 +431,7 @@ export function ProjectsList({ projects }: ProjectsListProps) {
                     />
                   </button>
                 </TableHead>
+                {/* 狀態 */}
                 <TableHead scope="col" aria-sort={getAriaSort(sort, "status")}>
                   <button
                     type="button"
@@ -437,6 +445,7 @@ export function ProjectsList({ projects }: ProjectsListProps) {
                     />
                   </button>
                 </TableHead>
+                {/* 桌數等 */}
                 <TableHead scope="col" aria-sort={getAriaSort(sort, "tables")}>
                   <button
                     type="button"
@@ -450,6 +459,7 @@ export function ProjectsList({ projects }: ProjectsListProps) {
                     />
                   </button>
                 </TableHead>
+                {/* 椅子數 */}
                 <TableHead
                   scope="col"
                   className="text-right tabular-nums"
@@ -467,7 +477,11 @@ export function ProjectsList({ projects }: ProjectsListProps) {
                     />
                   </button>
                 </TableHead>
-                <TableHead scope="col" aria-sort={getAriaSort(sort, "fnbItems")}>
+                {/* 餐飲項目 */}
+                <TableHead
+                  scope="col"
+                  aria-sort={getAriaSort(sort, "fnbItems")}
+                >
                   <button
                     type="button"
                     className="group inline-flex items-center gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
@@ -480,6 +494,7 @@ export function ProjectsList({ projects }: ProjectsListProps) {
                     />
                   </button>
                 </TableHead>
+                {/* 預計人數 */}
                 <TableHead
                   scope="col"
                   className="text-right tabular-nums"
@@ -497,6 +512,7 @@ export function ProjectsList({ projects }: ProjectsListProps) {
                     />
                   </button>
                 </TableHead>
+                {/* 專案備註 */}
                 <TableHead
                   scope="col"
                   aria-sort={getAriaSort(sort, "projectNotes")}
@@ -513,6 +529,7 @@ export function ProjectsList({ projects }: ProjectsListProps) {
                     />
                   </button>
                 </TableHead>
+                {/* 操作 */}
                 <TableHead scope="col" className="w-0">
                   {PROJECTS_PAGE.columnActions}
                 </TableHead>
@@ -523,150 +540,166 @@ export function ProjectsList({ projects }: ProjectsListProps) {
                 const statusForUi = normalizeProjectStatusForUi(project.status);
                 return (
                   <TableRow key={project.id}>
-                  <TableCell className="min-w-0 max-w-[120px] truncate">
-                    {project.eventType?.trim() ? project.eventType : "—"}
-                  </TableCell>
-                  <TableCell className="min-w-0 max-w-[120px] truncate">
-                    {project.customer}
-                  </TableCell>
-                  <TableCell className="min-w-0 max-w-[180px] truncate">
-                    <Link
-                      href={`/dashboard-new/projects/${project.id}`}
-                      className="font-medium text-primary hover:underline focus:outline-none focus:underline"
-                    >
-                      {project.eventOrVenueUse}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="min-w-0 max-w-[160px] truncate">
-                    {project.space}
-                  </TableCell>
-                  <TableCell className="tabular-nums whitespace-nowrap">
-                    {project.rentals?.[0]
-                      ? formatRentalDateRangeForTable(
-                          project.rentals[0],
-                          (d) => DATE_FORMATTER.format(d),
-                        )
-                      : DATE_FORMATTER.format(new Date(project.date))}
-                  </TableCell>
-                  <TableCell className="tabular-nums whitespace-nowrap">
-                    {project.rentals?.[0]?.startTime ?? "—"}
-                  </TableCell>
-                  <TableCell className="tabular-nums whitespace-nowrap">
-                    {project.rentals?.[0]?.endTime ?? "—"}
-                  </TableCell>
-                  <TableCell className="min-w-0 max-w-[100px] truncate">
-                    {project.contactPerson}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {CURRENCY_FORMATTER.format(project.amount)}
-                  </TableCell>
-                  <TableCell>
-                    {statusForUi ? (
-                      <span className="flex items-center gap-2">
-                        <span
-                          className={cn(
-                            "size-2 shrink-0 rounded-full",
-                            getStatusColorClass(statusForUi),
+                    {/* 活動類型 */}
+                    <TableCell className="min-w-0 max-w-[120px] truncate">
+                      {project.eventType?.trim() ? project.eventType : "—"}
+                    </TableCell>
+                    {/* 活動名稱 */}
+                    <TableCell className="min-w-0 max-w-[180px] truncate">
+                      <Link
+                        href={`/dashboard-new/projects/${project.id}`}
+                        className="font-medium text-primary hover:underline focus:outline-none focus:underline"
+                      >
+                        {project.eventOrVenueUse}
+                      </Link>
+                    </TableCell>
+                    {/* 客戶 */}
+                    <TableCell className="min-w-0 max-w-[120px] truncate">
+                      {project.customer}
+                    </TableCell>
+                    {/* 場域 */}
+                    <TableCell className="min-w-0 max-w-[160px] truncate">
+                      {project.space}
+                    </TableCell>
+                    {/* 日期 */}
+                    <TableCell className="tabular-nums whitespace-nowrap">
+                      {project.rentals?.[0]
+                        ? formatRentalDateRangeForTable(
+                            project.rentals[0],
+                            (d) => DATE_FORMATTER.format(d),
+                          )
+                        : DATE_FORMATTER.format(new Date(project.date))}
+                    </TableCell>
+                    {/* 開始時間 */}
+                    <TableCell className="tabular-nums whitespace-nowrap">
+                      {project.rentals?.[0]?.startTime ?? "—"}
+                    </TableCell>
+                    {/* 結束時間 */}
+                    <TableCell className="tabular-nums whitespace-nowrap">
+                      {project.rentals?.[0]?.endTime ?? "—"}
+                    </TableCell>
+                    {/* 接洽人 */}
+                    <TableCell className="min-w-0 max-w-[100px] truncate">
+                      {project.contactPerson}
+                    </TableCell>
+                    {/* 金額 */}
+                    <TableCell className="text-right tabular-nums">
+                      {CURRENCY_FORMATTER.format(project.amount)}
+                    </TableCell>
+                    {/* 狀態 */}
+                    <TableCell>
+                      {statusForUi ? (
+                        <span className="flex items-center gap-2">
+                          <span
+                            className={cn(
+                              "size-2 shrink-0 rounded-full",
+                              getStatusColorClass(statusForUi),
+                            )}
+                            aria-hidden
+                          />
+                          {getStatusLabel(statusForUi)}
+                        </span>
+                      ) : null}
+                    </TableCell>
+                    {/* 桌數等 */}
+                    <TableCell className="min-w-0 max-w-[80px] truncate">
+                      {project.tables ?? "—"}
+                    </TableCell>
+                    {/* 椅子數 */}
+                    <TableCell className="text-right tabular-nums">
+                      {project.chairs != null ? project.chairs : "—"}
+                    </TableCell>
+                    {/* 餐飲項目 */}
+                    <TableCell className="min-w-0 max-w-[140px] truncate">
+                      {project.fnbItems ?? "—"}
+                    </TableCell>
+                    {/* 預計人數 */}
+                    <TableCell className="text-right tabular-nums">
+                      {project.totalAttendees != null
+                        ? project.totalAttendees
+                        : "—"}
+                    </TableCell>
+                    {/* 專案備註 */}
+                    <TableCell className="min-w-0 max-w-[180px] truncate">
+                      {project.projectNotes ?? "—"}
+                    </TableCell>
+                    {/* 操作 */}
+                    <TableCell className="w-0 whitespace-nowrap">
+                      <div className="flex items-center gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label={PROJECT_DETAIL_PAGE.buttonDownloadCsv}
+                          onClick={() => handleDownloadCsv(project.id)}
+                          disabled={downloadingId === project.id}
+                        >
+                          {downloadingId === project.id ? (
+                            <Loader2 className="size-4 animate-spin" />
+                          ) : (
+                            <Download className="size-4" />
                           )}
-                          aria-hidden
-                        />
-                        {getStatusLabel(statusForUi)}
-                      </span>
-                    ) : null}
-                  </TableCell>
-                  <TableCell className="min-w-0 max-w-[80px] truncate">
-                    {project.tables ?? "—"}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {project.chairs != null ? project.chairs : "—"}
-                  </TableCell>
-                  <TableCell className="min-w-0 max-w-[140px] truncate">
-                    {project.fnbItems ?? "—"}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {project.totalAttendees != null
-                      ? project.totalAttendees
-                      : "—"}
-                  </TableCell>
-                  <TableCell className="min-w-0 max-w-[180px] truncate">
-                    {project.projectNotes ?? "—"}
-                  </TableCell>
-                  <TableCell className="w-0 whitespace-nowrap">
-                    <div className="flex items-center gap-1">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={PROJECT_DETAIL_PAGE.buttonDownloadCsv}
-                        onClick={() => handleDownloadCsv(project.id)}
-                        disabled={downloadingId === project.id}
-                      >
-                        {downloadingId === project.id ? (
-                          <Loader2 className="size-4 animate-spin" />
-                        ) : (
-                          <Download className="size-4" />
-                        )}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        asChild
-                        aria-label={PROJECTS_PAGE.actionEditAria}
-                      >
-                        <Link href={`/dashboard-new/projects/${project.id}`}>
-                          <Pencil className="size-4" />
-                        </Link>
-                      </Button>
-                      <AlertDialog
-                        onOpenChange={(open) => {
-                          if (!open) setDeleteError(null);
-                        }}
-                      >
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-sm"
-                            aria-label={PROJECTS_PAGE.actionDeleteAria}
-                          >
-                            <Trash2 className="size-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>
-                              {PROJECT_DETAIL_PAGE.deleteConfirmTitle}
-                            </AlertDialogTitle>
-                            <AlertDialogDescription>
-                              {PROJECT_DETAIL_PAGE.deleteConfirmDescription}
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          {deleteError ? (
-                            <p
-                              className="text-sm text-destructive"
-                              role="alert"
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          asChild
+                          aria-label={PROJECTS_PAGE.actionEditAria}
+                        >
+                          <Link href={`/dashboard-new/projects/${project.id}`}>
+                            <Pencil className="size-4" />
+                          </Link>
+                        </Button>
+                        <AlertDialog
+                          onOpenChange={(open) => {
+                            if (!open) setDeleteError(null);
+                          }}
+                        >
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon-sm"
+                              aria-label={PROJECTS_PAGE.actionDeleteAria}
                             >
-                              {deleteError}
-                            </p>
-                          ) : null}
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>
-                              {PROJECT_DETAIL_PAGE.deleteConfirmCancel}
-                            </AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleDeleteConfirm(project.id)}
-                              disabled={deletingId === project.id}
-                            >
-                              {deletingId === project.id
-                                ? "刪除中…"
-                                : PROJECT_DETAIL_PAGE.deleteConfirmConfirm}
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </TableCell>
-                </TableRow>
+                              <Trash2 className="size-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>
+                                {PROJECT_DETAIL_PAGE.deleteConfirmTitle}
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                {PROJECT_DETAIL_PAGE.deleteConfirmDescription}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            {deleteError ? (
+                              <p
+                                className="text-sm text-destructive"
+                                role="alert"
+                              >
+                                {deleteError}
+                              </p>
+                            ) : null}
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>
+                                {PROJECT_DETAIL_PAGE.deleteConfirmCancel}
+                              </AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteConfirm(project.id)}
+                                disabled={deletingId === project.id}
+                              >
+                                {deletingId === project.id
+                                  ? "刪除中…"
+                                  : PROJECT_DETAIL_PAGE.deleteConfirmConfirm}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
             </TableBody>

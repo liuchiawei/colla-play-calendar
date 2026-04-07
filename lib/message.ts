@@ -143,6 +143,7 @@ export const PROJECTS_PAGE = {
   searchAriaLabel: "搜尋專案",
   searchNoResults: "搜尋無結果",
   tableCaption: "專案列表",
+  columnActivityType: "活動類型",
   columnCustomer: "客戶",
   columnEventOrVenueUse: "活動名稱",
   columnSpace: "場域",
