@@ -445,7 +445,7 @@ export function SpaceProjectsCalendar({
                 <Badge
                   key={opt.value}
                   className={cn(
-                    "text-[10px] font-medium border-0",
+                    "text-xs font-medium border-0",
                     getStatusColorClass(opt.value),
                     opt.value !== "cancelled" && "text-white",
                   )}
