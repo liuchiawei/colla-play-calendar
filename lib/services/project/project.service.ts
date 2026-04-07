@@ -238,6 +238,8 @@ function mapRowToProject(
       teardownMinutesAfter: number;
       rentalAmount: number;
       fnbAmount: number;
+      paidAmount: number;
+      pendingAmount: number;
     }>;
   },
   adminNameById: Map<string, string>,
@@ -251,6 +253,16 @@ function mapRowToProject(
     (sum, r) => sum + r.rentalAmount + r.fnbAmount,
     0,
   );
+  const rentalAmountTotal = row.rentals.reduce(
+    (sum, r) => sum + r.rentalAmount,
+    0,
+  );
+  const fnbAmountTotal = row.rentals.reduce((sum, r) => sum + r.fnbAmount, 0);
+  const paidAmountTotal = row.rentals.reduce((sum, r) => sum + r.paidAmount, 0);
+  const pendingAmountTotal = row.rentals.reduce(
+    (sum, r) => sum + r.pendingAmount,
+    0,
+  );
   return {
     id: row.id,
     customer: row.customerName,
@@ -261,6 +273,10 @@ function mapRowToProject(
     contactPerson:
       adminNameById.get(row.collaPlayContactId) ?? row.collaPlayContactId,
     amount,
+    rentalAmountTotal,
+    fnbAmountTotal,
+    paidAmountTotal,
+    pendingAmountTotal,
     status: row.status as Project["status"],
     tables: row.tables ?? null,
     chairs: row.chairs ?? null,

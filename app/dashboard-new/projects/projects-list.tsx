@@ -32,7 +32,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { PROJECTS_PAGE, PROJECT_DETAIL_PAGE } from "@/lib/message";
+import {
+  CREATE_PROJECT_PAGE,
+  PROJECTS_PAGE,
+  PROJECT_DETAIL_PAGE,
+} from "@/lib/message";
 import {
   getStatusLabel,
   getStatusColorClass,
@@ -41,6 +45,7 @@ import {
 import type { Project } from "@/lib/types/project";
 import { cn } from "@/lib/utils";
 import { formatRentalDateRangeForTable } from "@/lib/utils/project";
+import { formatEquipmentNeedsLine } from "@/lib/utils/project-equipment-needs";
 import { deleteProject, downloadProjectDetailCsv } from "./[id]/actions";
 
 const DATE_FORMATTER = new Intl.DateTimeFormat("zh-TW", {
@@ -51,6 +56,15 @@ const CURRENCY_FORMATTER = new Intl.NumberFormat("zh-TW", {
   style: "currency",
   currency: "TWD",
 });
+
+/** 設備勾選一行顯示（與 CSV／詳情一致） */
+const EQUIPMENT_NEEDS_LINE_LABELS = {
+  microphone: CREATE_PROJECT_PAGE.labelEquipmentMicrophone,
+  extensionCord: CREATE_PROJECT_PAGE.labelEquipmentExtensionCord,
+  projector: CREATE_PROJECT_PAGE.labelEquipmentProjector,
+  whiteboard: CREATE_PROJECT_PAGE.labelEquipmentWhiteboard,
+  noOtherEquipmentNeeds: CREATE_PROJECT_PAGE.labelEquipmentNoOtherNeeds,
+} as const;
 
 type SortDirection = "asc" | "desc";
 
@@ -67,6 +81,11 @@ type SortKey =
   | "status"
   | "tables"
   | "chairs"
+  | "otherEquipment"
+  | "rentalAmountTotal"
+  | "fnbAmountTotal"
+  | "paidAmountTotal"
+  | "pendingAmountTotal"
   | "fnbItems"
   | "totalAttendees"
   | "projectNotes";
@@ -186,6 +205,21 @@ export function ProjectsList({ projects }: ProjectsListProps) {
         }
         case "fnbItems":
           return project.fnbItems ?? "";
+        case "otherEquipment":
+          return (
+            formatEquipmentNeedsLine(
+              project.equipmentNeeds,
+              EQUIPMENT_NEEDS_LINE_LABELS,
+            ) ?? ""
+          );
+        case "rentalAmountTotal":
+          return project.rentalAmountTotal;
+        case "fnbAmountTotal":
+          return project.fnbAmountTotal;
+        case "paidAmountTotal":
+          return project.paidAmountTotal;
+        case "pendingAmountTotal":
+          return project.pendingAmountTotal;
         case "totalAttendees": {
           const s = project.totalAttendees;
           if (s == null || s === "") return null;
@@ -453,7 +487,25 @@ export function ProjectsList({ projects }: ProjectsListProps) {
                     />
                   </button>
                 </TableHead>
-                {/* 桌數等 */}
+                {/* 人數 */}
+                <TableHead
+                  scope="col"
+                  className="text-right tabular-nums"
+                  aria-sort={getAriaSort(sort, "totalAttendees")}
+                >
+                  <button
+                    type="button"
+                    className="group inline-flex w-full items-center justify-end gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                    onClick={() => toggleSort("totalAttendees")}
+                  >
+                    <span>{PROJECTS_PAGE.columnTotalAttendees}</span>
+                    <SortIcon
+                      active={sort?.key === "totalAttendees"}
+                      dir={sort?.key === "totalAttendees" ? sort.dir : "asc"}
+                    />
+                  </button>
+                </TableHead>
+                {/* 桌子 */}
                 <TableHead scope="col" aria-sort={getAriaSort(sort, "tables")}>
                   <button
                     type="button"
@@ -467,7 +519,7 @@ export function ProjectsList({ projects }: ProjectsListProps) {
                     />
                   </button>
                 </TableHead>
-                {/* 椅子數 */}
+                {/* 椅子 */}
                 <TableHead
                   scope="col"
                   className="text-right tabular-nums"
@@ -482,6 +534,99 @@ export function ProjectsList({ projects }: ProjectsListProps) {
                     <SortIcon
                       active={sort?.key === "chairs"}
                       dir={sort?.key === "chairs" ? sort.dir : "asc"}
+                    />
+                  </button>
+                </TableHead>
+                {/* 其他設備 */}
+                <TableHead
+                  scope="col"
+                  aria-sort={getAriaSort(sort, "otherEquipment")}
+                >
+                  <button
+                    type="button"
+                    className="group inline-flex items-center gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                    onClick={() => toggleSort("otherEquipment")}
+                  >
+                    <span>{PROJECTS_PAGE.columnOtherEquipment}</span>
+                    <SortIcon
+                      active={sort?.key === "otherEquipment"}
+                      dir={sort?.key === "otherEquipment" ? sort.dir : "asc"}
+                    />
+                  </button>
+                </TableHead>
+                {/* 場租 */}
+                <TableHead
+                  scope="col"
+                  className="text-right tabular-nums"
+                  aria-sort={getAriaSort(sort, "rentalAmountTotal")}
+                >
+                  <button
+                    type="button"
+                    className="group inline-flex w-full items-center justify-end gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                    onClick={() => toggleSort("rentalAmountTotal")}
+                  >
+                    <span>{PROJECTS_PAGE.columnRentalAmount}</span>
+                    <SortIcon
+                      active={sort?.key === "rentalAmountTotal"}
+                      dir={
+                        sort?.key === "rentalAmountTotal" ? sort.dir : "asc"
+                      }
+                    />
+                  </button>
+                </TableHead>
+                {/* 餐飲（金額） */}
+                <TableHead
+                  scope="col"
+                  className="text-right tabular-nums"
+                  aria-sort={getAriaSort(sort, "fnbAmountTotal")}
+                >
+                  <button
+                    type="button"
+                    className="group inline-flex w-full items-center justify-end gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                    onClick={() => toggleSort("fnbAmountTotal")}
+                  >
+                    <span>{PROJECTS_PAGE.columnFnbAmount}</span>
+                    <SortIcon
+                      active={sort?.key === "fnbAmountTotal"}
+                      dir={sort?.key === "fnbAmountTotal" ? sort.dir : "asc"}
+                    />
+                  </button>
+                </TableHead>
+                {/* 已付 */}
+                <TableHead
+                  scope="col"
+                  className="text-right tabular-nums"
+                  aria-sort={getAriaSort(sort, "paidAmountTotal")}
+                >
+                  <button
+                    type="button"
+                    className="group inline-flex w-full items-center justify-end gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                    onClick={() => toggleSort("paidAmountTotal")}
+                  >
+                    <span>{PROJECTS_PAGE.columnPaidAmount}</span>
+                    <SortIcon
+                      active={sort?.key === "paidAmountTotal"}
+                      dir={sort?.key === "paidAmountTotal" ? sort.dir : "asc"}
+                    />
+                  </button>
+                </TableHead>
+                {/* 待付 */}
+                <TableHead
+                  scope="col"
+                  className="text-right tabular-nums"
+                  aria-sort={getAriaSort(sort, "pendingAmountTotal")}
+                >
+                  <button
+                    type="button"
+                    className="group inline-flex w-full items-center justify-end gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                    onClick={() => toggleSort("pendingAmountTotal")}
+                  >
+                    <span>{PROJECTS_PAGE.columnPendingAmount}</span>
+                    <SortIcon
+                      active={sort?.key === "pendingAmountTotal"}
+                      dir={
+                        sort?.key === "pendingAmountTotal" ? sort.dir : "asc"
+                      }
                     />
                   </button>
                 </TableHead>
@@ -502,25 +647,7 @@ export function ProjectsList({ projects }: ProjectsListProps) {
                     />
                   </button>
                 </TableHead>
-                {/* 預計人數 */}
-                <TableHead
-                  scope="col"
-                  className="text-right tabular-nums"
-                  aria-sort={getAriaSort(sort, "totalAttendees")}
-                >
-                  <button
-                    type="button"
-                    className="group inline-flex w-full items-center justify-end gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-                    onClick={() => toggleSort("totalAttendees")}
-                  >
-                    <span>{PROJECTS_PAGE.columnTotalAttendees}</span>
-                    <SortIcon
-                      active={sort?.key === "totalAttendees"}
-                      dir={sort?.key === "totalAttendees" ? sort.dir : "asc"}
-                    />
-                  </button>
-                </TableHead>
-                {/* 專案備註 */}
+                {/* 備註 */}
                 <TableHead
                   scope="col"
                   aria-sort={getAriaSort(sort, "projectNotes")}
@@ -609,25 +736,48 @@ export function ProjectsList({ projects }: ProjectsListProps) {
                         </span>
                       ) : null}
                     </TableCell>
-                    {/* 桌數等 */}
-                    <TableCell className="min-w-0 max-w-[80px] truncate">
-                      {project.tables ?? "—"}
-                    </TableCell>
-                    {/* 椅子數 */}
-                    <TableCell className="text-right tabular-nums">
-                      {project.chairs != null ? project.chairs : "—"}
-                    </TableCell>
-                    {/* 餐飲項目 */}
-                    <TableCell className="min-w-0 max-w-[140px] truncate">
-                      {project.fnbItems ?? "—"}
-                    </TableCell>
-                    {/* 預計人數 */}
+                    {/* 人數 */}
                     <TableCell className="text-right tabular-nums">
                       {project.totalAttendees != null
                         ? project.totalAttendees
                         : "—"}
                     </TableCell>
-                    {/* 專案備註 */}
+                    {/* 桌子 */}
+                    <TableCell className="min-w-0 max-w-[80px] truncate">
+                      {project.tables ?? "—"}
+                    </TableCell>
+                    {/* 椅子 */}
+                    <TableCell className="text-right tabular-nums">
+                      {project.chairs != null ? project.chairs : "—"}
+                    </TableCell>
+                    {/* 其他設備 */}
+                    <TableCell className="min-w-0 max-w-[160px] truncate">
+                      {formatEquipmentNeedsLine(
+                        project.equipmentNeeds,
+                        EQUIPMENT_NEEDS_LINE_LABELS,
+                      ) ?? "—"}
+                    </TableCell>
+                    {/* 場租 */}
+                    <TableCell className="text-right tabular-nums">
+                      {CURRENCY_FORMATTER.format(project.rentalAmountTotal)}
+                    </TableCell>
+                    {/* 餐飲（金額） */}
+                    <TableCell className="text-right tabular-nums">
+                      {CURRENCY_FORMATTER.format(project.fnbAmountTotal)}
+                    </TableCell>
+                    {/* 已付 */}
+                    <TableCell className="text-right tabular-nums">
+                      {CURRENCY_FORMATTER.format(project.paidAmountTotal)}
+                    </TableCell>
+                    {/* 待付 */}
+                    <TableCell className="text-right tabular-nums">
+                      {CURRENCY_FORMATTER.format(project.pendingAmountTotal)}
+                    </TableCell>
+                    {/* 餐飲項目 */}
+                    <TableCell className="min-w-0 max-w-[140px] truncate">
+                      {project.fnbItems ?? "—"}
+                    </TableCell>
+                    {/* 備註 */}
                     <TableCell className="min-w-0 max-w-[180px] truncate">
                       {project.projectNotes ?? "—"}
                     </TableCell>

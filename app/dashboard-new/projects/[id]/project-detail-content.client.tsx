@@ -1168,6 +1168,7 @@ export function ProjectDetailContent({
                 {PROJECT_DETAIL_PAGE.sectionCustomer}
               </h2>
             </CardHeader>
+            {/* 客戶資訊 */}
             <CardContent className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
@@ -1237,6 +1238,7 @@ export function ProjectDetailContent({
             </CardContent>
           </Card>
 
+          {/* 專案資訊 */}
           <Card>
             <CardHeader>
               <h2 className="text-lg font-semibold">
@@ -1244,11 +1246,47 @@ export function ProjectDetailContent({
               </h2>
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
+              {/* 狀態 */}
+              {statusForUi ? (
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem className="min-w-0">
+                      <FormLabel>{PROJECT_DETAIL_PAGE.labelStatus}</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {PROJECT_STATUS_UI_SELECTABLE.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {PROJECTS_PAGE[opt.labelKey]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ) : null}
+              {/* 活動類型 */}
               <FormField
                 control={form.control}
                 name="activityTypePreset"
                 render={({ field }) => (
-                  <FormItem className="sm:col-span-2">
+                  <FormItem
+                    className={cn(
+                      "min-w-0",
+                      !statusForUi && "sm:col-span-2",
+                    )}
+                  >
                     <FormLabel>
                       {CREATE_PROJECT_PAGE.labelActivityType}{" "}
                       <span className="text-destructive">*</span>
@@ -1305,6 +1343,7 @@ export function ProjectDetailContent({
                   )}
                 />
               ) : null}
+              {/* 活動名稱 */}
               <FormField
                 control={form.control}
                 name="eventOrVenueUse"
@@ -1351,6 +1390,7 @@ export function ProjectDetailContent({
                   </FormItem>
                 )}
               />
+              {/* CollaPlay 接洽人 */}
               <FormField
                 control={form.control}
                 name="collaPlayContactId"
@@ -1381,35 +1421,6 @@ export function ProjectDetailContent({
                   </FormItem>
                 )}
               />
-              {statusForUi ? (
-                <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{PROJECT_DETAIL_PAGE.labelStatus}</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {PROJECT_STATUS_UI_SELECTABLE.map((opt) => (
-                            <SelectItem key={opt.value} value={opt.value}>
-                              {PROJECTS_PAGE[opt.labelKey]}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              ) : null}
             </CardContent>
           </Card>
 

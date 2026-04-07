@@ -31,6 +31,14 @@ export interface Project {
   /** 對應 DB collaPlayContactId（CollaPlay 窗口） */
   contactPerson: string;
   amount: number;
+  /** 列表用：各筆租借場租加總 */
+  rentalAmountTotal: number;
+  /** 列表用：各筆租借餐飲金額加總 */
+  fnbAmountTotal: number;
+  /** 列表用：各筆租借已付加總 */
+  paidAmountTotal: number;
+  /** 列表用：各筆租借待付加總 */
+  pendingAmountTotal: number;
   status: ProjectStatus;
   /** 選填：桌數等 */
   tables?: string | null;
