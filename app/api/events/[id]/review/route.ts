@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/services/auth/auth-server.service";
 import { reviewEvent } from "@/lib/services/events/event.service";
-import type { ApiResponse, EventWithCategory, EventReviewInput } from "@/lib/types";
+import type { ApiResponse, EventWithCategory } from "@/lib/types";
 import { z } from "zod";
 
 type RouteContext = {
@@ -26,7 +26,6 @@ export async function PATCH(
       return adminResult;
     }
 
-    const { userId: adminId } = adminResult;
     const { id: eventId } = await context.params;
 
     // 解析請求體
@@ -34,7 +33,7 @@ export async function PATCH(
     const validatedData = reviewEventSchema.parse(body);
 
     // 使用 event service 審核活動
-    const event = await reviewEvent(eventId, validatedData.status, adminId);
+    const event = await reviewEvent(eventId, validatedData.status);
 
     return NextResponse.json<ApiResponse<EventWithCategory>>({
       success: true,

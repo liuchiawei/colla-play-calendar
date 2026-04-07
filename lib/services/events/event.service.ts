@@ -257,12 +257,11 @@ export async function getEventsByStatus(
  *
  * @param eventId 活動 ID
  * @param status 新狀態
- * @param adminId 管理員 ID（用於記錄）
  * @returns Promise<EventWithCategory>
  */
 export async function reviewEvent(
   eventId: string,
-  status: EventStatus,
+  status: EventStatus
 ): Promise<EventWithCategory> {
   if (!eventId || !status) {
     throw new Error("活動 ID 和狀態為必填");
