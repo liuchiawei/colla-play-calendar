@@ -34,12 +34,12 @@ export interface Project {
   status: ProjectStatus;
   /** 選填：桌數等 */
   tables?: string | null;
-  /** 選填：椅子數 */
-  chairs?: number | null;
+  /** 選填：椅子數（可為數字字串、TBC 等） */
+  chairs?: string | null;
   /** 選填：餐飲項目 */
   fnbItems?: string | null;
-  /** 選填：預計人數 */
-  totalAttendees?: number | null;
+  /** 選填：預計人數（可為數字字串、TBC 等） */
+  totalAttendees?: string | null;
   /** 選填：專案備註 */
   projectNotes?: string | null;
   /** 選填：設備勾選（舊資料可能為 null） */
@@ -85,9 +85,9 @@ export interface CreateProjectInput {
   eventOrVenueUse: string;
   /** 活動類型（新欄位；API 會對舊 payload 補預設「其他」） */
   eventType: string;
-  totalAttendees?: number;
+  totalAttendees?: string;
   tables?: string;
-  chairs?: number;
+  chairs?: string;
   fnbItems?: string;
   projectNotes?: string;
   collaPlayContactId: string;
@@ -107,9 +107,9 @@ export interface UpdateProjectInput {
   eventOrVenueUse: string;
   /** 活動類型（新欄位；未傳則不更新，向後相容舊客戶端） */
   eventType?: string;
-  totalAttendees?: number;
+  totalAttendees?: string;
   tables?: string;
-  chairs?: number;
+  chairs?: string;
   fnbItems?: string;
   projectNotes?: string;
   collaPlayContactId: string;

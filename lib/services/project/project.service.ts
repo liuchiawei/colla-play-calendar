@@ -223,9 +223,9 @@ function mapRowToProject(
     collaPlayContactId: string;
     status: string;
     tables: string | null;
-    chairs: number | null;
+    chairs: string | null;
     fnbItems: string | null;
-    totalAttendees: number | null;
+    totalAttendees: string | null;
     projectNotes: string | null;
     equipmentNeeds: unknown;
     rentals: Array<{

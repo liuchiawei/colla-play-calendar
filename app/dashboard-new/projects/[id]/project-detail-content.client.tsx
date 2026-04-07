@@ -194,9 +194,9 @@ const editProjectSchema = z
       }),
     activityCustomDetail: z.string().optional().default(""),
     eventOrVenueUse: z.string().trim().min(1, CREATE_PROJECT_PAGE.errorRequired),
-    totalAttendees: z.coerce.number().min(0).optional(),
+    totalAttendees: z.string().optional(),
     tables: z.string().optional(),
-    chairs: z.coerce.number().min(0).optional(),
+    chairs: z.string().optional(),
     equipmentNeeds: editEquipmentNeedsFormSchema.default(() =>
       defaultEquipmentNeedsForm(),
     ),
@@ -303,9 +303,9 @@ function projectToFormValues(project: ProjectWithRentals): EditFormValues {
     activityTypePreset: preset,
     activityCustomDetail: customDetail,
     eventOrVenueUse: project.eventOrVenueUse,
-    totalAttendees: project.totalAttendees ?? undefined,
+    totalAttendees: project.totalAttendees ?? "",
     tables: project.tables ?? "",
-    chairs: project.chairs ?? undefined,
+    chairs: project.chairs ?? "",
     equipmentNeeds: parseEquipmentNeedsFromDb(project.equipmentNeeds),
     fnbItems: project.fnbItems ?? "",
     projectNotes: project.projectNotes ?? "",
@@ -341,9 +341,9 @@ function formValuesToUpdateInput(values: EditFormValues): UpdateProjectInput {
       values.activityTypePreset,
       values.activityCustomDetail ?? "",
     ),
-    totalAttendees: values.totalAttendees,
-    tables: values.tables || undefined,
-    chairs: values.chairs,
+    totalAttendees: values.totalAttendees?.trim() || undefined,
+    tables: values.tables?.trim() || undefined,
+    chairs: values.chairs?.trim() || undefined,
     equipmentNeeds: values.equipmentNeeds,
     fnbItems: values.fnbItems || undefined,
     projectNotes: values.projectNotes || undefined,
@@ -1430,17 +1430,10 @@ export function ProjectDetailContent({
                     </FormLabel>
                     <FormControl>
                       <Input
-                        type="number"
-                        min={0}
+                        type="text"
                         {...field}
+                        placeholder={CREATE_PROJECT_PAGE.placeholderAttendees}
                         value={field.value ?? ""}
-                        onChange={(e) =>
-                          field.onChange(
-                            e.target.value === ""
-                              ? undefined
-                              : Number(e.target.value),
-                          )
-                        }
                       />
                     </FormControl>
                     <FormMessage />
@@ -1454,7 +1447,10 @@ export function ProjectDetailContent({
                   <FormItem>
                     <FormLabel>{CREATE_PROJECT_PAGE.labelTables}</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input
+                        {...field}
+                        placeholder={CREATE_PROJECT_PAGE.placeholderTables}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -1468,17 +1464,10 @@ export function ProjectDetailContent({
                     <FormLabel>{CREATE_PROJECT_PAGE.labelChairs}</FormLabel>
                     <FormControl>
                       <Input
-                        type="number"
-                        min={0}
+                        type="text"
                         {...field}
+                        placeholder={CREATE_PROJECT_PAGE.placeholderChairs}
                         value={field.value ?? ""}
-                        onChange={(e) =>
-                          field.onChange(
-                            e.target.value === ""
-                              ? undefined
-                              : Number(e.target.value),
-                          )
-                        }
                       />
                     </FormControl>
                     <FormMessage />

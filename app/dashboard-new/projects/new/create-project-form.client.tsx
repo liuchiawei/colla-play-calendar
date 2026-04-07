@@ -119,11 +119,15 @@ const createProjectSchema = z
       .string()
       .trim()
       .min(1, CREATE_PROJECT_PAGE.errorRequired),
-    totalAttendees: z.number(CREATE_PROJECT_PAGE.errorRequired).min(0),
+    totalAttendees: z
+      .string()
+      .refine((s) => s.trim().length > 0, CREATE_PROJECT_PAGE.errorRequired),
     tables: z
       .string()
       .refine((s) => s.trim().length > 0, CREATE_PROJECT_PAGE.errorRequired),
-    chairs: z.number(CREATE_PROJECT_PAGE.errorRequired).min(0),
+    chairs: z
+      .string()
+      .refine((s) => s.trim().length > 0, CREATE_PROJECT_PAGE.errorRequired),
     equipmentNeeds: equipmentNeedsFormSchema.default(() =>
       defaultEquipmentNeedsForm(),
     ),
@@ -213,9 +217,9 @@ export function CreateProjectForm({
       activityTypePreset: "",
       activityCustomDetail: "",
       eventOrVenueUse: "",
-      totalAttendees: undefined,
+      totalAttendees: "",
       tables: "",
-      chairs: undefined,
+      chairs: "",
       equipmentNeeds: defaultEquipmentNeedsForm(),
       fnbItems: "",
       projectNotes: "",
@@ -245,10 +249,16 @@ export function CreateProjectForm({
       activityCustomDetail,
       equipmentNeeds,
       eventOrVenueUse,
+      totalAttendees,
+      tables,
+      chairs,
       ...rest
     } = data;
     const payload: CreateProjectInput = {
       ...rest,
+      totalAttendees: totalAttendees.trim(),
+      tables: tables.trim(),
+      chairs: chairs.trim(),
       eventOrVenueUse,
       eventType: resolveEventTypeFromForm(
         activityTypePreset,
@@ -616,18 +626,10 @@ export function CreateProjectForm({
                   <FormControl>
                     <Input
                       {...field}
-                      type="number"
-                      min={0}
+                      type="text"
                       name={field.name}
                       placeholder={CREATE_PROJECT_PAGE.placeholderAttendees}
                       value={field.value ?? ""}
-                      onChange={(e) =>
-                        field.onChange(
-                          e.target.value === ""
-                            ? undefined
-                            : Number(e.target.value),
-                        )
-                      }
                     />
                   </FormControl>
                   <FormMessage />
@@ -644,7 +646,11 @@ export function CreateProjectForm({
                     {CREATE_PROJECT_PAGE.labelTablesRequired}
                   </FormLabel>
                   <FormControl>
-                    <Input {...field} name={field.name} />
+                    <Input
+                      {...field}
+                      name={field.name}
+                      placeholder={CREATE_PROJECT_PAGE.placeholderTables}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -662,17 +668,10 @@ export function CreateProjectForm({
                   <FormControl>
                     <Input
                       {...field}
-                      type="number"
-                      min={0}
+                      type="text"
                       name={field.name}
+                      placeholder={CREATE_PROJECT_PAGE.placeholderChairs}
                       value={field.value ?? ""}
-                      onChange={(e) =>
-                        field.onChange(
-                          e.target.value === ""
-                            ? undefined
-                            : Number(e.target.value),
-                        )
-                      }
                     />
                   </FormControl>
                   <FormMessage />

@@ -178,12 +178,20 @@ export function ProjectsList({ projects }: ProjectsListProps) {
           const n = parseIntIfNumeric(project.tables);
           return n ?? project.tables ?? "";
         }
-        case "chairs":
-          return project.chairs ?? null;
+        case "chairs": {
+          const s = project.chairs;
+          if (s == null || s === "") return null;
+          const n = parseIntIfNumeric(s);
+          return n ?? s;
+        }
         case "fnbItems":
           return project.fnbItems ?? "";
-        case "totalAttendees":
-          return project.totalAttendees ?? null;
+        case "totalAttendees": {
+          const s = project.totalAttendees;
+          if (s == null || s === "") return null;
+          const n = parseIntIfNumeric(s);
+          return n ?? s;
+        }
         case "projectNotes":
           return project.projectNotes ?? "";
       }
