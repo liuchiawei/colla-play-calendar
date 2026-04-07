@@ -196,6 +196,7 @@ export const CREATE_PROJECT_PAGE = {
   labelEquipmentExtensionCord: "延長線",
   labelEquipmentProjector: "投影設備",
   labelEquipmentWhiteboard: "白板／白板筆",
+  labelEquipmentNoOtherNeeds: "無其他設備需求",
 
   labelCustomerName: "客戶名稱",
   labelCustomerNameRequired: "客戶名稱 *",
@@ -211,9 +212,12 @@ export const CREATE_PROJECT_PAGE = {
   labelEventOrVenueUseRequired: "活動名稱 *",
   placeholderEventOrVenueUse: "例如：產品發表會、工作坊、Podcast 錄製…",
   labelTotalAttendees: "活動總人數",
+  labelTotalAttendeesRequired: "活動總人數 *",
   placeholderAttendees: "預估參與人數",
   labelTables: "桌子需求",
+  labelTablesRequired: "桌子需求 *",
   labelChairs: "椅子需求",
+  labelChairsRequired: "椅子需求 *",
   labelFnb: "餐飲品項",
   labelProjectNotes: "備註",
   labelCollaPlayContact: "CollaPlay 接洽人",
@@ -286,6 +290,7 @@ export const PROJECT_DETAIL_PAGE = {
   labelEquipmentExtensionCord: "延長線",
   labelEquipmentProjector: "投影設備",
   labelEquipmentWhiteboard: "白板／白板筆",
+  labelEquipmentNoOtherNeeds: "無其他設備需求",
   labelEquipmentSummary: "設備勾選",
 
   labelCustomerName: "客戶名稱",

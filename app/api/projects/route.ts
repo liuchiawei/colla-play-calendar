@@ -43,6 +43,28 @@ function validateCreateProjectInput(
   if (!b.collaPlayContactId || typeof b.collaPlayContactId !== "string" || !b.collaPlayContactId.trim()) {
     return { ok: false, error: "CollaPlay 窗口為必填" };
   }
+  const rawTotalAttendees = b.totalAttendees;
+  if (
+    rawTotalAttendees == null ||
+    typeof rawTotalAttendees !== "number" ||
+    Number.isNaN(rawTotalAttendees) ||
+    rawTotalAttendees < 0
+  ) {
+    return { ok: false, error: CREATE_PROJECT_PAGE.errorRequired };
+  }
+  const rawTables = b.tables;
+  if (rawTables == null || typeof rawTables !== "string" || !rawTables.trim()) {
+    return { ok: false, error: CREATE_PROJECT_PAGE.errorRequired };
+  }
+  const rawChairs = b.chairs;
+  if (
+    rawChairs == null ||
+    typeof rawChairs !== "number" ||
+    Number.isNaN(rawChairs) ||
+    rawChairs < 0
+  ) {
+    return { ok: false, error: CREATE_PROJECT_PAGE.errorRequired };
+  }
   if (!Array.isArray(b.rentals) || b.rentals.length < 1) {
     return { ok: false, error: "至少需一筆租借項目" };
   }

@@ -14,6 +14,8 @@ export type ProjectEquipmentNeeds = {
   extensionCord?: boolean;
   projector?: boolean;
   whiteboard?: boolean;
+  /** 與上述四項互斥：明確表示無其他設備需求 */
+  noOtherEquipmentNeeds?: boolean;
 };
 
 export interface Project {

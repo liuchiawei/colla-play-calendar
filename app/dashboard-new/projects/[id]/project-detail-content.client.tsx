@@ -115,6 +115,7 @@ import {
 } from "@/lib/constants/project-form";
 import {
   defaultEquipmentNeedsForm,
+  formatEquipmentNeedsLine,
   parseEquipmentNeedsFromDb,
 } from "@/lib/utils/project-equipment-needs";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -131,19 +132,14 @@ function formatDateTime(value: string | Date): string {
   return format(d, "yyyy/MM/dd HH:mm", { locale: zhTW });
 }
 
-/** 設備勾選：唯讀一行（詳情） */
-function formatEquipmentNeedsLine(
-  raw: ProjectWithRentals["equipmentNeeds"],
-): string | null {
-  const p = parseEquipmentNeedsFromDb(raw);
-  const parts: string[] = [];
-  if (p.microphone) parts.push(CREATE_PROJECT_PAGE.labelEquipmentMicrophone);
-  if (p.extensionCord)
-    parts.push(CREATE_PROJECT_PAGE.labelEquipmentExtensionCord);
-  if (p.projector) parts.push(CREATE_PROJECT_PAGE.labelEquipmentProjector);
-  if (p.whiteboard) parts.push(CREATE_PROJECT_PAGE.labelEquipmentWhiteboard);
-  return parts.length > 0 ? parts.join("、") : null;
-}
+/** 設備勾選顯示標籤（詳情／唯讀區與 formatEquipmentNeedsLine 共用） */
+const EQUIPMENT_NEEDS_LINE_LABELS = {
+  microphone: CREATE_PROJECT_PAGE.labelEquipmentMicrophone,
+  extensionCord: CREATE_PROJECT_PAGE.labelEquipmentExtensionCord,
+  projector: CREATE_PROJECT_PAGE.labelEquipmentProjector,
+  whiteboard: CREATE_PROJECT_PAGE.labelEquipmentWhiteboard,
+  noOtherEquipmentNeeds: CREATE_PROJECT_PAGE.labelEquipmentNoOtherNeeds,
+} as const;
 
 // Form schema (aligned with create form)
 const rentalItemSchema = z
@@ -178,6 +174,7 @@ const editEquipmentNeedsFormSchema = z.object({
   extensionCord: z.boolean(),
   projector: z.boolean(),
   whiteboard: z.boolean(),
+  noOtherEquipmentNeeds: z.boolean(),
 });
 
 const editProjectSchema = z
@@ -1501,7 +1498,16 @@ export function ProjectDetailContent({
                         <FormControl>
                           <Checkbox
                             checked={field.value}
-                            onCheckedChange={(c) => field.onChange(c === true)}
+                            onCheckedChange={(c) => {
+                              const on = c === true;
+                              field.onChange(on);
+                              if (on) {
+                                form.setValue(
+                                  "equipmentNeeds.noOtherEquipmentNeeds",
+                                  false,
+                                );
+                              }
+                            }}
                             aria-label={
                               CREATE_PROJECT_PAGE.labelEquipmentMicrophone
                             }
@@ -1521,7 +1527,16 @@ export function ProjectDetailContent({
                         <FormControl>
                           <Checkbox
                             checked={field.value}
-                            onCheckedChange={(c) => field.onChange(c === true)}
+                            onCheckedChange={(c) => {
+                              const on = c === true;
+                              field.onChange(on);
+                              if (on) {
+                                form.setValue(
+                                  "equipmentNeeds.noOtherEquipmentNeeds",
+                                  false,
+                                );
+                              }
+                            }}
                             aria-label={
                               CREATE_PROJECT_PAGE.labelEquipmentExtensionCord
                             }
@@ -1541,7 +1556,16 @@ export function ProjectDetailContent({
                         <FormControl>
                           <Checkbox
                             checked={field.value}
-                            onCheckedChange={(c) => field.onChange(c === true)}
+                            onCheckedChange={(c) => {
+                              const on = c === true;
+                              field.onChange(on);
+                              if (on) {
+                                form.setValue(
+                                  "equipmentNeeds.noOtherEquipmentNeeds",
+                                  false,
+                                );
+                              }
+                            }}
                             aria-label={
                               CREATE_PROJECT_PAGE.labelEquipmentProjector
                             }
@@ -1561,7 +1585,16 @@ export function ProjectDetailContent({
                         <FormControl>
                           <Checkbox
                             checked={field.value}
-                            onCheckedChange={(c) => field.onChange(c === true)}
+                            onCheckedChange={(c) => {
+                              const on = c === true;
+                              field.onChange(on);
+                              if (on) {
+                                form.setValue(
+                                  "equipmentNeeds.noOtherEquipmentNeeds",
+                                  false,
+                                );
+                              }
+                            }}
                             aria-label={
                               CREATE_PROJECT_PAGE.labelEquipmentWhiteboard
                             }
@@ -1569,6 +1602,47 @@ export function ProjectDetailContent({
                         </FormControl>
                         <FormLabel className="font-normal leading-none">
                           {CREATE_PROJECT_PAGE.labelEquipmentWhiteboard}
+                        </FormLabel>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="equipmentNeeds.noOtherEquipmentNeeds"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center gap-2 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={(c) => {
+                              const on = c === true;
+                              field.onChange(on);
+                              if (on) {
+                                form.setValue(
+                                  "equipmentNeeds.microphone",
+                                  false,
+                                );
+                                form.setValue(
+                                  "equipmentNeeds.extensionCord",
+                                  false,
+                                );
+                                form.setValue(
+                                  "equipmentNeeds.projector",
+                                  false,
+                                );
+                                form.setValue(
+                                  "equipmentNeeds.whiteboard",
+                                  false,
+                                );
+                              }
+                            }}
+                            aria-label={
+                              CREATE_PROJECT_PAGE.labelEquipmentNoOtherNeeds
+                            }
+                          />
+                        </FormControl>
+                        <FormLabel className="font-normal leading-none">
+                          {CREATE_PROJECT_PAGE.labelEquipmentNoOtherNeeds}
                         </FormLabel>
                       </FormItem>
                     )}
@@ -2273,7 +2347,10 @@ export function ProjectDetailContent({
                 {PROJECT_DETAIL_PAGE.labelEquipmentSummary}
               </p>
               <p className="font-medium">
-                {formatEquipmentNeedsLine(project.equipmentNeeds) ?? "—"}
+                {formatEquipmentNeedsLine(
+                  project.equipmentNeeds,
+                  EQUIPMENT_NEEDS_LINE_LABELS,
+                ) ?? "—"}
               </p>
             </div>
           </CardContent>

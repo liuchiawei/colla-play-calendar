@@ -94,6 +94,7 @@ const equipmentNeedsFormSchema = z.object({
   extensionCord: z.boolean(),
   projector: z.boolean(),
   whiteboard: z.boolean(),
+  noOtherEquipmentNeeds: z.boolean(),
 });
 
 const createProjectSchema = z
@@ -118,9 +119,11 @@ const createProjectSchema = z
       .string()
       .trim()
       .min(1, CREATE_PROJECT_PAGE.errorRequired),
-    totalAttendees: z.coerce.number().min(0).optional(),
-    tables: z.string().optional(),
-    chairs: z.coerce.number().min(0).optional(),
+    totalAttendees: z.number(CREATE_PROJECT_PAGE.errorRequired).min(0),
+    tables: z
+      .string()
+      .refine((s) => s.trim().length > 0, CREATE_PROJECT_PAGE.errorRequired),
+    chairs: z.number(CREATE_PROJECT_PAGE.errorRequired).min(0),
     equipmentNeeds: equipmentNeedsFormSchema.default(() =>
       defaultEquipmentNeedsForm(),
     ),
@@ -607,8 +610,8 @@ export function CreateProjectForm({
               name="totalAttendees"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>
-                    {CREATE_PROJECT_PAGE.labelTotalAttendees}
+                  <FormLabel aria-required>
+                    {CREATE_PROJECT_PAGE.labelTotalAttendeesRequired}
                   </FormLabel>
                   <FormControl>
                     <Input
@@ -637,11 +640,8 @@ export function CreateProjectForm({
               name="tables"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>
-                    {CREATE_PROJECT_PAGE.labelTables}{" "}
-                    <span className="text-muted-foreground font-normal">
-                      ({CREATE_PROJECT_PAGE.optional})
-                    </span>
+                  <FormLabel aria-required>
+                    {CREATE_PROJECT_PAGE.labelTablesRequired}
                   </FormLabel>
                   <FormControl>
                     <Input {...field} name={field.name} />
@@ -656,7 +656,9 @@ export function CreateProjectForm({
               name="chairs"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{CREATE_PROJECT_PAGE.labelChairs}</FormLabel>
+                  <FormLabel aria-required>
+                    {CREATE_PROJECT_PAGE.labelChairsRequired}
+                  </FormLabel>
                   <FormControl>
                     <Input
                       {...field}
@@ -691,7 +693,16 @@ export function CreateProjectForm({
                       <FormControl>
                         <Checkbox
                           checked={field.value}
-                          onCheckedChange={(c) => field.onChange(c === true)}
+                          onCheckedChange={(c) => {
+                            const on = c === true;
+                            field.onChange(on);
+                            if (on) {
+                              form.setValue(
+                                "equipmentNeeds.noOtherEquipmentNeeds",
+                                false,
+                              );
+                            }
+                          }}
                           aria-label={
                             CREATE_PROJECT_PAGE.labelEquipmentMicrophone
                           }
@@ -711,7 +722,16 @@ export function CreateProjectForm({
                       <FormControl>
                         <Checkbox
                           checked={field.value}
-                          onCheckedChange={(c) => field.onChange(c === true)}
+                          onCheckedChange={(c) => {
+                            const on = c === true;
+                            field.onChange(on);
+                            if (on) {
+                              form.setValue(
+                                "equipmentNeeds.noOtherEquipmentNeeds",
+                                false,
+                              );
+                            }
+                          }}
                           aria-label={
                             CREATE_PROJECT_PAGE.labelEquipmentExtensionCord
                           }
@@ -731,7 +751,16 @@ export function CreateProjectForm({
                       <FormControl>
                         <Checkbox
                           checked={field.value}
-                          onCheckedChange={(c) => field.onChange(c === true)}
+                          onCheckedChange={(c) => {
+                            const on = c === true;
+                            field.onChange(on);
+                            if (on) {
+                              form.setValue(
+                                "equipmentNeeds.noOtherEquipmentNeeds",
+                                false,
+                              );
+                            }
+                          }}
                           aria-label={
                             CREATE_PROJECT_PAGE.labelEquipmentProjector
                           }
@@ -751,7 +780,16 @@ export function CreateProjectForm({
                       <FormControl>
                         <Checkbox
                           checked={field.value}
-                          onCheckedChange={(c) => field.onChange(c === true)}
+                          onCheckedChange={(c) => {
+                            const on = c === true;
+                            field.onChange(on);
+                            if (on) {
+                              form.setValue(
+                                "equipmentNeeds.noOtherEquipmentNeeds",
+                                false,
+                              );
+                            }
+                          }}
                           aria-label={
                             CREATE_PROJECT_PAGE.labelEquipmentWhiteboard
                           }
@@ -759,6 +797,38 @@ export function CreateProjectForm({
                       </FormControl>
                       <FormLabel className="font-normal leading-none">
                         {CREATE_PROJECT_PAGE.labelEquipmentWhiteboard}
+                      </FormLabel>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="equipmentNeeds.noOtherEquipmentNeeds"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center gap-2 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={(c) => {
+                            const on = c === true;
+                            field.onChange(on);
+                            if (on) {
+                              form.setValue("equipmentNeeds.microphone", false);
+                              form.setValue(
+                                "equipmentNeeds.extensionCord",
+                                false,
+                              );
+                              form.setValue("equipmentNeeds.projector", false);
+                              form.setValue("equipmentNeeds.whiteboard", false);
+                            }
+                          }}
+                          aria-label={
+                            CREATE_PROJECT_PAGE.labelEquipmentNoOtherNeeds
+                          }
+                        />
+                      </FormControl>
+                      <FormLabel className="font-normal leading-none">
+                        {CREATE_PROJECT_PAGE.labelEquipmentNoOtherNeeds}
                       </FormLabel>
                     </FormItem>
                   )}
