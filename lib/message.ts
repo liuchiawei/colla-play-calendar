@@ -178,6 +178,13 @@ export const PROJECTS_PAGE = {
   tabListView: "列表",
   tabWeekView: "週曆",
   tabsAriaLabel: "專案檢視方式",
+  downloadListCsv: "下載 CSV",
+  downloadListCsvAria: "下載專案列表 CSV（可選日期區間）",
+  downloadListCsvPopoverTitle: "匯出專案列表",
+  downloadListCsvPopoverDescription: "選擇報表涵蓋的開始與結束日期，將匯出該區間內曾排程的專案（與列表欄位相同，不含操作）。",
+  downloadListCsvConfirm: "下載",
+  downloadListCsvResetMonth: "重設為當月",
+  downloadListCsvResetMonthAria: "將日期區間重設為目前月份",
 } as const;
 
 // Create Project Page (建立新專案表單)

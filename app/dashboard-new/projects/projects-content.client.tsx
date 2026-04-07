@@ -3,7 +3,7 @@
 import * as React from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { Plus, Search, CalendarDays, Filter, X } from "lucide-react";
+import { Download, Plus, Search, CalendarDays, Filter, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -24,6 +24,11 @@ import {
   type ProjectStatusUi,
 } from "@/lib/config/project-status";
 import type { Project } from "@/lib/types/project";
+import {
+  buildProjectsListCsv,
+  filterProjectsForDateRange,
+  getProjectsListCsvFilename,
+} from "@/lib/services/project/project-list-csv.service";
 import { cn } from "@/lib/utils";
 import type { DateRange } from "react-day-picker";
 import {
@@ -138,6 +143,13 @@ function summarizeSelected(count: number, emptyLabel: string): string {
 export function ProjectsContent({ projects }: ProjectsContentProps) {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [searchOpen, setSearchOpen] = React.useState(false);
+  const [listCsvPopoverOpen, setListCsvPopoverOpen] = React.useState(false);
+  const [listCsvRange, setListCsvRange] = React.useState<
+    DateRange | undefined
+  >(() => {
+    const now = new Date();
+    return { from: startOfMonth(now), to: endOfMonth(now) };
+  });
 
   const [selectedSpaceIds, setSelectedSpaceIds] = React.useState<Set<string>>(
     () => new Set(),
@@ -241,21 +253,112 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
     selectedContactPeople.size > 0 ||
     Boolean(selectedDateRange?.from || selectedDateRange?.to);
 
+  const canDownloadListCsv = React.useMemo(() => {
+    const r = listCsvRange;
+    if (!r?.from || !r?.to) return false;
+    return startOfDay(r.to) >= startOfDay(r.from);
+  }, [listCsvRange]);
+
+  const handleResetListCsvMonth = React.useCallback(() => {
+    const now = new Date();
+    setListCsvRange({ from: startOfMonth(now), to: endOfMonth(now) });
+  }, []);
+
+  const handleDownloadListCsv = React.useCallback(() => {
+    if (!listCsvRange?.from || !listCsvRange?.to || !canDownloadListCsv) return;
+    const { from, to } = listCsvRange;
+    const filtered = filterProjectsForDateRange(projects, { from, to });
+    const csv = buildProjectsListCsv(filtered);
+    const filename = getProjectsListCsvFilename({ from, to });
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+    setListCsvPopoverOpen(false);
+  }, [projects, listCsvRange, canDownloadListCsv]);
+
   return (
     <div className="flex-1 min-w-0 p-6 flex flex-col gap-6">
       <div className="flex flex-col gap-3">
         <div className="flex flex-col md:flex-row gap-3 items-center justify-between">
-        {/* Create New Project Button */}
-        <Link href="/dashboard-new/projects/new" className="shrink-0">
-          <Button
-            variant="default"
-            className="gap-2"
-            aria-label={PROJECTS_PAGE.createNewProjectAria}
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          {/* 新增專案 */}
+          <Link href="/dashboard-new/projects/new">
+            <Button
+              variant="default"
+              className="gap-2"
+              aria-label={PROJECTS_PAGE.createNewProjectAria}
+            >
+              <Plus className="size-4 shrink-0" aria-hidden />
+              {PROJECTS_PAGE.createNewProject}
+            </Button>
+          </Link>
+          {/* 下載列表 CSV */}
+          <Popover
+            open={listCsvPopoverOpen}
+            onOpenChange={setListCsvPopoverOpen}
           >
-            <Plus className="size-4 shrink-0" aria-hidden />
-            {PROJECTS_PAGE.createNewProject}
-          </Button>
-        </Link>
+            <PopoverTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                className="gap-2"
+                aria-label={PROJECTS_PAGE.downloadListCsvAria}
+              >
+                <Download className="size-4 shrink-0" aria-hidden />
+                {PROJECTS_PAGE.downloadListCsv}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent
+              align="start"
+              className="w-auto max-w-[min(calc(100vw-2rem),22rem)] p-0"
+            >
+              <div className="p-2 md:p-3 lg:p-4 space-y-3">
+                <div>
+                  <p className="font-medium text-sm">
+                    {PROJECTS_PAGE.downloadListCsvPopoverTitle}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+                    {PROJECTS_PAGE.downloadListCsvPopoverDescription}
+                  </p>
+                </div>
+                <Calendar
+                  mode="range"
+                  selected={listCsvRange}
+                  onSelect={setListCsvRange}
+                  numberOfMonths={1}
+                  defaultMonth={listCsvRange?.from}
+                  className="w-full"
+                />
+                {/* Footer Buttons */}
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  {/* 重置月份 */}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleResetListCsvMonth}
+                    aria-label={PROJECTS_PAGE.downloadListCsvResetMonthAria}
+                  >
+                    {PROJECTS_PAGE.downloadListCsvResetMonth}
+                  </Button>
+                  {/* 確認下載 */}
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={!canDownloadListCsv}
+                    onClick={handleDownloadListCsv}
+                  >
+                    {PROJECTS_PAGE.downloadListCsvConfirm}
+                  </Button>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
         {/* Search Bar */}
         <Popover open={searchOpen} onOpenChange={setSearchOpen}>
           <PopoverAnchor asChild>
