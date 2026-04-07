@@ -3,7 +3,6 @@ import {
   Building2,
   FolderKanban,
   Users,
-  FileDown,
 } from "lucide-react";
 import { DASHBOARD_NEW_LABELS } from "../message";
 
@@ -52,3 +51,11 @@ export const dashboardColors = {
     hotPink: "oklch(0.65 0.28 340)",
   },
 } as const;
+
+// 專案列表表格欄位（順序與版型）；實際渲染見 app/dashboard-new/projects/projects-list.tsx
+export {
+  PROJECTS_LIST_COLUMNS,
+  type ProjectsListColumnConfig,
+  type ProjectsListColumnId,
+  type ProjectsListSortKey,
+} from "./projects-list-table";
