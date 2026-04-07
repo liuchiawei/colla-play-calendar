@@ -50,12 +50,12 @@ export const PROJECT_STATUS_OPTIONS: Array<{
   {
     value: "negotiating",
     labelKey: "statusNegotiating",
-    colorClass: "bg-slate-500",
+    colorClass: "bg-accent",
   },
   {
     value: "confirmed",
     labelKey: "statusConfirmed",
-    colorClass: "bg-blue-500",
+    colorClass: "bg-primary",
   },
   {
     value: "deposit_paid",
@@ -65,7 +65,7 @@ export const PROJECT_STATUS_OPTIONS: Array<{
   {
     value: "completed",
     labelKey: "statusCompleted",
-    colorClass: "bg-green-600",
+    colorClass: "bg-emerald-600",
   },
   {
     value: "cancelled",
