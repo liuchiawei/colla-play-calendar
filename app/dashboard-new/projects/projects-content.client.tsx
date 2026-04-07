@@ -29,6 +29,11 @@ import {
   filterProjectsForDateRange,
   getProjectsListCsvFilename,
 } from "@/lib/services/project/project-list-csv.service";
+import {
+  isProjectActivityPreset,
+  PROJECT_ACTIVITY_TYPE_OPTIONS,
+  PROJECT_ACTIVITY_TYPE_OTHER,
+} from "@/lib/constants/project-form";
 import { cn } from "@/lib/utils";
 import type { DateRange } from "react-day-picker";
 import {
@@ -140,6 +145,26 @@ function summarizeSelected(count: number, emptyLabel: string): string {
   return `已選 ${count}`;
 }
 
+/** 活動類型篩選：多選為 OR；「其他」含自訂字串（非預設選項） */
+function projectMatchesSelectedActivityTypes(
+  eventType: string,
+  selected: Set<string>,
+): boolean {
+  for (const opt of selected) {
+    if (opt === PROJECT_ACTIVITY_TYPE_OTHER) {
+      if (
+        eventType === PROJECT_ACTIVITY_TYPE_OTHER ||
+        !isProjectActivityPreset(eventType)
+      ) {
+        return true;
+      }
+    } else if (eventType === opt) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function ProjectsContent({ projects }: ProjectsContentProps) {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [searchOpen, setSearchOpen] = React.useState(false);
@@ -163,6 +188,8 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
   const [selectedDateRange, setSelectedDateRange] = React.useState<
     DateRange | undefined
   >(undefined);
+  const [selectedActivityTypeValues, setSelectedActivityTypeValues] =
+    React.useState<Set<string>>(() => new Set());
 
   const contactPersonOptions = React.useMemo(() => {
     const set = new Set<string>();
@@ -181,6 +208,7 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
       selectedSpaceIds.size > 0 ||
       selectedStatusValues.size > 0 ||
       selectedContactPeople.size > 0 ||
+      selectedActivityTypeValues.size > 0 ||
       Boolean(selectedDateRange?.from || selectedDateRange?.to);
 
     if (!hasAnyFilter) return searched;
@@ -215,6 +243,18 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
         if (!selectedContactPeople.has(project.contactPerson)) return false;
       }
 
+      // activity type (OR)
+      if (selectedActivityTypeValues.size > 0) {
+        if (
+          !projectMatchesSelectedActivityTypes(
+            project.eventType,
+            selectedActivityTypeValues,
+          )
+        ) {
+          return false;
+        }
+      }
+
       // date range (intersection)
       if (selectedDateRange?.from || selectedDateRange?.to) {
         const rentals = project.rentals;
@@ -238,6 +278,7 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
   }, [
     projects,
     searchQuery,
+    selectedActivityTypeValues,
     selectedContactPeople,
     selectedDateRange,
     selectedSpaceIds,
@@ -251,6 +292,7 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
     selectedSpaceIds.size > 0 ||
     selectedStatusValues.size > 0 ||
     selectedContactPeople.size > 0 ||
+    selectedActivityTypeValues.size > 0 ||
     Boolean(selectedDateRange?.from || selectedDateRange?.to);
 
   const canDownloadListCsv = React.useMemo(() => {
@@ -433,6 +475,68 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
             <Filter className="size-3.5" aria-hidden />
             篩選
           </span>
+          {/* 活動類型 */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                aria-label={`${PROJECTS_PAGE.columnActivityType}篩選（${summarizeSelected(selectedActivityTypeValues.size, "全部")}）`}
+              >
+                {PROJECTS_PAGE.columnActivityType}
+                <span className="text-muted-foreground">
+                  {summarizeSelected(selectedActivityTypeValues.size, "全部")}
+                </span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-[min(18rem,90vw)] p-3">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-medium">
+                  {PROJECTS_PAGE.columnActivityType}
+                </p>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-2"
+                  onClick={() => setSelectedActivityTypeValues(new Set())}
+                  disabled={selectedActivityTypeValues.size === 0}
+                >
+                  清除
+                </Button>
+              </div>
+              <div className="mt-2 flex flex-col gap-2 max-h-72 overflow-auto pr-1">
+                {PROJECT_ACTIVITY_TYPE_OPTIONS.map((opt) => {
+                  const checked = selectedActivityTypeValues.has(opt);
+                  return (
+                    <label
+                      key={opt}
+                      className={cn(
+                        "flex items-center gap-2 rounded-md border border-border/60 px-2 py-2 text-sm hover:bg-accent/40",
+                        checked && "bg-accent/30",
+                      )}
+                    >
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={(next) => {
+                          setSelectedActivityTypeValues((prev) => {
+                            const set = new Set(prev);
+                            if (next) set.add(opt);
+                            else set.delete(opt);
+                            return set;
+                          });
+                        }}
+                        aria-label={`選取${PROJECTS_PAGE.columnActivityType}：${opt}`}
+                      />
+                      <span className="min-w-0 truncate">{opt}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </PopoverContent>
+          </Popover>
 
           {/* 場域 */}
           <Popover>
@@ -733,6 +837,7 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
               setSelectedSpaceIds(new Set());
               setSelectedStatusValues(new Set());
               setSelectedContactPeople(new Set());
+              setSelectedActivityTypeValues(new Set());
               setSelectedDateRange(undefined);
             }}
             disabled={!anyFiltersActive}
@@ -761,7 +866,7 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
         </TabsContent>
 
         <TabsContent value="week" className="flex-1 min-w-0 w-full">
-          <ProjectsWeekCalendar projects={projects} />
+          <ProjectsWeekCalendar projects={filteredProjects} />
         </TabsContent>
       </Tabs>
     </div>
