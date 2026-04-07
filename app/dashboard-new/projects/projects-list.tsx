@@ -55,6 +55,7 @@ const CURRENCY_FORMATTER = new Intl.NumberFormat("zh-TW", {
 type SortDirection = "asc" | "desc";
 
 type SortKey =
+  | "eventType"
   | "customer"
   | "eventOrVenueUse"
   | "space"
@@ -155,6 +156,8 @@ export function ProjectsList({ projects }: ProjectsListProps) {
 
     const getSortValue = (project: Project): string | number | null => {
       switch (sort.key) {
+        case "eventType":
+          return project.eventType ?? "";
         case "customer":
           return project.customer ?? "";
         case "eventOrVenueUse":
@@ -283,6 +286,22 @@ export function ProjectsList({ projects }: ProjectsListProps) {
             </TableCaption>
             <TableHeader>
               <TableRow>
+                <TableHead
+                  scope="col"
+                  aria-sort={getAriaSort(sort, "eventType")}
+                >
+                  <button
+                    type="button"
+                    className="group inline-flex items-center gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                    onClick={() => toggleSort("eventType")}
+                  >
+                    <span>{PROJECTS_PAGE.columnActivityType}</span>
+                    <SortIcon
+                      active={sort?.key === "eventType"}
+                      dir={sort?.key === "eventType" ? sort.dir : "asc"}
+                    />
+                  </button>
+                </TableHead>
                 <TableHead scope="col" aria-sort={getAriaSort(sort, "customer")}>
                   <button
                     type="button"
@@ -504,6 +523,9 @@ export function ProjectsList({ projects }: ProjectsListProps) {
                 const statusForUi = normalizeProjectStatusForUi(project.status);
                 return (
                   <TableRow key={project.id}>
+                  <TableCell className="min-w-0 max-w-[120px] truncate">
+                    {project.eventType?.trim() ? project.eventType : "—"}
+                  </TableCell>
                   <TableCell className="min-w-0 max-w-[120px] truncate">
                     {project.customer}
                   </TableCell>

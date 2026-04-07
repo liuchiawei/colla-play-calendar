@@ -114,7 +114,10 @@ const createProjectSchema = z
         message: CREATE_PROJECT_PAGE.errorActivityTypeRequired,
       }),
     activityCustomDetail: z.string().optional().default(""),
-    eventOrVenueUse: z.string().trim().min(1, CREATE_PROJECT_PAGE.errorRequired),
+    eventOrVenueUse: z
+      .string()
+      .trim()
+      .min(1, CREATE_PROJECT_PAGE.errorRequired),
     totalAttendees: z.coerce.number().min(0).optional(),
     tables: z.string().optional(),
     chairs: z.coerce.number().min(0).optional(),
@@ -503,7 +506,9 @@ export function CreateProjectForm({
                     <Input
                       {...field}
                       name={field.name}
-                      placeholder={CREATE_PROJECT_PAGE.placeholderEventOrVenueUse}
+                      placeholder={
+                        CREATE_PROJECT_PAGE.placeholderEventOrVenueUse
+                      }
                     />
                   </FormControl>
                   <FormMessage />
@@ -596,6 +601,7 @@ export function CreateProjectForm({
             </h2>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
+            {/* 活動總人數 */}
             <FormField
               control={form.control}
               name="totalAttendees"
@@ -625,6 +631,7 @@ export function CreateProjectForm({
                 </FormItem>
               )}
             />
+            {/* 桌子需求 */}
             <FormField
               control={form.control}
               name="tables"
@@ -643,6 +650,7 @@ export function CreateProjectForm({
                 </FormItem>
               )}
             />
+            {/* 椅子需求 */}
             <FormField
               control={form.control}
               name="chairs"
@@ -673,6 +681,7 @@ export function CreateProjectForm({
               <p className="text-sm font-medium leading-none">
                 {CREATE_PROJECT_PAGE.labelEquipmentExtras}
               </p>
+              {/* 其他設備（可複選） */}
               <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 <FormField
                   control={form.control}

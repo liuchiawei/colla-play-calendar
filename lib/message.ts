@@ -144,11 +144,11 @@ export const PROJECTS_PAGE = {
   searchNoResults: "搜尋無結果",
   tableCaption: "專案列表",
   columnCustomer: "客戶",
-  columnEventOrVenueUse: "活動名稱或場地用途",
+  columnEventOrVenueUse: "活動名稱",
   columnSpace: "場域",
   columnDate: "日期",
-  columnEventStartTime: "活動開始時間",
-  columnEventEndTime: "活動結束時間",
+  columnEventStartTime: "開始時間",
+  columnEventEndTime: "結束時間",
   columnSetupTime: "場佈時間",
   columnTeardownTime: "場復時間",
   columnContact: "接洽人",
@@ -206,8 +206,8 @@ export const CREATE_PROJECT_PAGE = {
   optional: "選填",
   labelTaxId: "統一編號",
 
-  labelEventOrVenueUse: "活動名稱或場地用途",
-  labelEventOrVenueUseRequired: "活動名稱或場地用途 *",
+  labelEventOrVenueUse: "活動名稱",
+  labelEventOrVenueUseRequired: "活動名稱 *",
   placeholderEventOrVenueUse: "例如：產品發表會、工作坊、Podcast 錄製…",
   labelTotalAttendees: "活動總人數",
   placeholderAttendees: "預估參與人數",
@@ -259,7 +259,8 @@ export const CREATE_PROJECT_PAGE = {
   errorPhoneInvalid: "請輸入有效的聯絡電話",
   errorEndBeforeStart: "結束時間須晚於開始時間",
   /** 同日須 end > start；跨日時結束日不可早於開始日 */
-  errorInvalidRentalWindow: "請確認日期與時間：同日時結束須晚於開始；跨日時結束日不可早於開始日。",
+  errorInvalidRentalWindow:
+    "請確認日期與時間：同日時結束須晚於開始；跨日時結束日不可早於開始日。",
   errorRentalOverlapInternal: "表單內有租借在相同空間時段重疊，請調整。",
 } as const;
 
@@ -290,7 +291,7 @@ export const PROJECT_DETAIL_PAGE = {
   labelPhone: "聯絡電話",
   labelCompany: "公司行號",
   labelTaxId: "統一編號",
-  labelEventOrVenueUse: "活動名稱或場地用途",
+  labelEventOrVenueUse: "活動名稱",
   labelTotalAttendees: "活動總人數",
   labelTables: "桌子需求",
   labelChairs: "椅子需求",
