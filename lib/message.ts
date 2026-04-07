@@ -143,22 +143,28 @@ export const PROJECTS_PAGE = {
   searchAriaLabel: "搜尋專案",
   searchNoResults: "搜尋無結果",
   tableCaption: "專案列表",
+  columnActivityType: "活動類型",
   columnCustomer: "客戶",
-  columnEventOrVenueUse: "活動名稱或場地用途",
+  columnEventOrVenueUse: "活動名稱",
   columnSpace: "場域",
   columnDate: "日期",
-  columnEventStartTime: "活動開始時間",
-  columnEventEndTime: "活動結束時間",
+  columnEventStartTime: "開始時間",
+  columnEventEndTime: "結束時間",
   columnSetupTime: "場佈時間",
   columnTeardownTime: "場復時間",
   columnContact: "接洽人",
   columnAmount: "金額",
   columnStatus: "狀態",
-  columnTables: "桌數等",
-  columnChairs: "椅子數",
+  columnTables: "桌子",
+  columnChairs: "椅子",
   columnFnbItems: "餐飲項目",
-  columnTotalAttendees: "預計人數",
-  columnProjectNotes: "專案備註",
+  columnTotalAttendees: "人數",
+  columnProjectNotes: "備註",
+  columnOtherEquipment: "其他設備",
+  columnRentalAmount: "場租",
+  columnFnbAmount: "餐飲",
+  columnPaidAmount: "已付",
+  columnPendingAmount: "待付",
   columnActions: "操作",
   actionEditAria: "編輯此專案",
   actionDeleteAria: "刪除此專案",
@@ -172,7 +178,17 @@ export const PROJECTS_PAGE = {
   tabListView: "列表",
   tabWeekView: "週曆",
   tabsAriaLabel: "專案檢視方式",
+  downloadListCsv: "下載 CSV",
+  downloadListCsvAria: "下載專案列表 CSV（可選日期區間）",
+  downloadListCsvPopoverTitle: "匯出專案列表",
+  downloadListCsvPopoverDescription: "選擇報表涵蓋的開始與結束日期，將匯出該區間內曾排程的專案（與列表欄位相同，不含操作）。",
+  downloadListCsvConfirm: "下載",
+  downloadListCsvResetMonth: "重設為當月",
+  downloadListCsvResetMonthAria: "將日期區間重設為目前月份",
 } as const;
+
+/** 餐飲金額尚未確定：列表／詳情／CSV 顯示與表單勾選（單一來源） */
+export const FNB_AMOUNT_PENDING_LABEL = "餐飲金額待定" as const;
 
 // Create Project Page (建立新專案表單)
 export const CREATE_PROJECT_PAGE = {
@@ -195,6 +211,7 @@ export const CREATE_PROJECT_PAGE = {
   labelEquipmentExtensionCord: "延長線",
   labelEquipmentProjector: "投影設備",
   labelEquipmentWhiteboard: "白板／白板筆",
+  labelEquipmentNoOtherNeeds: "無其他設備需求",
 
   labelCustomerName: "客戶名稱",
   labelCustomerNameRequired: "客戶名稱 *",
@@ -206,13 +223,18 @@ export const CREATE_PROJECT_PAGE = {
   optional: "選填",
   labelTaxId: "統一編號",
 
-  labelEventOrVenueUse: "活動名稱或場地用途",
-  labelEventOrVenueUseRequired: "活動名稱或場地用途 *",
+  labelEventOrVenueUse: "活動名稱",
+  labelEventOrVenueUseRequired: "活動名稱 *",
   placeholderEventOrVenueUse: "例如：產品發表會、工作坊、Podcast 錄製…",
   labelTotalAttendees: "活動總人數",
-  placeholderAttendees: "預估參與人數",
+  labelTotalAttendeesRequired: "活動總人數 *",
+  placeholderAttendees: "數字或 TBC（暫定）",
   labelTables: "桌子需求",
+  labelTablesRequired: "桌子需求 *",
+  placeholderTables: "數字或 TBC（暫定）",
   labelChairs: "椅子需求",
+  labelChairsRequired: "椅子需求 *",
+  placeholderChairs: "數字或 TBC（暫定）",
   labelFnb: "餐飲品項",
   labelProjectNotes: "備註",
   labelCollaPlayContact: "CollaPlay 接洽人",
@@ -242,6 +264,8 @@ export const CREATE_PROJECT_PAGE = {
   teardownDefault: "預設：結束後 30 分鐘",
   labelRentalAmount: "場租金額 (NT$)",
   labelFnbAmount: "餐飲金額 (NT$)",
+  /** 與 {@link FNB_AMOUNT_PENDING_LABEL} 同文案，供勾選項使用 */
+  labelFnbAmountPending: FNB_AMOUNT_PENDING_LABEL,
   labelPaidAmount: "已付款項 (NT$)",
   /** 建立專案時：任一段已付款項大於 0 則狀態為已確定 */
   hintPaidAmountSetsConfirmed:
@@ -259,7 +283,8 @@ export const CREATE_PROJECT_PAGE = {
   errorPhoneInvalid: "請輸入有效的聯絡電話",
   errorEndBeforeStart: "結束時間須晚於開始時間",
   /** 同日須 end > start；跨日時結束日不可早於開始日 */
-  errorInvalidRentalWindow: "請確認日期與時間：同日時結束須晚於開始；跨日時結束日不可早於開始日。",
+  errorInvalidRentalWindow:
+    "請確認日期與時間：同日時結束須晚於開始；跨日時結束日不可早於開始日。",
   errorRentalOverlapInternal: "表單內有租借在相同空間時段重疊，請調整。",
 } as const;
 
@@ -284,13 +309,14 @@ export const PROJECT_DETAIL_PAGE = {
   labelEquipmentExtensionCord: "延長線",
   labelEquipmentProjector: "投影設備",
   labelEquipmentWhiteboard: "白板／白板筆",
+  labelEquipmentNoOtherNeeds: "無其他設備需求",
   labelEquipmentSummary: "設備勾選",
 
   labelCustomerName: "客戶名稱",
   labelPhone: "聯絡電話",
   labelCompany: "公司行號",
   labelTaxId: "統一編號",
-  labelEventOrVenueUse: "活動名稱或場地用途",
+  labelEventOrVenueUse: "活動名稱",
   labelTotalAttendees: "活動總人數",
   labelTables: "桌子需求",
   labelChairs: "椅子需求",

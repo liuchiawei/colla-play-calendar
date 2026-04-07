@@ -73,6 +73,7 @@ const rentalItemSchema = z
     teardownMinutesAfter: z.number().min(0).optional(),
     rentalAmount: z.coerce.number().min(0),
     fnbAmount: z.coerce.number().min(0),
+    fnbAmountPending: z.boolean().default(false),
     paidAmount: z.coerce.number().min(0),
   })
   .refine(
@@ -94,6 +95,7 @@ const equipmentNeedsFormSchema = z.object({
   extensionCord: z.boolean(),
   projector: z.boolean(),
   whiteboard: z.boolean(),
+  noOtherEquipmentNeeds: z.boolean(),
 });
 
 const createProjectSchema = z
@@ -114,10 +116,19 @@ const createProjectSchema = z
         message: CREATE_PROJECT_PAGE.errorActivityTypeRequired,
       }),
     activityCustomDetail: z.string().optional().default(""),
-    eventOrVenueUse: z.string().trim().min(1, CREATE_PROJECT_PAGE.errorRequired),
-    totalAttendees: z.coerce.number().min(0).optional(),
-    tables: z.string().optional(),
-    chairs: z.coerce.number().min(0).optional(),
+    eventOrVenueUse: z
+      .string()
+      .trim()
+      .min(1, CREATE_PROJECT_PAGE.errorRequired),
+    totalAttendees: z
+      .string()
+      .refine((s) => s.trim().length > 0, CREATE_PROJECT_PAGE.errorRequired),
+    tables: z
+      .string()
+      .refine((s) => s.trim().length > 0, CREATE_PROJECT_PAGE.errorRequired),
+    chairs: z
+      .string()
+      .refine((s) => s.trim().length > 0, CREATE_PROJECT_PAGE.errorRequired),
     equipmentNeeds: equipmentNeedsFormSchema.default(() =>
       defaultEquipmentNeedsForm(),
     ),
@@ -184,6 +195,7 @@ const defaultRental: CreateProjectFormValues["rentals"][0] = {
   teardownMinutesAfter: 0,
   rentalAmount: 0,
   fnbAmount: 0,
+  fnbAmountPending: false,
   paidAmount: 0,
 };
 
@@ -207,9 +219,9 @@ export function CreateProjectForm({
       activityTypePreset: "",
       activityCustomDetail: "",
       eventOrVenueUse: "",
-      totalAttendees: undefined,
+      totalAttendees: "",
       tables: "",
-      chairs: undefined,
+      chairs: "",
       equipmentNeeds: defaultEquipmentNeedsForm(),
       fnbItems: "",
       projectNotes: "",
@@ -239,10 +251,16 @@ export function CreateProjectForm({
       activityCustomDetail,
       equipmentNeeds,
       eventOrVenueUse,
+      totalAttendees,
+      tables,
+      chairs,
       ...rest
     } = data;
     const payload: CreateProjectInput = {
       ...rest,
+      totalAttendees: totalAttendees.trim(),
+      tables: tables.trim(),
+      chairs: chairs.trim(),
       eventOrVenueUse,
       eventType: resolveEventTypeFromForm(
         activityTypePreset,
@@ -503,7 +521,9 @@ export function CreateProjectForm({
                     <Input
                       {...field}
                       name={field.name}
-                      placeholder={CREATE_PROJECT_PAGE.placeholderEventOrVenueUse}
+                      placeholder={
+                        CREATE_PROJECT_PAGE.placeholderEventOrVenueUse
+                      }
                     />
                   </FormControl>
                   <FormMessage />
@@ -596,73 +616,64 @@ export function CreateProjectForm({
             </h2>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
+            {/* 活動總人數 */}
             <FormField
               control={form.control}
               name="totalAttendees"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>
-                    {CREATE_PROJECT_PAGE.labelTotalAttendees}
+                  <FormLabel aria-required>
+                    {CREATE_PROJECT_PAGE.labelTotalAttendeesRequired}
                   </FormLabel>
                   <FormControl>
                     <Input
                       {...field}
-                      type="number"
-                      min={0}
+                      type="text"
                       name={field.name}
                       placeholder={CREATE_PROJECT_PAGE.placeholderAttendees}
                       value={field.value ?? ""}
-                      onChange={(e) =>
-                        field.onChange(
-                          e.target.value === ""
-                            ? undefined
-                            : Number(e.target.value),
-                        )
-                      }
                     />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+            {/* 桌子需求 */}
             <FormField
               control={form.control}
               name="tables"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>
-                    {CREATE_PROJECT_PAGE.labelTables}{" "}
-                    <span className="text-muted-foreground font-normal">
-                      ({CREATE_PROJECT_PAGE.optional})
-                    </span>
+                  <FormLabel aria-required>
+                    {CREATE_PROJECT_PAGE.labelTablesRequired}
                   </FormLabel>
                   <FormControl>
-                    <Input {...field} name={field.name} />
+                    <Input
+                      {...field}
+                      name={field.name}
+                      placeholder={CREATE_PROJECT_PAGE.placeholderTables}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+            {/* 椅子需求 */}
             <FormField
               control={form.control}
               name="chairs"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{CREATE_PROJECT_PAGE.labelChairs}</FormLabel>
+                  <FormLabel aria-required>
+                    {CREATE_PROJECT_PAGE.labelChairsRequired}
+                  </FormLabel>
                   <FormControl>
                     <Input
                       {...field}
-                      type="number"
-                      min={0}
+                      type="text"
                       name={field.name}
+                      placeholder={CREATE_PROJECT_PAGE.placeholderChairs}
                       value={field.value ?? ""}
-                      onChange={(e) =>
-                        field.onChange(
-                          e.target.value === ""
-                            ? undefined
-                            : Number(e.target.value),
-                        )
-                      }
                     />
                   </FormControl>
                   <FormMessage />
@@ -673,6 +684,7 @@ export function CreateProjectForm({
               <p className="text-sm font-medium leading-none">
                 {CREATE_PROJECT_PAGE.labelEquipmentExtras}
               </p>
+              {/* 其他設備（可複選） */}
               <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 <FormField
                   control={form.control}
@@ -682,7 +694,16 @@ export function CreateProjectForm({
                       <FormControl>
                         <Checkbox
                           checked={field.value}
-                          onCheckedChange={(c) => field.onChange(c === true)}
+                          onCheckedChange={(c) => {
+                            const on = c === true;
+                            field.onChange(on);
+                            if (on) {
+                              form.setValue(
+                                "equipmentNeeds.noOtherEquipmentNeeds",
+                                false,
+                              );
+                            }
+                          }}
                           aria-label={
                             CREATE_PROJECT_PAGE.labelEquipmentMicrophone
                           }
@@ -702,7 +723,16 @@ export function CreateProjectForm({
                       <FormControl>
                         <Checkbox
                           checked={field.value}
-                          onCheckedChange={(c) => field.onChange(c === true)}
+                          onCheckedChange={(c) => {
+                            const on = c === true;
+                            field.onChange(on);
+                            if (on) {
+                              form.setValue(
+                                "equipmentNeeds.noOtherEquipmentNeeds",
+                                false,
+                              );
+                            }
+                          }}
                           aria-label={
                             CREATE_PROJECT_PAGE.labelEquipmentExtensionCord
                           }
@@ -722,7 +752,16 @@ export function CreateProjectForm({
                       <FormControl>
                         <Checkbox
                           checked={field.value}
-                          onCheckedChange={(c) => field.onChange(c === true)}
+                          onCheckedChange={(c) => {
+                            const on = c === true;
+                            field.onChange(on);
+                            if (on) {
+                              form.setValue(
+                                "equipmentNeeds.noOtherEquipmentNeeds",
+                                false,
+                              );
+                            }
+                          }}
                           aria-label={
                             CREATE_PROJECT_PAGE.labelEquipmentProjector
                           }
@@ -742,7 +781,16 @@ export function CreateProjectForm({
                       <FormControl>
                         <Checkbox
                           checked={field.value}
-                          onCheckedChange={(c) => field.onChange(c === true)}
+                          onCheckedChange={(c) => {
+                            const on = c === true;
+                            field.onChange(on);
+                            if (on) {
+                              form.setValue(
+                                "equipmentNeeds.noOtherEquipmentNeeds",
+                                false,
+                              );
+                            }
+                          }}
                           aria-label={
                             CREATE_PROJECT_PAGE.labelEquipmentWhiteboard
                           }
@@ -750,6 +798,38 @@ export function CreateProjectForm({
                       </FormControl>
                       <FormLabel className="font-normal leading-none">
                         {CREATE_PROJECT_PAGE.labelEquipmentWhiteboard}
+                      </FormLabel>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="equipmentNeeds.noOtherEquipmentNeeds"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center gap-2 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={(c) => {
+                            const on = c === true;
+                            field.onChange(on);
+                            if (on) {
+                              form.setValue("equipmentNeeds.microphone", false);
+                              form.setValue(
+                                "equipmentNeeds.extensionCord",
+                                false,
+                              );
+                              form.setValue("equipmentNeeds.projector", false);
+                              form.setValue("equipmentNeeds.whiteboard", false);
+                            }
+                          }}
+                          aria-label={
+                            CREATE_PROJECT_PAGE.labelEquipmentNoOtherNeeds
+                          }
+                        />
+                      </FormControl>
+                      <FormLabel className="font-normal leading-none">
+                        {CREATE_PROJECT_PAGE.labelEquipmentNoOtherNeeds}
                       </FormLabel>
                     </FormItem>
                   )}
@@ -1109,7 +1189,8 @@ export function CreateProjectForm({
                   </div>
                 ) : null}
 
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid items-start gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  {/* 場租金額 */}
                   <FormField
                     control={form.control}
                     name={`rentals.${index}.rentalAmount`}
@@ -1131,27 +1212,65 @@ export function CreateProjectForm({
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name={`rentals.${index}.fnbAmount`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          {CREATE_PROJECT_PAGE.labelFnbAmount}
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            type="number"
-                            min={0}
-                            name={field.name}
-                            className="tabular-nums"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <div className="flex min-w-0 w-full flex-col gap-2">
+                  {/* 餐飲金額 */}
+                    <FormField
+                      control={form.control}
+                      name={`rentals.${index}.fnbAmount`}
+                      render={({ field }) => {
+                        const pending =
+                          watchedRentals?.[index]?.fnbAmountPending === true;
+                        return (
+                          <FormItem>
+                            <FormLabel>
+                              {CREATE_PROJECT_PAGE.labelFnbAmount}
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                type="number"
+                                min={0}
+                                name={field.name}
+                                className="tabular-nums"
+                                disabled={pending}
+                                value={field.value ?? ""}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        );
+                      }}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`rentals.${index}.fnbAmountPending`}
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center gap-2 space-y-0">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={(c) => {
+                                const checked = c === true;
+                                field.onChange(checked);
+                                if (checked) {
+                                  form.setValue(
+                                    `rentals.${index}.fnbAmount`,
+                                    0,
+                                  );
+                                }
+                              }}
+                              aria-label={
+                                CREATE_PROJECT_PAGE.labelFnbAmountPending
+                              }
+                            />
+                          </FormControl>
+                          <FormLabel className="font-normal leading-none">
+                            {CREATE_PROJECT_PAGE.labelFnbAmountPending}
+                          </FormLabel>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                   <FormField
                     control={form.control}
                     name={`rentals.${index}.paidAmount`}
@@ -1194,6 +1313,7 @@ export function CreateProjectForm({
                           rentalAmount: 0,
                           fnbAmount: 0,
                           paidAmount: 0,
+                          fnbAmountPending: false,
                         },
                       )}
                     </div>

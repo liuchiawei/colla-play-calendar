@@ -14,6 +14,8 @@ export type ProjectEquipmentNeeds = {
   extensionCord?: boolean;
   projector?: boolean;
   whiteboard?: boolean;
+  /** 與上述四項互斥：明確表示無其他設備需求 */
+  noOtherEquipmentNeeds?: boolean;
 };
 
 export interface Project {
@@ -29,15 +31,25 @@ export interface Project {
   /** 對應 DB collaPlayContactId（CollaPlay 窗口） */
   contactPerson: string;
   amount: number;
+  /** 列表用：各筆租借場租加總 */
+  rentalAmountTotal: number;
+  /** 列表用：各筆租借餐飲金額加總 */
+  fnbAmountTotal: number;
+  /** 列表用：任一段租借為餐飲待定時，餐飲欄顯示「餐飲金額待定」 */
+  hasFnbAmountPending: boolean;
+  /** 列表用：各筆租借已付加總 */
+  paidAmountTotal: number;
+  /** 列表用：各筆租借待付加總 */
+  pendingAmountTotal: number;
   status: ProjectStatus;
   /** 選填：桌數等 */
   tables?: string | null;
-  /** 選填：椅子數 */
-  chairs?: number | null;
+  /** 選填：椅子數（可為數字字串、TBC 等） */
+  chairs?: string | null;
   /** 選填：餐飲項目 */
   fnbItems?: string | null;
-  /** 選填：預計人數 */
-  totalAttendees?: number | null;
+  /** 選填：預計人數（可為數字字串、TBC 等） */
+  totalAttendees?: string | null;
   /** 選填：專案備註 */
   projectNotes?: string | null;
   /** 選填：設備勾選（舊資料可能為 null） */
@@ -67,6 +79,8 @@ export interface RentalItem {
   teardownMinutesAfter?: number; // 場復延後分鐘數，預設 30
   rentalAmount: number;
   fnbAmount: number;
+  /** 未傳視同 false（API 向前相容） */
+  fnbAmountPending?: boolean;
   paidAmount: number;
   pendingAmount: number;
 }
@@ -83,9 +97,9 @@ export interface CreateProjectInput {
   eventOrVenueUse: string;
   /** 活動類型（新欄位；API 會對舊 payload 補預設「其他」） */
   eventType: string;
-  totalAttendees?: number;
+  totalAttendees?: string;
   tables?: string;
-  chairs?: number;
+  chairs?: string;
   fnbItems?: string;
   projectNotes?: string;
   collaPlayContactId: string;
@@ -105,9 +119,9 @@ export interface UpdateProjectInput {
   eventOrVenueUse: string;
   /** 活動類型（新欄位；未傳則不更新，向後相容舊客戶端） */
   eventType?: string;
-  totalAttendees?: number;
+  totalAttendees?: string;
   tables?: string;
-  chairs?: number;
+  chairs?: string;
   fnbItems?: string;
   projectNotes?: string;
   collaPlayContactId: string;

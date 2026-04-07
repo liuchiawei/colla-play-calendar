@@ -73,7 +73,7 @@
   --card: oklch(0.9712 0 66.44);
   --card-foreground: oklch(0.18 0.02 52.59);
   /* Popover: Light background */
-  --popover: oklch(0.98 0.01 52.59);
+  --popover: oklch(0.98 0.005 52.59);
   --popover-foreground: oklch(0.18 0.02 52.59);
   /* Primary: Dark stone gray */
   --primary: oklch(0.2686 0 52.59);

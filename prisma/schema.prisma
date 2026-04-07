@@ -288,9 +288,9 @@ model Project {
   taxId               String? // 統編（選填）
   eventOrVenueUse     String // 活動或場地用途
   eventType           String         @default("其他") // 活動類型（舊資料預設其他）
-  totalAttendees      Int? // 預計人數
+  totalAttendees      String? // 預計人數（可為數字字串、TBC 等）
   tables              String? // 桌數等
-  chairs              Int? // 椅子數
+  chairs              String? // 椅子數（可為數字字串、TBC 等）
   fnbItems            String? // 餐飲項目
   projectNotes        String? // 專案備註
   collaPlayContactId  String // CollaPlay 窗口 ID（目前字串，未來可改 FK）
@@ -316,6 +316,7 @@ model ProjectRental {
   teardownMinutesAfter Int      @default(30)
   rentalAmount         Int      @default(0) // 場地費
   fnbAmount            Int      @default(0) // 餐飲費
+  fnbAmountPending     Boolean  @default(false) // 餐飲金額待定（顯示用；待定時 fnbAmount 以 0 儲存）
   paidAmount           Int      @default(0) // 已付
   pendingAmount        Int      @default(0) // 待付
   spaceIds             String[] // 場域 ID 陣列（PostgreSQL）

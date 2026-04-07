@@ -3,7 +3,7 @@
 import * as React from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { Plus, Search, CalendarDays, Filter, X } from "lucide-react";
+import { Download, Plus, Search, CalendarDays, Filter, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -24,6 +24,16 @@ import {
   type ProjectStatusUi,
 } from "@/lib/config/project-status";
 import type { Project } from "@/lib/types/project";
+import {
+  buildProjectsListCsv,
+  filterProjectsForDateRange,
+  getProjectsListCsvFilename,
+} from "@/lib/services/project/project-list-csv.service";
+import {
+  isProjectActivityPreset,
+  PROJECT_ACTIVITY_TYPE_OPTIONS,
+  PROJECT_ACTIVITY_TYPE_OTHER,
+} from "@/lib/constants/project-form";
 import { cn } from "@/lib/utils";
 import type { DateRange } from "react-day-picker";
 import {
@@ -135,9 +145,36 @@ function summarizeSelected(count: number, emptyLabel: string): string {
   return `已選 ${count}`;
 }
 
+/** 活動類型篩選：多選為 OR；「其他」含自訂字串（非預設選項） */
+function projectMatchesSelectedActivityTypes(
+  eventType: string,
+  selected: Set<string>,
+): boolean {
+  for (const opt of selected) {
+    if (opt === PROJECT_ACTIVITY_TYPE_OTHER) {
+      if (
+        eventType === PROJECT_ACTIVITY_TYPE_OTHER ||
+        !isProjectActivityPreset(eventType)
+      ) {
+        return true;
+      }
+    } else if (eventType === opt) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function ProjectsContent({ projects }: ProjectsContentProps) {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [searchOpen, setSearchOpen] = React.useState(false);
+  const [listCsvPopoverOpen, setListCsvPopoverOpen] = React.useState(false);
+  const [listCsvRange, setListCsvRange] = React.useState<
+    DateRange | undefined
+  >(() => {
+    const now = new Date();
+    return { from: startOfMonth(now), to: endOfMonth(now) };
+  });
 
   const [selectedSpaceIds, setSelectedSpaceIds] = React.useState<Set<string>>(
     () => new Set(),
@@ -151,6 +188,8 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
   const [selectedDateRange, setSelectedDateRange] = React.useState<
     DateRange | undefined
   >(undefined);
+  const [selectedActivityTypeValues, setSelectedActivityTypeValues] =
+    React.useState<Set<string>>(() => new Set());
 
   const contactPersonOptions = React.useMemo(() => {
     const set = new Set<string>();
@@ -169,6 +208,7 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
       selectedSpaceIds.size > 0 ||
       selectedStatusValues.size > 0 ||
       selectedContactPeople.size > 0 ||
+      selectedActivityTypeValues.size > 0 ||
       Boolean(selectedDateRange?.from || selectedDateRange?.to);
 
     if (!hasAnyFilter) return searched;
@@ -203,6 +243,18 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
         if (!selectedContactPeople.has(project.contactPerson)) return false;
       }
 
+      // activity type (OR)
+      if (selectedActivityTypeValues.size > 0) {
+        if (
+          !projectMatchesSelectedActivityTypes(
+            project.eventType,
+            selectedActivityTypeValues,
+          )
+        ) {
+          return false;
+        }
+      }
+
       // date range (intersection)
       if (selectedDateRange?.from || selectedDateRange?.to) {
         const rentals = project.rentals;
@@ -226,6 +278,7 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
   }, [
     projects,
     searchQuery,
+    selectedActivityTypeValues,
     selectedContactPeople,
     selectedDateRange,
     selectedSpaceIds,
@@ -239,23 +292,115 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
     selectedSpaceIds.size > 0 ||
     selectedStatusValues.size > 0 ||
     selectedContactPeople.size > 0 ||
+    selectedActivityTypeValues.size > 0 ||
     Boolean(selectedDateRange?.from || selectedDateRange?.to);
+
+  const canDownloadListCsv = React.useMemo(() => {
+    const r = listCsvRange;
+    if (!r?.from || !r?.to) return false;
+    return startOfDay(r.to) >= startOfDay(r.from);
+  }, [listCsvRange]);
+
+  const handleResetListCsvMonth = React.useCallback(() => {
+    const now = new Date();
+    setListCsvRange({ from: startOfMonth(now), to: endOfMonth(now) });
+  }, []);
+
+  const handleDownloadListCsv = React.useCallback(() => {
+    if (!listCsvRange?.from || !listCsvRange?.to || !canDownloadListCsv) return;
+    const { from, to } = listCsvRange;
+    const filtered = filterProjectsForDateRange(projects, { from, to });
+    const csv = buildProjectsListCsv(filtered);
+    const filename = getProjectsListCsvFilename({ from, to });
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+    setListCsvPopoverOpen(false);
+  }, [projects, listCsvRange, canDownloadListCsv]);
 
   return (
     <div className="flex-1 min-w-0 p-6 flex flex-col gap-6">
       <div className="flex flex-col gap-3">
         <div className="flex flex-col md:flex-row gap-3 items-center justify-between">
-        {/* Create New Project Button */}
-        <Link href="/dashboard-new/projects/new" className="shrink-0">
-          <Button
-            variant="default"
-            className="gap-2"
-            aria-label={PROJECTS_PAGE.createNewProjectAria}
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          {/* 新增專案 */}
+          <Link href="/dashboard-new/projects/new">
+            <Button
+              variant="default"
+              className="gap-2"
+              aria-label={PROJECTS_PAGE.createNewProjectAria}
+            >
+              <Plus className="size-4 shrink-0" aria-hidden />
+              {PROJECTS_PAGE.createNewProject}
+            </Button>
+          </Link>
+          {/* 下載列表 CSV */}
+          <Popover
+            open={listCsvPopoverOpen}
+            onOpenChange={setListCsvPopoverOpen}
           >
-            <Plus className="size-4 shrink-0" aria-hidden />
-            {PROJECTS_PAGE.createNewProject}
-          </Button>
-        </Link>
+            <PopoverTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                className="gap-2"
+                aria-label={PROJECTS_PAGE.downloadListCsvAria}
+              >
+                <Download className="size-4 shrink-0" aria-hidden />
+                {PROJECTS_PAGE.downloadListCsv}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent
+              align="start"
+              className="w-auto max-w-[min(calc(100vw-2rem),22rem)] p-0"
+            >
+              <div className="p-2 md:p-3 lg:p-4 space-y-3">
+                <div>
+                  <p className="font-medium text-sm">
+                    {PROJECTS_PAGE.downloadListCsvPopoverTitle}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+                    {PROJECTS_PAGE.downloadListCsvPopoverDescription}
+                  </p>
+                </div>
+                <Calendar
+                  mode="range"
+                  selected={listCsvRange}
+                  onSelect={setListCsvRange}
+                  numberOfMonths={1}
+                  defaultMonth={listCsvRange?.from}
+                  className="w-full"
+                />
+                {/* Footer Buttons */}
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  {/* 重置月份 */}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleResetListCsvMonth}
+                    aria-label={PROJECTS_PAGE.downloadListCsvResetMonthAria}
+                  >
+                    {PROJECTS_PAGE.downloadListCsvResetMonth}
+                  </Button>
+                  {/* 確認下載 */}
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={!canDownloadListCsv}
+                    onClick={handleDownloadListCsv}
+                  >
+                    {PROJECTS_PAGE.downloadListCsvConfirm}
+                  </Button>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
         {/* Search Bar */}
         <Popover open={searchOpen} onOpenChange={setSearchOpen}>
           <PopoverAnchor asChild>
@@ -330,6 +475,68 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
             <Filter className="size-3.5" aria-hidden />
             篩選
           </span>
+          {/* 活動類型 */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                aria-label={`${PROJECTS_PAGE.columnActivityType}篩選（${summarizeSelected(selectedActivityTypeValues.size, "全部")}）`}
+              >
+                {PROJECTS_PAGE.columnActivityType}
+                <span className="text-muted-foreground">
+                  {summarizeSelected(selectedActivityTypeValues.size, "全部")}
+                </span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-[min(18rem,90vw)] p-3">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-medium">
+                  {PROJECTS_PAGE.columnActivityType}
+                </p>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-2"
+                  onClick={() => setSelectedActivityTypeValues(new Set())}
+                  disabled={selectedActivityTypeValues.size === 0}
+                >
+                  清除
+                </Button>
+              </div>
+              <div className="mt-2 flex flex-col gap-2 max-h-72 overflow-auto pr-1">
+                {PROJECT_ACTIVITY_TYPE_OPTIONS.map((opt) => {
+                  const checked = selectedActivityTypeValues.has(opt);
+                  return (
+                    <label
+                      key={opt}
+                      className={cn(
+                        "flex items-center gap-2 rounded-md border border-border/60 px-2 py-2 text-sm hover:bg-accent/40",
+                        checked && "bg-accent/30",
+                      )}
+                    >
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={(next) => {
+                          setSelectedActivityTypeValues((prev) => {
+                            const set = new Set(prev);
+                            if (next) set.add(opt);
+                            else set.delete(opt);
+                            return set;
+                          });
+                        }}
+                        aria-label={`選取${PROJECTS_PAGE.columnActivityType}：${opt}`}
+                      />
+                      <span className="min-w-0 truncate">{opt}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </PopoverContent>
+          </Popover>
 
           {/* 場域 */}
           <Popover>
@@ -630,6 +837,7 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
               setSelectedSpaceIds(new Set());
               setSelectedStatusValues(new Set());
               setSelectedContactPeople(new Set());
+              setSelectedActivityTypeValues(new Set());
               setSelectedDateRange(undefined);
             }}
             disabled={!anyFiltersActive}
@@ -658,7 +866,7 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
         </TabsContent>
 
         <TabsContent value="week" className="flex-1 min-w-0 w-full">
-          <ProjectsWeekCalendar projects={projects} />
+          <ProjectsWeekCalendar projects={filteredProjects} />
         </TabsContent>
       </Tabs>
     </div>

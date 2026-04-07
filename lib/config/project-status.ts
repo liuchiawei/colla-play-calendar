@@ -8,11 +8,10 @@ import type { ProjectStatus } from "@/lib/types/project";
 
 export type ProjectStatusUi = "negotiating" | "confirmed" | "completed";
 
-/** 表單／篩選／圖例僅露出此三種；其餘狀態仍可由 getStatusLabel 顯示 */
+/** 表單／篩選／圖例僅露出此兩種；其餘狀態仍可由 getStatusLabel 顯示 */
 export const PROJECT_STATUS_UI_SELECTABLE_VALUES = [
   "negotiating",
   "confirmed",
-  "completed",
 ] as const satisfies readonly ProjectStatus[];
 
 /**
@@ -51,12 +50,12 @@ export const PROJECT_STATUS_OPTIONS: Array<{
   {
     value: "negotiating",
     labelKey: "statusNegotiating",
-    colorClass: "bg-slate-500",
+    colorClass: "bg-accent",
   },
   {
     value: "confirmed",
     labelKey: "statusConfirmed",
-    colorClass: "bg-blue-500",
+    colorClass: "bg-primary",
   },
   {
     value: "deposit_paid",
@@ -66,7 +65,7 @@ export const PROJECT_STATUS_OPTIONS: Array<{
   {
     value: "completed",
     labelKey: "statusCompleted",
-    colorClass: "bg-green-600",
+    colorClass: "bg-emerald-600",
   },
   {
     value: "cancelled",
@@ -75,7 +74,7 @@ export const PROJECT_STATUS_OPTIONS: Array<{
   },
 ];
 
-/** 狀態下拉與曆圖例用（洽談中／已確定／完成） */
+/** 狀態下拉與曆圖例用（洽談中／已確定） */
 export const PROJECT_STATUS_UI_SELECTABLE = PROJECT_STATUS_OPTIONS.filter((o) =>
   (PROJECT_STATUS_UI_SELECTABLE_VALUES as readonly string[]).includes(o.value),
 );

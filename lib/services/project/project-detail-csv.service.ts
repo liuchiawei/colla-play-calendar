@@ -16,10 +16,14 @@ import {
   getStatusLabel,
   normalizeProjectStatusForUi,
 } from "@/lib/config/project-status";
-import { CREATE_PROJECT_PAGE, PROJECT_DETAIL_PAGE } from "@/lib/message";
+import {
+  CREATE_PROJECT_PAGE,
+  PROJECT_DETAIL_PAGE,
+  FNB_AMOUNT_PENDING_LABEL,
+} from "@/lib/message";
 import type { ProjectWithRentals } from "@/lib/types/project";
 import { formatRentalDateRangeForTable } from "@/lib/utils/project";
-import { parseEquipmentNeedsFromDb } from "@/lib/utils/project-equipment-needs";
+import { formatEquipmentNeedsLine } from "@/lib/utils/project-equipment-needs";
 
 const CURRENCY_FORMATTER = new Intl.NumberFormat("zh-TW", {
   style: "currency",
@@ -39,19 +43,13 @@ function escapeCsvCell(value: string): string {
   return s;
 }
 
-/** 設備勾選：唯讀一行（CSV／詳情） */
-function formatEquipmentNeedsLine(
-  raw: ProjectWithRentals["equipmentNeeds"],
-): string | null {
-  const p = parseEquipmentNeedsFromDb(raw);
-  const parts: string[] = [];
-  if (p.microphone) parts.push(CREATE_PROJECT_PAGE.labelEquipmentMicrophone);
-  if (p.extensionCord)
-    parts.push(CREATE_PROJECT_PAGE.labelEquipmentExtensionCord);
-  if (p.projector) parts.push(CREATE_PROJECT_PAGE.labelEquipmentProjector);
-  if (p.whiteboard) parts.push(CREATE_PROJECT_PAGE.labelEquipmentWhiteboard);
-  return parts.length > 0 ? parts.join("、") : null;
-}
+const EQUIPMENT_NEEDS_LINE_LABELS = {
+  microphone: CREATE_PROJECT_PAGE.labelEquipmentMicrophone,
+  extensionCord: CREATE_PROJECT_PAGE.labelEquipmentExtensionCord,
+  projector: CREATE_PROJECT_PAGE.labelEquipmentProjector,
+  whiteboard: CREATE_PROJECT_PAGE.labelEquipmentWhiteboard,
+  noOtherEquipmentNeeds: CREATE_PROJECT_PAGE.labelEquipmentNoOtherNeeds,
+} as const;
 
 export function getProjectDetailCsvFilename(project: {
   id: string;
@@ -121,7 +119,10 @@ export function buildProjectDetailCsv(
         .join(","),
     );
   }
-  const equipmentLine = formatEquipmentNeedsLine(project.equipmentNeeds);
+  const equipmentLine = formatEquipmentNeedsLine(
+    project.equipmentNeeds,
+    EQUIPMENT_NEEDS_LINE_LABELS,
+  );
   if (equipmentLine) {
     rows.push(
       [PROJECT_DETAIL_PAGE.labelEquipmentSummary, equipmentLine]
@@ -189,7 +190,10 @@ export function buildProjectDetailCsv(
   rows.push(rentalHeaders.map(escapeCsvCell).join(","));
 
   const totalAmount = project.rentals.reduce(
-    (sum, r) => sum + r.rentalAmount + r.fnbAmount,
+    (sum, r) =>
+      sum +
+      r.rentalAmount +
+      (r.fnbAmountPending ? 0 : r.fnbAmount),
     0,
   );
   for (const r of project.rentals) {
@@ -204,7 +208,9 @@ export function buildProjectDetailCsv(
         timeRange,
         spaces,
         CURRENCY_FORMATTER.format(r.rentalAmount),
-        CURRENCY_FORMATTER.format(r.fnbAmount),
+        r.fnbAmountPending
+          ? FNB_AMOUNT_PENDING_LABEL
+          : CURRENCY_FORMATTER.format(r.fnbAmount),
         CURRENCY_FORMATTER.format(r.paidAmount),
         CURRENCY_FORMATTER.format(r.pendingAmount),
       ]

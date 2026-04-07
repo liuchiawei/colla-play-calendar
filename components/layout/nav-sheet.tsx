@@ -19,7 +19,7 @@ import { useAuthStore } from "@/lib/stores/auth-store";
 import { signOut } from "@/lib/services/auth/auth.service";
 import { cn } from "@/lib/utils";
 import { PAGE_LINKS } from "@/lib/config/config";
-import { LogIn, LogOut, LayoutDashboard, Layout } from "lucide-react";
+import { LogIn, LogOut, LayoutDashboard } from "lucide-react";
 import { useIsMobile } from "@/lib/hooks/use-mobile";
 
 interface NavSheetProps {

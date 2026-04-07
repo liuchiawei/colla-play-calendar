@@ -1,5 +1,6 @@
 "use client";
 
+import type React from "react";
 import { useCallback, useMemo, useTransition, useState } from "react";
 import Link from "next/link";
 import {
@@ -32,45 +33,58 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { PROJECTS_PAGE, PROJECT_DETAIL_PAGE } from "@/lib/message";
+import {
+  CREATE_PROJECT_PAGE,
+  PROJECTS_PAGE,
+  PROJECT_DETAIL_PAGE,
+  FNB_AMOUNT_PENDING_LABEL,
+} from "@/lib/message";
 import {
   getStatusLabel,
   getStatusColorClass,
   normalizeProjectStatusForUi,
 } from "@/lib/config/project-status";
+import {
+  PROJECTS_LIST_COLUMNS,
+  type ProjectsListColumnConfig,
+  type ProjectsListColumnId,
+  type ProjectsListSortKey,
+} from "@/lib/config/projects-list-table";
 import type { Project } from "@/lib/types/project";
 import { cn } from "@/lib/utils";
 import { formatRentalDateRangeForTable } from "@/lib/utils/project";
+import { formatEquipmentNeedsLine } from "@/lib/utils/project-equipment-needs";
 import { deleteProject, downloadProjectDetailCsv } from "./[id]/actions";
 
 const DATE_FORMATTER = new Intl.DateTimeFormat("zh-TW", {
   dateStyle: "short",
 });
 
-const CURRENCY_FORMATTER = new Intl.NumberFormat("zh-TW", {
+// const CURRENCY_FORMATTER = new Intl.NumberFormat("zh-TW", {
+//   style: "currency",
+//   currency: "TWD",
+// });
+
+/** 列表「金額」欄：僅顯示整數（無小數） */
+const CURRENCY_FORMATTER_INTEGER = new Intl.NumberFormat("zh-TW", {
   style: "currency",
   currency: "TWD",
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
 });
+
+/** 設備勾選一行顯示（與 CSV／詳情一致） */
+const EQUIPMENT_NEEDS_LINE_LABELS = {
+  microphone: CREATE_PROJECT_PAGE.labelEquipmentMicrophone,
+  extensionCord: CREATE_PROJECT_PAGE.labelEquipmentExtensionCord,
+  projector: CREATE_PROJECT_PAGE.labelEquipmentProjector,
+  whiteboard: CREATE_PROJECT_PAGE.labelEquipmentWhiteboard,
+  noOtherEquipmentNeeds: CREATE_PROJECT_PAGE.labelEquipmentNoOtherNeeds,
+} as const;
 
 type SortDirection = "asc" | "desc";
 
-type SortKey =
-  | "customer"
-  | "eventOrVenueUse"
-  | "space"
-  | "date"
-  | "eventStartTime"
-  | "eventEndTime"
-  | "contactPerson"
-  | "amount"
-  | "status"
-  | "tables"
-  | "chairs"
-  | "fnbItems"
-  | "totalAttendees"
-  | "projectNotes";
-
-type SortState = { key: SortKey; dir: SortDirection } | null;
+type SortState = { key: ProjectsListSortKey; dir: SortDirection } | null;
 
 interface ProjectsListProps {
   projects: Project[];
@@ -105,21 +119,65 @@ function parseIntIfNumeric(value: string | null | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+function statusLabelForSort(project: Project): string {
+  const statusForUi = normalizeProjectStatusForUi(project.status);
+  return statusForUi ? getStatusLabel(statusForUi) : "";
+}
+
+/** 與 ProjectsListSortKey 對齊；增刪欄位時須同步更新 */
+const PROJECT_LIST_SORT_VALUE_GETTERS: {
+  [K in ProjectsListSortKey]: (project: Project) => string | number | null;
+} = {
+  eventType: (p) => p.eventType ?? "",
+  customer: (p) => p.customer ?? "",
+  eventOrVenueUse: (p) => p.eventOrVenueUse ?? "",
+  space: (p) => p.space ?? "",
+  date: (p) => {
+    const rentalDate = p.rentals?.[0]?.date;
+    return parseDateToEpochMs(rentalDate) ?? parseDateToEpochMs(p.date);
+  },
+  eventStartTime: (p) => parseTimeToMinutes(p.rentals?.[0]?.startTime),
+  eventEndTime: (p) => parseTimeToMinutes(p.rentals?.[0]?.endTime),
+  contactPerson: (p) => p.contactPerson ?? "",
+  amount: (p) => p.amount ?? null,
+  status: (p) => statusLabelForSort(p),
+  tables: (p) => {
+    const n = parseIntIfNumeric(p.tables);
+    return n ?? p.tables ?? "";
+  },
+  chairs: (p) => {
+    const s = p.chairs;
+    if (s == null || s === "") return null;
+    const n = parseIntIfNumeric(s);
+    return n ?? s;
+  },
+  fnbItems: (p) => p.fnbItems ?? "",
+  otherEquipment: (p) =>
+    formatEquipmentNeedsLine(p.equipmentNeeds, EQUIPMENT_NEEDS_LINE_LABELS) ??
+    "",
+  rentalAmountTotal: (p) => p.rentalAmountTotal,
+  fnbAmountTotal: (p) =>
+    p.hasFnbAmountPending ? null : p.fnbAmountTotal,
+  paidAmountTotal: (p) => p.paidAmountTotal,
+  pendingAmountTotal: (p) => p.pendingAmountTotal,
+  totalAttendees: (p) => {
+    const s = p.totalAttendees;
+    if (s == null || s === "") return null;
+    const n = parseIntIfNumeric(s);
+    return n ?? s;
+  },
+  projectNotes: (p) => p.projectNotes ?? "",
+};
+
 function getAriaSort(
   sort: SortState,
-  key: SortKey,
+  key: ProjectsListSortKey,
 ): React.AriaAttributes["aria-sort"] {
   if (!sort || sort.key !== key) return "none";
   return sort.dir === "asc" ? "ascending" : "descending";
 }
 
-function SortIcon({
-  active,
-  dir,
-}: {
-  active: boolean;
-  dir: SortDirection;
-}) {
+function SortIcon({ active, dir }: { active: boolean; dir: SortDirection }) {
   if (!active) {
     return (
       <ArrowUpDown
@@ -135,6 +193,223 @@ function SortIcon({
   );
 }
 
+const HEADER_BTN_BASE =
+  "group inline-flex items-center gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40";
+const HEADER_BTN_END =
+  "group inline-flex w-full items-center justify-end gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40";
+
+function ProjectsListTableHeadCell({
+  column,
+  sort,
+  onToggleSort,
+}: {
+  column: ProjectsListColumnConfig;
+  sort: SortState;
+  onToggleSort: (key: ProjectsListSortKey) => void;
+}) {
+  if (!column.sortable) {
+    return (
+      <TableHead
+        scope="col"
+        className={"headerClassName" in column ? column.headerClassName : undefined}
+      >
+        {column.label}
+      </TableHead>
+    );
+  }
+
+  const sortKey = column.id;
+  const headerClassName =
+    "headerClassName" in column ? column.headerClassName : undefined;
+  const headerButtonJustifyEnd =
+    "headerButtonJustifyEnd" in column && column.headerButtonJustifyEnd;
+
+  return (
+    <TableHead
+      scope="col"
+      className={headerClassName}
+      aria-sort={getAriaSort(sort, sortKey)}
+    >
+      <button
+        type="button"
+        className={headerButtonJustifyEnd ? HEADER_BTN_END : HEADER_BTN_BASE}
+        onClick={() => onToggleSort(sortKey)}
+      >
+        <span>{column.label}</span>
+        <SortIcon
+          active={sort?.key === sortKey}
+          dir={sort?.key === sortKey ? sort.dir : "asc"}
+        />
+      </button>
+    </TableHead>
+  );
+}
+
+type ActionsCellContext = {
+  downloadingId: string | null;
+  deletingId: string | null;
+  deleteError: string | null;
+  onDownloadCsv: (projectId: string) => void;
+  onDeleteConfirm: (projectId: string) => void;
+  onAlertOpenChange: (open: boolean) => void;
+};
+
+function renderProjectsListCell(
+  columnId: ProjectsListColumnId,
+  project: Project,
+  statusForUi: ReturnType<typeof normalizeProjectStatusForUi>,
+  actionsCtx: ActionsCellContext,
+): React.ReactNode {
+  switch (columnId) {
+    case "eventType":
+      return project.eventType?.trim() ? project.eventType : "—";
+    case "eventOrVenueUse":
+      return (
+        <Link
+          href={`/dashboard-new/projects/${project.id}`}
+          className="font-medium text-primary hover:underline focus:outline-none focus:underline"
+        >
+          {project.eventOrVenueUse}
+        </Link>
+      );
+    case "customer":
+      return project.customer;
+    case "space":
+      return project.space;
+    case "date":
+      return project.rentals?.[0]
+        ? formatRentalDateRangeForTable(project.rentals[0], (d) =>
+            DATE_FORMATTER.format(d),
+          )
+        : DATE_FORMATTER.format(new Date(project.date));
+    case "eventStartTime":
+      return project.rentals?.[0]?.startTime ?? "—";
+    case "eventEndTime":
+      return project.rentals?.[0]?.endTime ?? "—";
+    case "contactPerson":
+      return project.contactPerson;
+    case "amount":
+      return CURRENCY_FORMATTER_INTEGER.format(project.amount);
+    case "status":
+      return statusForUi ? (
+        <span className="flex items-center gap-2">
+          <span
+            className={cn(
+              "size-2 shrink-0 rounded-full",
+              getStatusColorClass(statusForUi),
+            )}
+            aria-hidden
+          />
+          {getStatusLabel(statusForUi)}
+        </span>
+      ) : null;
+    case "totalAttendees":
+      return project.totalAttendees != null ? project.totalAttendees : "—";
+    case "tables":
+      return project.tables ?? "—";
+    case "chairs":
+      return project.chairs != null ? project.chairs : "—";
+    case "otherEquipment":
+      return (
+        formatEquipmentNeedsLine(
+          project.equipmentNeeds,
+          EQUIPMENT_NEEDS_LINE_LABELS,
+        ) ?? "—"
+      );
+    case "rentalAmountTotal":
+      return CURRENCY_FORMATTER_INTEGER.format(project.rentalAmountTotal);
+    case "fnbAmountTotal":
+      return project.hasFnbAmountPending
+        ? FNB_AMOUNT_PENDING_LABEL
+        : CURRENCY_FORMATTER_INTEGER.format(project.fnbAmountTotal);
+    case "paidAmountTotal":
+      return CURRENCY_FORMATTER_INTEGER.format(project.paidAmountTotal);
+    case "pendingAmountTotal":
+      return CURRENCY_FORMATTER_INTEGER.format(project.pendingAmountTotal);
+    case "fnbItems":
+      return project.fnbItems ?? "—";
+    case "projectNotes":
+      return project.projectNotes ?? "—";
+    case "actions":
+      return (
+        <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label={PROJECT_DETAIL_PAGE.buttonDownloadCsv}
+            onClick={() => actionsCtx.onDownloadCsv(project.id)}
+            disabled={actionsCtx.downloadingId === project.id}
+          >
+            {actionsCtx.downloadingId === project.id ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Download className="size-4" />
+            )}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            asChild
+            aria-label={PROJECTS_PAGE.actionEditAria}
+          >
+            <Link href={`/dashboard-new/projects/${project.id}`}>
+              <Pencil className="size-4" />
+            </Link>
+          </Button>
+          <AlertDialog
+            onOpenChange={(open) => {
+              actionsCtx.onAlertOpenChange(open);
+            }}
+          >
+            <AlertDialogTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label={PROJECTS_PAGE.actionDeleteAria}
+              >
+                <Trash2 className="size-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  {PROJECT_DETAIL_PAGE.deleteConfirmTitle}
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  {PROJECT_DETAIL_PAGE.deleteConfirmDescription}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              {actionsCtx.deleteError ? (
+                <p className="text-sm text-destructive" role="alert">
+                  {actionsCtx.deleteError}
+                </p>
+              ) : null}
+              <AlertDialogFooter>
+                <AlertDialogCancel>
+                  {PROJECT_DETAIL_PAGE.deleteConfirmCancel}
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => actionsCtx.onDeleteConfirm(project.id)}
+                  disabled={actionsCtx.deletingId === project.id}
+                >
+                  {actionsCtx.deletingId === project.id
+                    ? "刪除中…"
+                    : PROJECT_DETAIL_PAGE.deleteConfirmConfirm}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      );
+    default: {
+      const _exhaustive: never = columnId;
+      return _exhaustive;
+    }
+  }
+}
+
 export function ProjectsList({ projects }: ProjectsListProps) {
   const [, startTransition] = useTransition();
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -148,54 +423,12 @@ export function ProjectsList({ projects }: ProjectsListProps) {
     const localeCompareZhTw = (a: string, b: string) =>
       a.localeCompare(b, "zh-TW", { sensitivity: "base" });
 
-    const getStatusLabelForSort = (project: Project) => {
-      const statusForUi = normalizeProjectStatusForUi(project.status);
-      return statusForUi ? getStatusLabel(statusForUi) : "";
-    };
-
-    const getSortValue = (project: Project): string | number | null => {
-      switch (sort.key) {
-        case "customer":
-          return project.customer ?? "";
-        case "eventOrVenueUse":
-          return project.eventOrVenueUse ?? "";
-        case "space":
-          return project.space ?? "";
-        case "date": {
-          const rentalDate = project.rentals?.[0]?.date;
-          return (
-            parseDateToEpochMs(rentalDate) ?? parseDateToEpochMs(project.date)
-          );
-        }
-        case "eventStartTime":
-          return parseTimeToMinutes(project.rentals?.[0]?.startTime);
-        case "eventEndTime":
-          return parseTimeToMinutes(project.rentals?.[0]?.endTime);
-        case "contactPerson":
-          return project.contactPerson ?? "";
-        case "amount":
-          return project.amount ?? null;
-        case "status":
-          return getStatusLabelForSort(project);
-        case "tables": {
-          const n = parseIntIfNumeric(project.tables);
-          return n ?? (project.tables ?? "");
-        }
-        case "chairs":
-          return project.chairs ?? null;
-        case "fnbItems":
-          return project.fnbItems ?? "";
-        case "totalAttendees":
-          return project.totalAttendees ?? null;
-        case "projectNotes":
-          return project.projectNotes ?? "";
-      }
-    };
+    const getter = PROJECT_LIST_SORT_VALUE_GETTERS[sort.key];
 
     const withIndex = projects.map((project, originalIndex) => ({
       project,
       originalIndex,
-      value: getSortValue(project),
+      value: getter(project),
     }));
 
     withIndex.sort((a, b) => {
@@ -203,7 +436,8 @@ export function ProjectsList({ projects }: ProjectsListProps) {
       const aVal = a.value;
       const bVal = b.value;
 
-      if (aVal == null && bVal == null) return a.originalIndex - b.originalIndex;
+      if (aVal == null && bVal == null)
+        return a.originalIndex - b.originalIndex;
       if (aVal == null) return 1;
       if (bVal == null) return -1;
 
@@ -228,7 +462,7 @@ export function ProjectsList({ projects }: ProjectsListProps) {
     return withIndex.map((x) => x.project);
   }, [projects, sort]);
 
-  function toggleSort(nextKey: SortKey) {
+  function toggleSort(nextKey: ProjectsListSortKey) {
     setSort((prev) => {
       if (!prev || prev.key !== nextKey) return { key: nextKey, dir: "asc" };
       return { key: nextKey, dir: prev.dir === "asc" ? "desc" : "asc" };
@@ -266,6 +500,25 @@ export function ProjectsList({ projects }: ProjectsListProps) {
     });
   }, []);
 
+  const actionsCellCtx = useMemo<ActionsCellContext>(
+    () => ({
+      downloadingId,
+      deletingId,
+      deleteError,
+      onDownloadCsv: handleDownloadCsv,
+      onDeleteConfirm: handleDeleteConfirm,
+      onAlertOpenChange: (open) => {
+        if (!open) setDeleteError(null);
+      },
+    }),
+    [
+      downloadingId,
+      deletingId,
+      deleteError,
+      handleDownloadCsv,
+    ],
+  );
+
   return (
     <section
       className="flex-1 min-w-0 rounded-xl border border-border bg-card/50 backdrop-blur-sm [&_th]:p-4 [&_td]:p-4"
@@ -283,220 +536,14 @@ export function ProjectsList({ projects }: ProjectsListProps) {
             </TableCaption>
             <TableHeader>
               <TableRow>
-                <TableHead scope="col" aria-sort={getAriaSort(sort, "customer")}>
-                  <button
-                    type="button"
-                    className="group inline-flex items-center gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-                    onClick={() => toggleSort("customer")}
-                  >
-                    <span>{PROJECTS_PAGE.columnCustomer}</span>
-                    <SortIcon
-                      active={sort?.key === "customer"}
-                      dir={sort?.key === "customer" ? sort.dir : "asc"}
-                    />
-                  </button>
-                </TableHead>
-                <TableHead
-                  scope="col"
-                  aria-sort={getAriaSort(sort, "eventOrVenueUse")}
-                >
-                  <button
-                    type="button"
-                    className="group inline-flex items-center gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-                    onClick={() => toggleSort("eventOrVenueUse")}
-                  >
-                    <span>{PROJECTS_PAGE.columnEventOrVenueUse}</span>
-                    <SortIcon
-                      active={sort?.key === "eventOrVenueUse"}
-                      dir={sort?.key === "eventOrVenueUse" ? sort.dir : "asc"}
-                    />
-                  </button>
-                </TableHead>
-                <TableHead scope="col" aria-sort={getAriaSort(sort, "space")}>
-                  <button
-                    type="button"
-                    className="group inline-flex items-center gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-                    onClick={() => toggleSort("space")}
-                  >
-                    <span>{PROJECTS_PAGE.columnSpace}</span>
-                    <SortIcon
-                      active={sort?.key === "space"}
-                      dir={sort?.key === "space" ? sort.dir : "asc"}
-                    />
-                  </button>
-                </TableHead>
-                <TableHead scope="col" aria-sort={getAriaSort(sort, "date")}>
-                  <button
-                    type="button"
-                    className="group inline-flex items-center gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-                    onClick={() => toggleSort("date")}
-                  >
-                    <span>{PROJECTS_PAGE.columnDate}</span>
-                    <SortIcon
-                      active={sort?.key === "date"}
-                      dir={sort?.key === "date" ? sort.dir : "asc"}
-                    />
-                  </button>
-                </TableHead>
-                <TableHead
-                  scope="col"
-                  className="tabular-nums whitespace-nowrap"
-                  aria-sort={getAriaSort(sort, "eventStartTime")}
-                >
-                  <button
-                    type="button"
-                    className="group inline-flex items-center gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-                    onClick={() => toggleSort("eventStartTime")}
-                  >
-                    <span>{PROJECTS_PAGE.columnEventStartTime}</span>
-                    <SortIcon
-                      active={sort?.key === "eventStartTime"}
-                      dir={sort?.key === "eventStartTime" ? sort.dir : "asc"}
-                    />
-                  </button>
-                </TableHead>
-                <TableHead
-                  scope="col"
-                  className="tabular-nums whitespace-nowrap"
-                  aria-sort={getAriaSort(sort, "eventEndTime")}
-                >
-                  <button
-                    type="button"
-                    className="group inline-flex items-center gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-                    onClick={() => toggleSort("eventEndTime")}
-                  >
-                    <span>{PROJECTS_PAGE.columnEventEndTime}</span>
-                    <SortIcon
-                      active={sort?.key === "eventEndTime"}
-                      dir={sort?.key === "eventEndTime" ? sort.dir : "asc"}
-                    />
-                  </button>
-                </TableHead>
-                <TableHead
-                  scope="col"
-                  aria-sort={getAriaSort(sort, "contactPerson")}
-                >
-                  <button
-                    type="button"
-                    className="group inline-flex items-center gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-                    onClick={() => toggleSort("contactPerson")}
-                  >
-                    <span>{PROJECTS_PAGE.columnContact}</span>
-                    <SortIcon
-                      active={sort?.key === "contactPerson"}
-                      dir={sort?.key === "contactPerson" ? sort.dir : "asc"}
-                    />
-                  </button>
-                </TableHead>
-                <TableHead
-                  scope="col"
-                  className="text-right tabular-nums"
-                  aria-sort={getAriaSort(sort, "amount")}
-                >
-                  <button
-                    type="button"
-                    className="group inline-flex w-full items-center justify-end gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-                    onClick={() => toggleSort("amount")}
-                  >
-                    <span>{PROJECTS_PAGE.columnAmount}</span>
-                    <SortIcon
-                      active={sort?.key === "amount"}
-                      dir={sort?.key === "amount" ? sort.dir : "asc"}
-                    />
-                  </button>
-                </TableHead>
-                <TableHead scope="col" aria-sort={getAriaSort(sort, "status")}>
-                  <button
-                    type="button"
-                    className="group inline-flex items-center gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-                    onClick={() => toggleSort("status")}
-                  >
-                    <span>{PROJECTS_PAGE.columnStatus}</span>
-                    <SortIcon
-                      active={sort?.key === "status"}
-                      dir={sort?.key === "status" ? sort.dir : "asc"}
-                    />
-                  </button>
-                </TableHead>
-                <TableHead scope="col" aria-sort={getAriaSort(sort, "tables")}>
-                  <button
-                    type="button"
-                    className="group inline-flex items-center gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-                    onClick={() => toggleSort("tables")}
-                  >
-                    <span>{PROJECTS_PAGE.columnTables}</span>
-                    <SortIcon
-                      active={sort?.key === "tables"}
-                      dir={sort?.key === "tables" ? sort.dir : "asc"}
-                    />
-                  </button>
-                </TableHead>
-                <TableHead
-                  scope="col"
-                  className="text-right tabular-nums"
-                  aria-sort={getAriaSort(sort, "chairs")}
-                >
-                  <button
-                    type="button"
-                    className="group inline-flex w-full items-center justify-end gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-                    onClick={() => toggleSort("chairs")}
-                  >
-                    <span>{PROJECTS_PAGE.columnChairs}</span>
-                    <SortIcon
-                      active={sort?.key === "chairs"}
-                      dir={sort?.key === "chairs" ? sort.dir : "asc"}
-                    />
-                  </button>
-                </TableHead>
-                <TableHead scope="col" aria-sort={getAriaSort(sort, "fnbItems")}>
-                  <button
-                    type="button"
-                    className="group inline-flex items-center gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-                    onClick={() => toggleSort("fnbItems")}
-                  >
-                    <span>{PROJECTS_PAGE.columnFnbItems}</span>
-                    <SortIcon
-                      active={sort?.key === "fnbItems"}
-                      dir={sort?.key === "fnbItems" ? sort.dir : "asc"}
-                    />
-                  </button>
-                </TableHead>
-                <TableHead
-                  scope="col"
-                  className="text-right tabular-nums"
-                  aria-sort={getAriaSort(sort, "totalAttendees")}
-                >
-                  <button
-                    type="button"
-                    className="group inline-flex w-full items-center justify-end gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-                    onClick={() => toggleSort("totalAttendees")}
-                  >
-                    <span>{PROJECTS_PAGE.columnTotalAttendees}</span>
-                    <SortIcon
-                      active={sort?.key === "totalAttendees"}
-                      dir={sort?.key === "totalAttendees" ? sort.dir : "asc"}
-                    />
-                  </button>
-                </TableHead>
-                <TableHead
-                  scope="col"
-                  aria-sort={getAriaSort(sort, "projectNotes")}
-                >
-                  <button
-                    type="button"
-                    className="group inline-flex items-center gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-                    onClick={() => toggleSort("projectNotes")}
-                  >
-                    <span>{PROJECTS_PAGE.columnProjectNotes}</span>
-                    <SortIcon
-                      active={sort?.key === "projectNotes"}
-                      dir={sort?.key === "projectNotes" ? sort.dir : "asc"}
-                    />
-                  </button>
-                </TableHead>
-                <TableHead scope="col" className="w-0">
-                  {PROJECTS_PAGE.columnActions}
-                </TableHead>
+                {PROJECTS_LIST_COLUMNS.map((column) => (
+                  <ProjectsListTableHeadCell
+                    key={column.id}
+                    column={column}
+                    sort={sort}
+                    onToggleSort={toggleSort}
+                  />
+                ))}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -504,147 +551,20 @@ export function ProjectsList({ projects }: ProjectsListProps) {
                 const statusForUi = normalizeProjectStatusForUi(project.status);
                 return (
                   <TableRow key={project.id}>
-                  <TableCell className="min-w-0 max-w-[120px] truncate">
-                    {project.customer}
-                  </TableCell>
-                  <TableCell className="min-w-0 max-w-[180px] truncate">
-                    <Link
-                      href={`/dashboard-new/projects/${project.id}`}
-                      className="font-medium text-primary hover:underline focus:outline-none focus:underline"
-                    >
-                      {project.eventOrVenueUse}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="min-w-0 max-w-[160px] truncate">
-                    {project.space}
-                  </TableCell>
-                  <TableCell className="tabular-nums whitespace-nowrap">
-                    {project.rentals?.[0]
-                      ? formatRentalDateRangeForTable(
-                          project.rentals[0],
-                          (d) => DATE_FORMATTER.format(d),
-                        )
-                      : DATE_FORMATTER.format(new Date(project.date))}
-                  </TableCell>
-                  <TableCell className="tabular-nums whitespace-nowrap">
-                    {project.rentals?.[0]?.startTime ?? "—"}
-                  </TableCell>
-                  <TableCell className="tabular-nums whitespace-nowrap">
-                    {project.rentals?.[0]?.endTime ?? "—"}
-                  </TableCell>
-                  <TableCell className="min-w-0 max-w-[100px] truncate">
-                    {project.contactPerson}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {CURRENCY_FORMATTER.format(project.amount)}
-                  </TableCell>
-                  <TableCell>
-                    {statusForUi ? (
-                      <span className="flex items-center gap-2">
-                        <span
-                          className={cn(
-                            "size-2 shrink-0 rounded-full",
-                            getStatusColorClass(statusForUi),
-                          )}
-                          aria-hidden
-                        />
-                        {getStatusLabel(statusForUi)}
-                      </span>
-                    ) : null}
-                  </TableCell>
-                  <TableCell className="min-w-0 max-w-[80px] truncate">
-                    {project.tables ?? "—"}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {project.chairs != null ? project.chairs : "—"}
-                  </TableCell>
-                  <TableCell className="min-w-0 max-w-[140px] truncate">
-                    {project.fnbItems ?? "—"}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {project.totalAttendees != null
-                      ? project.totalAttendees
-                      : "—"}
-                  </TableCell>
-                  <TableCell className="min-w-0 max-w-[180px] truncate">
-                    {project.projectNotes ?? "—"}
-                  </TableCell>
-                  <TableCell className="w-0 whitespace-nowrap">
-                    <div className="flex items-center gap-1">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={PROJECT_DETAIL_PAGE.buttonDownloadCsv}
-                        onClick={() => handleDownloadCsv(project.id)}
-                        disabled={downloadingId === project.id}
+                    {PROJECTS_LIST_COLUMNS.map((column) => (
+                      <TableCell
+                        key={column.id}
+                        className={column.cellClassName || undefined}
                       >
-                        {downloadingId === project.id ? (
-                          <Loader2 className="size-4 animate-spin" />
-                        ) : (
-                          <Download className="size-4" />
+                        {renderProjectsListCell(
+                          column.id,
+                          project,
+                          statusForUi,
+                          actionsCellCtx,
                         )}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        asChild
-                        aria-label={PROJECTS_PAGE.actionEditAria}
-                      >
-                        <Link href={`/dashboard-new/projects/${project.id}`}>
-                          <Pencil className="size-4" />
-                        </Link>
-                      </Button>
-                      <AlertDialog
-                        onOpenChange={(open) => {
-                          if (!open) setDeleteError(null);
-                        }}
-                      >
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-sm"
-                            aria-label={PROJECTS_PAGE.actionDeleteAria}
-                          >
-                            <Trash2 className="size-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>
-                              {PROJECT_DETAIL_PAGE.deleteConfirmTitle}
-                            </AlertDialogTitle>
-                            <AlertDialogDescription>
-                              {PROJECT_DETAIL_PAGE.deleteConfirmDescription}
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          {deleteError ? (
-                            <p
-                              className="text-sm text-destructive"
-                              role="alert"
-                            >
-                              {deleteError}
-                            </p>
-                          ) : null}
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>
-                              {PROJECT_DETAIL_PAGE.deleteConfirmCancel}
-                            </AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleDeleteConfirm(project.id)}
-                              disabled={deletingId === project.id}
-                            >
-                              {deletingId === project.id
-                                ? "刪除中…"
-                                : PROJECT_DETAIL_PAGE.deleteConfirmConfirm}
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </TableCell>
-                </TableRow>
+                      </TableCell>
+                    ))}
+                  </TableRow>
                 );
               })}
             </TableBody>

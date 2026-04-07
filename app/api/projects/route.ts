@@ -14,6 +14,35 @@ import type { CreateProjectInput, ProjectWithRentals } from "@/lib/types/project
 import type { Project } from "@/lib/types/project";
 import { parseEquipmentNeedsFromApiBody } from "@/lib/utils/project-equipment-needs";
 
+/**
+ * 活動總人數／桌子／椅子：接受非負整數（舊版 JSON）或非空字串（含 TBC）。
+ */
+function normalizeProjectQuantityField(
+  raw: unknown,
+): { ok: true; value: string } | { ok: false } {
+  if (raw == null) {
+    return { ok: false };
+  }
+  if (typeof raw === "number") {
+    if (
+      !Number.isFinite(raw) ||
+      raw < 0 ||
+      !Number.isInteger(raw)
+    ) {
+      return { ok: false };
+    }
+    return { ok: true, value: String(raw) };
+  }
+  if (typeof raw === "string") {
+    const t = raw.trim();
+    if (!t.length) {
+      return { ok: false };
+    }
+    return { ok: true, value: t };
+  }
+  return { ok: false };
+}
+
 function validateCreateProjectInput(
   body: unknown
 ): { ok: true; data: CreateProjectInput } | { ok: false; error: string } {
@@ -42,6 +71,18 @@ function validateCreateProjectInput(
       : rawEventType.trim() || "其他";
   if (!b.collaPlayContactId || typeof b.collaPlayContactId !== "string" || !b.collaPlayContactId.trim()) {
     return { ok: false, error: "CollaPlay 窗口為必填" };
+  }
+  const totalAttendeesNorm = normalizeProjectQuantityField(b.totalAttendees);
+  if (!totalAttendeesNorm.ok) {
+    return { ok: false, error: CREATE_PROJECT_PAGE.errorRequired };
+  }
+  const tablesNorm = normalizeProjectQuantityField(b.tables);
+  if (!tablesNorm.ok) {
+    return { ok: false, error: CREATE_PROJECT_PAGE.errorRequired };
+  }
+  const chairsNorm = normalizeProjectQuantityField(b.chairs);
+  if (!chairsNorm.ok) {
+    return { ok: false, error: CREATE_PROJECT_PAGE.errorRequired };
   }
   if (!Array.isArray(b.rentals) || b.rentals.length < 1) {
     return { ok: false, error: "至少需一筆租借項目" };
@@ -100,6 +141,9 @@ function validateCreateProjectInput(
     ...raw,
     customerPhone,
     eventType,
+    totalAttendees: totalAttendeesNorm.value,
+    tables: tablesNorm.value,
+    chairs: chairsNorm.value,
     ...(Object.prototype.hasOwnProperty.call(b, "equipmentNeeds") && {
       equipmentNeeds,
     }),

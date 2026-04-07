@@ -2,11 +2,18 @@
 
 import type { ProjectEquipmentNeeds } from "@/lib/types/project";
 
-export const PROJECT_EQUIPMENT_DB_KEYS = [
+/** 可複選的具體設備（與 noOtherEquipmentNeeds 互斥） */
+export const PROJECT_EQUIPMENT_SPECIFIC_KEYS = [
   "microphone",
   "extensionCord",
   "projector",
   "whiteboard",
+] as const satisfies readonly (keyof ProjectEquipmentNeeds)[];
+
+/** DB／API 允許的全部鍵（含「無其他設備需求」） */
+export const PROJECT_EQUIPMENT_DB_KEYS = [
+  ...PROJECT_EQUIPMENT_SPECIFIC_KEYS,
+  "noOtherEquipmentNeeds",
 ] as const satisfies readonly (keyof ProjectEquipmentNeeds)[];
 
 const KEY_SET = new Set<string>(PROJECT_EQUIPMENT_DB_KEYS);
@@ -18,6 +25,7 @@ export function defaultEquipmentNeedsForm(): Required<ProjectEquipmentNeeds> {
     extensionCord: false,
     projector: false,
     whiteboard: false,
+    noOtherEquipmentNeeds: false,
   };
 }
 
@@ -39,17 +47,49 @@ export function parseEquipmentNeedsFromDb(
 }
 
 /**
- * 寫入 DB：僅保留 true，全無則 null
+ * 寫入 DB：具體設備優先；僅選「無其他設備需求」時存單一鍵；全無則 null
  */
 export function normalizeEquipmentNeedsForDb(
   input: ProjectEquipmentNeeds | null | undefined,
 ): Record<string, boolean> | null {
   if (input == null) return null;
   const out: Record<string, boolean> = {};
-  for (const k of PROJECT_EQUIPMENT_DB_KEYS) {
+  for (const k of PROJECT_EQUIPMENT_SPECIFIC_KEYS) {
     if (input[k] === true) out[k] = true;
   }
-  return Object.keys(out).length > 0 ? out : null;
+  if (Object.keys(out).length > 0) return out;
+  if (input.noOtherEquipmentNeeds === true) {
+    return { noOtherEquipmentNeeds: true };
+  }
+  return null;
+}
+
+/** 詳情／CSV 顯示用標籤（由呼叫端傳入，避免與 message 循環依賴） */
+export type EquipmentNeedsDisplayLabels = {
+  microphone: string;
+  extensionCord: string;
+  projector: string;
+  whiteboard: string;
+  noOtherEquipmentNeeds: string;
+};
+
+/**
+ * 設備勾選：唯讀一行（詳情、CSV）
+ */
+export function formatEquipmentNeedsLine(
+  raw: unknown,
+  labels: EquipmentNeedsDisplayLabels,
+): string | null {
+  const p = parseEquipmentNeedsFromDb(raw);
+  if (p.noOtherEquipmentNeeds) {
+    return labels.noOtherEquipmentNeeds;
+  }
+  const parts: string[] = [];
+  if (p.microphone) parts.push(labels.microphone);
+  if (p.extensionCord) parts.push(labels.extensionCord);
+  if (p.projector) parts.push(labels.projector);
+  if (p.whiteboard) parts.push(labels.whiteboard);
+  return parts.length > 0 ? parts.join("、") : null;
 }
 
 /**

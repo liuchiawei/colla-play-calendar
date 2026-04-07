@@ -241,9 +241,9 @@ export function ProjectsWeekCalendar({ projects }: ProjectsWeekCalendarProps) {
     setCurrentDate((d) => getNextWeek(d));
   };
 
-  const goToToday = () => {
-    setCurrentDate(new Date());
-  };
+  // const goToToday = () => {
+  //   setCurrentDate(new Date());
+  // };
 
   const baseDay = startOfDay(currentDate);
   const isToday = (date: Date) => isSameDay(date, new Date());
