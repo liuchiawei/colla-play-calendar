@@ -68,7 +68,6 @@ function ProjectBadgeLink({
   dateKey,
   className,
   showVenue = true,
-  spaceBorderClass,
   spaceBorderColors,
 }: {
   project: Project;
@@ -76,8 +75,6 @@ function ProjectBadgeLink({
   dateKey?: string;
   className?: string;
   showVenue?: boolean;
-  /** 依空間套用的框線 class（整圈 Badge 邊框） */
-  spaceBorderClass?: string;
   /** spaceId → 框線顏色 class，用於場域名稱小標的邊框色 */
   spaceBorderColors?: Record<string, string>;
 }) {
@@ -164,11 +161,6 @@ function DayCellContent({
           dateKey={dateKey}
           className="text-[10px] truncate w-full"
           showVenue={showVenue}
-          spaceBorderClass={
-            spaceBorderColors
-              ? spaceBorderColors[getPrimarySpaceId(project) ?? ""]
-              : undefined
-          }
           spaceBorderColors={spaceBorderColors}
         />
       ))}

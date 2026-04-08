@@ -6,7 +6,7 @@
  * 優化快取策略，減少不必要的網路請求和資料庫查詢
  */
 
-import { authClient } from "@/lib/auth-client";
+import { getAuthClient } from "@/lib/auth-client";
 import type { UserWithAdmin } from "@/lib/types";
 
 /**
@@ -192,7 +192,7 @@ export async function signIn(
 
   try {
     // 1. 執行認證客戶端登入
-    const result = await authClient.signIn.email({
+    const result = await getAuthClient().signIn.email({
       email,
       password,
     });
@@ -273,7 +273,7 @@ export async function signUp(
     const userName = name || email.split("@")[0] || "";
 
     // 1. 執行認證客戶端註冊
-    const result = await authClient.signUp.email({
+    const result = await getAuthClient().signUp.email({
       email,
       password,
       name: userName,
@@ -381,7 +381,7 @@ export async function signInWithGoogle(
     // callbackURL は認証成功後のリダイレクト先を指定
     // Better Auth は自動的に /api/auth/callback/google を処理し、
     // その後 callbackURL にリダイレクトする
-    const result = await authClient.signIn.social({
+    const result = await getAuthClient().signIn.social({
       provider: "google",
       callbackURL: redirectTo,
     });
@@ -441,7 +441,7 @@ export async function signOut(
     await revalidateCache(["user-auth"]);
 
     // 2. 執行認證客戶端登出
-    await authClient.signOut();
+    await getAuthClient().signOut();
 
     // 3. 清除本地狀態
     onLogout?.();

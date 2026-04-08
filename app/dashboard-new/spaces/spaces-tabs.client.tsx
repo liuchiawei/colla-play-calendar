@@ -5,7 +5,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ALL_SPACES } from "@/lib/config/config";
 import { SPACES_PAGE } from "@/lib/message";
 import type { Project } from "@/lib/types/project";
-import { SpaceProjectsCalendar } from "./[slug]/space-projects-calendar.client";
+import { SpaceProjectsCalendar } from "./space-projects-calendar.client";
 import { LayoutGrid } from "lucide-react";
 
 const FILTER_ALL = "all" as const;
