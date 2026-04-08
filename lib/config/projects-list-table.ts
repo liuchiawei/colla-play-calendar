@@ -23,7 +23,7 @@ export const PROJECTS_LIST_COLUMNS = [
     cellClassName: "w-[120px] min-w-[120px] max-w-[120px] truncate",
     //表頭
     stickyHeaderClassName:
-      "sticky left-0 z-30 bg-card border-r border-border/30",
+      "sticky left-0 z-30 bg-card border-r border-border/30 rounded-tl-xl",
     //儲存格
     stickyCellClassName:
       "sticky left-0 z-20 bg-card border-r border-border/30 group-hover:bg-muted",
