@@ -56,11 +56,7 @@ function getUniqueSpaceNames(
 function badgeClassNameByStatus(status: ProjectStatus): string {
   const statusForUi = normalizeProjectStatusForUi(status);
   if (!statusForUi) return cn("border-0 bg-muted text-foreground");
-  return cn(
-    "border-0",
-    getStatusColorClass(statusForUi),
-    "text-white",
-  );
+  return cn("border-0", getStatusColorClass(statusForUi), "text-white");
 }
 
 function ProjectBadgeLink({
@@ -108,7 +104,7 @@ function ProjectBadgeLink({
               <span
                 key={id}
                 className={cn(
-                  "rounded-sm border px-1 py-0.5",
+                  "rounded-full border px-2 py-0.5",
                   spaceBorderColors?.[id] ?? "border-muted",
                 )}
               >
@@ -389,38 +385,9 @@ export function SpaceProjectsCalendar({
         </p>
       )}
 
+      {/* 圖例 */}
       {hasAnyProjects ? (
         <div className="mt-3 flex flex-col items-center gap-3 text-xs text-muted-foreground">
-          {spaceLegend != null &&
-            spaceLegend.length > 0 &&
-            spaceBorderColors != null && (
-              <div
-                className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2"
-                aria-label="場域圖例"
-              >
-                {spaceLegend.map((entry) => {
-                  const borderClass = spaceBorderColors[entry.id];
-                  return (
-                    <span
-                      key={entry.id}
-                      className="flex items-center gap-1.5"
-                      title={entry.name}
-                    >
-                      <span
-                        className={cn(
-                          "size-3 shrink-0 rounded-sm border-2 border-muted",
-                          borderClass ?? "border-muted-foreground/50",
-                        )}
-                        aria-hidden
-                      />
-                      <span className="truncate max-w-32">
-                        {entry.name}
-                      </span>
-                    </span>
-                  );
-                })}
-              </div>
-            )}
           <div className="flex flex-wrap items-center justify-center gap-4">
             {PROJECT_STATUS_UI_SELECTABLE.map((opt) => (
               <span
