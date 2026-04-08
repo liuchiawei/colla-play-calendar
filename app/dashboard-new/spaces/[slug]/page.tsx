@@ -3,12 +3,20 @@
 
 import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { DashboardShell } from "../../components/dashboard-shell.client";
 import { PageHeader } from "../../components/page-header.client";
+import { auth } from "@/lib/auth";
+import prisma from "@/lib/prisma";
 import { getSpaceById } from "@/lib/config/config";
 import { getProjectsBySpaceId } from "@/lib/services/project/project.service";
 import { SPACE_DETAIL_PAGE } from "@/lib/message";
 import { SpaceProjectsContent } from "./space-projects-content.client";
+import {
+  buildLoginUrlWithNext,
+  buildPathWithSearch,
+  type NextSearchParams,
+} from "@/lib/utils/login-next";
 
 function SpaceProjectsSkeleton() {
   return (
@@ -33,6 +41,7 @@ async function SpaceProjects({
 
 interface PageProps {
   params: Promise<{ slug: string }>;
+  searchParams?: Promise<NextSearchParams>;
 }
 
 /** 已廢除的場域 id（room1/room2）導向多功能教室 */
@@ -41,8 +50,25 @@ const DEPRECATED_SPACE_REDIRECT: Record<string, string> = {
   "4f-multipurpose-room-2": "4f-multipurpose-room",
 };
 
-export default async function SpaceDetailPage({ params }: PageProps) {
+export default async function SpaceDetailPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
+
+  const h = await headers();
+  const session = await auth.api.getSession({ headers: h });
+  const sp = searchParams ? await searchParams : undefined;
+  const nextPath = buildPathWithSearch(`/dashboard-new/spaces/${slug}`, sp);
+
+  if (!session?.user) {
+    redirect(buildLoginUrlWithNext(nextPath));
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { isAdmin: true },
+  });
+  if (!user?.isAdmin) {
+    redirect("/");
+  }
 
   const redirectTarget = DEPRECATED_SPACE_REDIRECT[slug];
   if (redirectTarget) {

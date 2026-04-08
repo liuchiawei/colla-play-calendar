@@ -25,7 +25,12 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-export default function LoginForm() {
+type LoginFormProps = {
+  /** 登入成功後導向（由 Server 依 Referer 解析，預設 `/profile`） */
+  redirectTo?: string;
+};
+
+export default function LoginForm({ redirectTo = "/profile" }: LoginFormProps) {
   const router = useRouter();
   const { fetchUser } = useAuthStore();
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +59,7 @@ export default function LoginForm() {
         },
         onNavigate: (path) => router.push(path),
         onRefresh: () => router.refresh(),
-        redirectTo: "/profile",
+        redirectTo,
       });
 
       if (!result.success) {
@@ -102,7 +107,7 @@ export default function LoginForm() {
           {/* Google 登入按鈕 */}
           <GoogleAuthButton
             label="使用 Google 登入"
-            redirectTo="/profile"
+            redirectTo={redirectTo}
           />
         </form>
       </Form>

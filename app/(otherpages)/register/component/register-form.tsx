@@ -32,7 +32,14 @@ const registerSchema = z
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
-export default function RegisterForm() {
+type RegisterFormProps = {
+  /** 註冊成功後導向（由 Server 依 Referer 解析，預設 `/profile`） */
+  redirectTo?: string;
+};
+
+export default function RegisterForm({
+  redirectTo = "/profile",
+}: RegisterFormProps) {
   const router = useRouter();
   const { fetchUser } = useAuthStore();
   const [error, setError] = useState<string | null>(null);
@@ -65,7 +72,7 @@ export default function RegisterForm() {
         },
         onNavigate: (path) => router.push(path),
         onRefresh: () => router.refresh(),
-        redirectTo: "/profile",
+        redirectTo,
       });
 
       if (!result.success) {
@@ -116,7 +123,7 @@ export default function RegisterForm() {
           {/* Google 註冊按鈕 */}
           <GoogleAuthButton
             label="使用 Google 註冊"
-            redirectTo="/profile"
+            redirectTo={redirectTo}
           />
         </form>
       </Form>

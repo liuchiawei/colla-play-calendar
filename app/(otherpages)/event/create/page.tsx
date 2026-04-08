@@ -6,6 +6,11 @@ import { headers } from "next/headers";
 import { Suspense } from "react";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import {
+  buildLoginUrlWithNext,
+  buildPathWithSearch,
+  type NextSearchParams,
+} from "@/lib/utils/login-next";
 import SectionContainer from "@/components/layout/section-container";
 import { EventFormClient } from "./event-form-client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,13 +20,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 export const dynamic = "force-dynamic";
 
 // 異步資料獲取組件
-async function CreateEventContent() {
+async function CreateEventContent({ nextPath }: { nextPath: string }) {
   // 取得登入狀態
   const session = await auth.api.getSession({ headers: await headers() });
 
   // 若未登入，導向登入頁面
   if (!session?.user) {
-    redirect("/login");
+    redirect(buildLoginUrlWithNext(nextPath));
   }
 
   // 獲取所有類別
@@ -34,7 +39,14 @@ async function CreateEventContent() {
   return <EventFormClient categories={categories} />;
 }
 
-export default async function CreateEventPage() {
+interface PageProps {
+  searchParams?: Promise<NextSearchParams>;
+}
+
+export default async function CreateEventPage({ searchParams }: PageProps) {
+  const sp = searchParams ? await searchParams : undefined;
+  const nextPath = buildPathWithSearch("/event/create", sp);
+
   return (
     <SectionContainer>
       <Suspense
@@ -49,7 +61,7 @@ export default async function CreateEventPage() {
           </Card>
         }
       >
-        <CreateEventContent />
+        <CreateEventContent nextPath={nextPath} />
       </Suspense>
     </SectionContainer>
   );
