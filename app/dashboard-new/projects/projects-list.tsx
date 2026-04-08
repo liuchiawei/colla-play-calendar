@@ -563,7 +563,7 @@ export function ProjectsList({ projects }: ProjectsListProps) {
                 ))}
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <TableBody className="[&_tr:last-child_td:first-child]:rounded-bl-xl">
               {sortedProjects.map((project) => {
                 const statusForUi = normalizeProjectStatusForUi(project.status);
                 return (
