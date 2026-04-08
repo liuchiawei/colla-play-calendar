@@ -8,6 +8,7 @@ import { Suspense } from "react";
 import { mutate } from "swr";
 import { motion } from "motion/react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Tooltip,
   TooltipContent,
@@ -21,12 +22,9 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { formatDate, formatTime } from "@/lib/date-utils";
 import type { EventWithCategory } from "@/lib/types";
-import { useAuthStore } from "@/lib/stores/auth-store";
 import {
-  Calendar,
   Clock,
   MapPin,
   User,
@@ -52,7 +50,6 @@ export function EventDetailDialog({
   open,
   onOpenChange,
 }: EventDetailDialogProps) {
-  const { user } = useAuthStore();
   const [isRegistered, setIsRegistered] = React.useState(
     event?.isRegistered || false
   );
@@ -119,7 +116,9 @@ export function EventDetailDialog({
         <div className="relative w-full h-full min-h-36 overflow-hidden">
           {event.imageBlobUrl || event.imageUrl ? (
             // 封面圖片
-            <img
+            <Image
+              width={1000}
+              height={1000}
               src={event.imageBlobUrl || event.imageUrl || ""}
               alt={event.title}
               className="absolute inset-0 z-0 object-cover border pointer-events-none"
@@ -134,7 +133,7 @@ export function EventDetailDialog({
             />
           )}
           {/* 疊加層 */}
-          <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent select-none pointer-events-none" />
+          <div className="absolute inset-0 bg-linear-to-t from-card via-transparent to-transparent select-none pointer-events-none" />
           {/* 封面資訊區塊 (標題、分類標籤﹑日期) */}
           <div className="w-full h-full flex flex-col justify-between gap-4 p-6 z-10">
             {/* 分類標籤 */}
@@ -229,7 +228,7 @@ export function EventDetailDialog({
 
             {/* 報名人數 */}
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-primary/10 text-primary flex-shrink-0">
+              <div className="p-2 rounded-full bg-primary/10 text-primary shrink-0">
                 <Users className="size-4" />
               </div>
               <div className="flex-1 flex flex-col gap-1 md:gap-2">

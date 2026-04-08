@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CommentForm } from "./comment-form";
 import { CommentItem } from "./comment-item";
-import type { CommentListResponse, CommentWithRelations } from "@/lib/types";
+import type { CommentListResponse } from "@/lib/types";
 import useSWR from "swr";
 
 interface EventInteractionsProps {

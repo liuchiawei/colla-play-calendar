@@ -65,7 +65,7 @@ export function AdminSidebar() {
                     group relative overflow-hidden transition-all duration-300
                     ${
                       isActive
-                        ? "bg-gradient-to-r from-accent to-primary text-white shadow-lg shadow-accent/50 hover:shadow-xl hover:shadow-accent/60"
+                        ? "bg-linear-to-r from-accent to-primary text-white shadow-lg shadow-accent/50 hover:shadow-xl hover:shadow-accent/60"
                         : "hover:text-foreground hover:bg-accent/10 dark:hover:bg-accent/5"
                     }
                   `}

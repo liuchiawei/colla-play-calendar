@@ -5,7 +5,8 @@ import type { EventWithCategory } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { formatDate, formatTime } from "@/lib/date-utils";
+import { formatDate } from "@/lib/date-utils";
+import Image from "next/image";
 
 export function EventPosterCard({
   event,
@@ -26,9 +27,11 @@ export function EventPosterCard({
       onClick={onClick}
     >
       {/* 圖片區域 */}
-      <div className="relative w-full aspect-[3/4] overflow-hidden">
+      <div className="relative w-full aspect-3/4 overflow-hidden">
         {imageUrl ? (
-          <img
+          <Image
+            width={1000}
+            height={1000}
             src={imageUrl}
             alt={event.title}
             className="w-full h-full object-cover"
@@ -43,7 +46,7 @@ export function EventPosterCard({
           />
         )}
         {/* 疊加層 - 從底部向上漸變 */}
-        <div className="absolute inset-0 p-3 flex flex-col justify-between bg-gradient-to-t from-black/20 to-transparent group-hover:from-black/80 select-none pointer-events-none z-10">
+        <div className="absolute inset-0 p-3 flex flex-col justify-between bg-linear-to-t from-black/20 to-transparent group-hover:from-black/80 select-none pointer-events-none z-10">
           {/* 類別標籤 - 左上角 */}
           {event.category && (
             <Badge

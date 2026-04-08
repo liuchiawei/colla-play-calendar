@@ -8,10 +8,9 @@ import { formatDistanceToNow } from "date-fns";
 import { zhTW } from "date-fns/locale";
 import { Heart, Edit2, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import UserAvatar from "@/components/features/user/user-avatar";
 import { ReplyForm } from "./reply-form";
-import { CommentForm } from "./comment-form";
 import type { CommentWithRelations } from "@/lib/types";
 
 interface CommentItemProps {
@@ -237,7 +236,7 @@ export function CommentItem({
               </div>
             </div>
           ) : (
-            <div className="text-sm whitespace-pre-wrap break-words">
+            <div className="text-sm whitespace-pre-wrap wrap-break-word">
               {comment.content}
             </div>
           )}

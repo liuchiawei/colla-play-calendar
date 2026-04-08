@@ -24,13 +24,12 @@ import { EventDetailDialog } from "@/components/features/events/event-detail-dia
 import {
   getNextDay,
   getPreviousDay,
-  formatDayHeader,
   formatMonthYear,
   generateTimeSlots,
   isEventOnDay,
   calculateEventPosition,
 } from "@/lib/date-utils";
-import { startOfDay, isSameDay, endOfDay } from "date-fns";
+import { startOfDay, endOfDay } from "date-fns";
 import type { EventWithCategory } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -73,6 +72,16 @@ export function DailyCalendar({
     };
   }, [baseDay]);
 
+  const eventRangeStartIso = React.useMemo(
+    () => eventRange.start.toISOString(),
+    [eventRange.start],
+  );
+
+  const eventRangeEndIso = React.useMemo(
+    () => eventRange.end.toISOString(),
+    [eventRange.end],
+  );
+
   const timeSlots = generateTimeSlots();
 
   // イベントデータを取得
@@ -80,8 +89,8 @@ export function DailyCalendar({
     setIsLoading(true);
     try {
       const params = new URLSearchParams({
-        start: eventRange.start.toISOString(),
-        end: eventRange.end.toISOString(),
+        start: eventRangeStartIso,
+        end: eventRangeEndIso,
       });
       const response = await fetch(`/api/events?${params}`);
       const data = await response.json();
@@ -93,7 +102,7 @@ export function DailyCalendar({
     } finally {
       setIsLoading(false);
     }
-  }, [eventRange.start.toISOString(), eventRange.end.toISOString()]);
+  }, [eventRangeStartIso, eventRangeEndIso]);
 
   // 日が変更されたらイベントを再取得
   React.useEffect(() => {
@@ -113,10 +122,10 @@ export function DailyCalendar({
   };
 
   // 今日へ移動
-  const goToToday = () => {
-    setDirection(0);
-    setCurrentDate(new Date());
-  };
+  // const goToToday = () => {
+  //   setDirection(0);
+  //   setCurrentDate(new Date());
+  // };
 
   // 今日かどうかチェック
   const isToday = (date: Date) => {

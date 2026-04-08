@@ -78,14 +78,8 @@ export function SpacesTabs({ projects }: SpacesTabsProps) {
         <div className="mt-6 flex-1 min-w-0">
           <SpaceProjectsCalendar
             projects={filteredProjects}
-            spaceName={
-              isAllView
-                ? ""
-                : (ALL_SPACES.find((s) => s.id === selectedFilter)?.name ?? "")
-            }
             showVenue={true}
             spaceBorderColors={isAllView ? SPACE_BORDER_COLORS : undefined}
-            spaceLegend={isAllView ? spaceLegend : undefined}
           />
         </div>
       </Tabs>

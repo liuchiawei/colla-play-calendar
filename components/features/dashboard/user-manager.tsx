@@ -5,6 +5,7 @@
 
 import * as React from "react";
 import { motion } from "motion/react";
+import Image from "next/image";
 import { Search, Filter, Users, Shield, User, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -177,13 +178,15 @@ export function UserManager({
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
                       {user.image ? (
-                        <img
+                        <Image
+                          width={400}
+                          height={400}
                           src={user.image}
                           alt={user.name || user.email}
                           className="w-8 h-8 rounded-full"
                         />
                       ) : (
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                        <div className="w-8 h-8 rounded-full bg-linear-to-br from-primary to-accent flex items-center justify-center">
                           <User className="w-4 h-4 text-white" />
                         </div>
                       )}

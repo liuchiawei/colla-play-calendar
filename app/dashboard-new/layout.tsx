@@ -12,7 +12,7 @@ export default async function DashboardNewLayout({
   // Render layout with sidebar
   return (
     <SidebarProvider defaultOpen={true}>
-      <div className="flex min-h-screen w-full bg-gradient-to-br from-background via-background to-accent/5 dark:from-background dark:via-background dark:to-accent/10">
+      <div className="flex min-h-screen w-full bg-linear-to-br from-background via-background to-accent/5 dark:from-background dark:via-background dark:to-accent/10">
         <AdminSidebar />
         <main className="flex-1 overflow-auto">{children}</main>
       </div>
