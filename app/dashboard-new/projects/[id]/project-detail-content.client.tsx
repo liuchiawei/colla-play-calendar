@@ -203,7 +203,6 @@ const editProjectSchema = z
       defaultEquipmentNeedsForm(),
     ),
     fnbItems: z.string().optional(),
-    projectNotes: z.string().optional(),
     collaPlayContactId: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
     internalNotes: z.string().optional(),
     status: z
@@ -312,7 +311,6 @@ function projectToFormValues(project: ProjectWithRentals): EditFormValues {
     chairs: project.chairs ?? "",
     equipmentNeeds: parseEquipmentNeedsFromDb(project.equipmentNeeds),
     fnbItems: project.fnbItems ?? "",
-    projectNotes: project.projectNotes ?? "",
     collaPlayContactId: project.collaPlayContactId,
     internalNotes: project.internalNotes ?? "",
     status: statusForUi ?? undefined,
@@ -335,7 +333,10 @@ function projectToFormValues(project: ProjectWithRentals): EditFormValues {
   };
 }
 
-function formValuesToUpdateInput(values: EditFormValues): UpdateProjectInput {
+function formValuesToUpdateInput(
+  values: EditFormValues,
+  preservedProjectNotes: string | null,
+): UpdateProjectInput {
   return {
     customerName: values.customerName,
     customerPhone: values.customerPhone,
@@ -351,7 +352,7 @@ function formValuesToUpdateInput(values: EditFormValues): UpdateProjectInput {
     chairs: values.chairs?.trim() || undefined,
     equipmentNeeds: values.equipmentNeeds,
     fnbItems: values.fnbItems || undefined,
-    projectNotes: values.projectNotes || undefined,
+    projectNotes: preservedProjectNotes ?? undefined,
     collaPlayContactId: values.collaPlayContactId,
     internalNotes: values.internalNotes || undefined,
     status: values.status,
@@ -781,10 +782,13 @@ function AddRentalFormDialog({
           teardownMinutesAfter: data.teardownMinutesAfter ?? 30,
         },
       ];
-      const payload = formValuesToUpdateInput({
-        ...baseValues,
-        rentals: newRentals,
-      });
+      const payload = formValuesToUpdateInput(
+        {
+          ...baseValues,
+          rentals: newRentals,
+        },
+        project.projectNotes,
+      );
       const result = await updateProject(project.id, payload);
       if (result.success) {
         onSuccess();
@@ -1178,7 +1182,7 @@ export function ProjectDetailContent({
   }, [project, form]);
 
   const handleSubmit = form.handleSubmit((data: EditFormValues) => {
-    const payload = formValuesToUpdateInput(data);
+    const payload = formValuesToUpdateInput(data, project.projectNotes);
     startUpdateTransition(async () => {
       const result = await updateProject(project.id, payload);
       if (result.success) {
@@ -1447,21 +1451,6 @@ export function ProjectDetailContent({
                 render={({ field }) => (
                   <FormItem className="sm:col-span-2">
                     <FormLabel>{CREATE_PROJECT_PAGE.labelFnb}</FormLabel>
-                    <FormControl>
-                      <Textarea {...field} rows={2} className="resize-none" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="projectNotes"
-                render={({ field }) => (
-                  <FormItem className="sm:col-span-2">
-                    <FormLabel>
-                      {CREATE_PROJECT_PAGE.labelProjectNotes}
-                    </FormLabel>
                     <FormControl>
                       <Textarea {...field} rows={2} className="resize-none" />
                     </FormControl>
@@ -2390,16 +2379,6 @@ export function ProjectDetailContent({
                 </p>
                 <p className="font-medium whitespace-pre-wrap">
                   {project.fnbItems}
-                </p>
-              </div>
-            ) : null}
-            {project.projectNotes ? (
-              <div className="sm:col-span-2">
-                <p className="text-sm text-muted-foreground">
-                  {PROJECT_DETAIL_PAGE.labelProjectNotes}
-                </p>
-                <p className="font-medium whitespace-pre-wrap">
-                  {project.projectNotes}
                 </p>
               </div>
             ) : null}

@@ -166,7 +166,7 @@ const PROJECT_LIST_SORT_VALUE_GETTERS: {
     const n = parseIntIfNumeric(s);
     return n ?? s;
   },
-  projectNotes: (p) => p.projectNotes ?? "",
+  internalNotes: (p) => p.internalNotes ?? "",
 };
 
 function getAriaSort(
@@ -345,8 +345,8 @@ function renderProjectsListCell(
       return CURRENCY_FORMATTER_INTEGER.format(project.pendingAmountTotal);
     case "fnbItems":
       return project.fnbItems ?? "—";
-    case "projectNotes":
-      return project.projectNotes ?? "—";
+    case "internalNotes":
+      return project.internalNotes ?? "—";
     case "actions":
       return (
         <div className="flex items-center gap-1">

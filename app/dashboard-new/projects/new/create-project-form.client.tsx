@@ -133,7 +133,6 @@ const createProjectSchema = z
       defaultEquipmentNeedsForm(),
     ),
     fnbItems: z.string().optional(),
-    projectNotes: z.string().optional(),
     collaPlayContactId: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
     internalNotes: z.string().optional(),
     rentals: z
@@ -224,7 +223,6 @@ export function CreateProjectForm({
       chairs: "",
       equipmentNeeds: defaultEquipmentNeedsForm(),
       fnbItems: "",
-      projectNotes: "",
       collaPlayContactId: "",
       internalNotes: "",
       rentals: [{ ...defaultRental }],
@@ -536,24 +534,6 @@ export function CreateProjectForm({
               render={({ field }) => (
                 <FormItem className="sm:col-span-2">
                   <FormLabel>{CREATE_PROJECT_PAGE.labelFnb}</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      {...field}
-                      name={field.name}
-                      rows={2}
-                      className="resize-none"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="projectNotes"
-              render={({ field }) => (
-                <FormItem className="sm:col-span-2">
-                  <FormLabel>{CREATE_PROJECT_PAGE.labelProjectNotes}</FormLabel>
                   <FormControl>
                     <Textarea
                       {...field}

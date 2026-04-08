@@ -52,6 +52,8 @@ export interface Project {
   totalAttendees?: string | null;
   /** 選填：專案備註 */
   projectNotes?: string | null;
+  /** 選填：內部備註（列表欄位） */
+  internalNotes?: string | null;
   /** 選填：設備勾選（舊資料可能為 null） */
   equipmentNeeds?: ProjectEquipmentNeeds | null;
   /** 選填：每筆租借的日期與場域（週曆依空間分組用） */

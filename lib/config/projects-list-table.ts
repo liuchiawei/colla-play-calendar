@@ -159,9 +159,9 @@ export const PROJECTS_LIST_COLUMNS = [
     cellClassName: "min-w-0 max-w-[140px] truncate",
   },
   {
-    id: "projectNotes",
+    id: "internalNotes",
     sortable: true,
-    label: PROJECTS_PAGE.columnProjectNotes,
+    label: PROJECTS_PAGE.columnInternalNotes,
     cellClassName: "min-w-0 max-w-[180px] truncate",
   },
   {

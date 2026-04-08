@@ -147,8 +147,8 @@ function formatProjectCellPlain(
       return CURRENCY_FORMATTER_INTEGER.format(project.pendingAmountTotal);
     case "fnbItems":
       return project.fnbItems ?? "—";
-    case "projectNotes":
-      return project.projectNotes ?? "—";
+    case "internalNotes":
+      return project.internalNotes ?? "—";
     case "actions":
       return "";
     default: {

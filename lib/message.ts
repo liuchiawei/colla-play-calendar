@@ -159,7 +159,7 @@ export const PROJECTS_PAGE = {
   columnChairs: "椅子",
   columnFnbItems: "餐飲項目",
   columnTotalAttendees: "人數",
-  columnProjectNotes: "備註",
+  columnInternalNotes: "內部備註",
   columnOtherEquipment: "其他設備",
   columnRentalAmount: "場租",
   columnFnbAmount: "餐飲",
