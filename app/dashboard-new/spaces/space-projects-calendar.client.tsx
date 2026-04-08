@@ -34,10 +34,10 @@ function toDateKey(d: Date): string {
 }
 
 /** 取得專案主要空間 id（第一筆 rental 的第一個 spaceId），供 border 色與圖例對應 */
-function getPrimarySpaceId(project: Project): string | null {
-  const id = project.rentals?.[0]?.spaceIds?.[0];
-  return id ?? null;
-}
+// function getPrimarySpaceId(project: Project): string | null {
+//   const id = project.rentals?.[0]?.spaceIds?.[0];
+//   return id ?? null;
+// }
 
 /** 從所有 rentals 取得不重複的空間名稱（依 id 去重後再依顯示名稱去重），供活動場地顯示 */
 function getUniqueSpaceNames(
@@ -171,23 +171,21 @@ export interface SpaceLegendEntry {
 
 interface SpaceProjectsCalendarProps {
   projects: Project[];
-  spaceName: string;
+  // spaceName: string;
   /** 是否顯示活動場地，預設 true；單一空間頁可傳 false */
   showVenue?: boolean;
   /** spaceId → border 色 class（如 border-l-blue-500），用於區分不同空間 */
   spaceBorderColors?: Record<string, string>;
   /** 圖例項目（空間 id + 名稱），與 spaceBorderColors 一併使用時顯示圖例 */
-  spaceLegend?: SpaceLegendEntry[];
+  // spaceLegend?: SpaceLegendEntry[];
 }
 
 const MAX_SPACES_COLUMNS = 8;
 
 export function SpaceProjectsCalendar({
   projects,
-  spaceName,
   showVenue = true,
   spaceBorderColors,
-  spaceLegend,
 }: SpaceProjectsCalendarProps) {
   const visibleProjects = React.useMemo(() => {
     return projects.filter((p) => {
