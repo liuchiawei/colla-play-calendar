@@ -4,8 +4,20 @@
 // 新規作成・編集両方に対応するフォーム
 
 import * as React from "react";
-import { motion } from "motion/react";
-import { Calendar, Clock, MapPin, User, Link2, Ticket, Image, FileText, Tag, Upload, X } from "lucide-react";
+import Image from "next/image";
+import {
+  Calendar,
+  Clock,
+  MapPin,
+  User,
+  Link2,
+  Ticket,
+  ImageIcon,
+  FileText,
+  Tag,
+  Upload,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,7 +37,12 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { formatForDateTimeInput } from "@/lib/date-utils";
-import type { EventWithCategory, EventInput, Category, EventStatus } from "@/lib/types";
+import type {
+  EventWithCategory,
+  EventInput,
+  Category,
+  EventStatus,
+} from "@/lib/types";
 
 interface EventFormProps {
   event?: EventWithCategory | null;
@@ -222,7 +239,7 @@ export function EventForm({
   // 入力変更ハンドラ
   const handleChange = (
     field: keyof EventInput,
-    value: string | null | EventStatus
+    value: string | null | EventStatus,
   ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
@@ -383,7 +400,10 @@ export function EventForm({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="registrationUrl" className="flex items-center gap-2">
+              <Label
+                htmlFor="registrationUrl"
+                className="flex items-center gap-2"
+              >
                 <Link2 className="h-4 w-4 text-muted-foreground" />
                 報名連結
               </Label>
@@ -391,7 +411,9 @@ export function EventForm({
                 id="registrationUrl"
                 type="url"
                 value={formData.registrationUrl || ""}
-                onChange={(e) => handleChange("registrationUrl", e.target.value)}
+                onChange={(e) =>
+                  handleChange("registrationUrl", e.target.value)
+                }
                 placeholder="https://..."
               />
             </div>
@@ -400,7 +422,7 @@ export function EventForm({
           {/* 圖片上傳 */}
           <div className="space-y-2">
             <Label className="flex items-center gap-2">
-              <Image className="h-4 w-4 text-muted-foreground" />
+              <ImageIcon className="h-4 w-4 text-muted-foreground" />
               活動圖片
             </Label>
             <div className="space-y-3">
@@ -413,10 +435,7 @@ export function EventForm({
                   onChange={handleFileSelect}
                   className="hidden"
                 />
-                <Label
-                  htmlFor="file-upload"
-                  className="flex-1 cursor-pointer"
-                >
+                <Label htmlFor="file-upload" className="flex-1 cursor-pointer">
                   <Button
                     type="button"
                     variant="outline"
@@ -434,7 +453,11 @@ export function EventForm({
                     type="button"
                     variant="outline"
                     size="icon"
-                    onClick={selectedFile ? handleRemoveFile : handleRemoveUploadedImage}
+                    onClick={
+                      selectedFile
+                        ? handleRemoveFile
+                        : handleRemoveUploadedImage
+                    }
                     className="shrink-0"
                   >
                     <X className="h-4 w-4" />
@@ -445,7 +468,9 @@ export function EventForm({
               {/* 預覽 */}
               {previewUrl && (
                 <div className="relative w-full h-48 rounded-lg overflow-hidden border border-border">
-                  <img
+                  <Image
+                    width={1000}
+                    height={1000}
                     src={previewUrl}
                     alt="預覽"
                     className="w-full h-full object-cover"
@@ -455,7 +480,10 @@ export function EventForm({
 
               {/* 圖片網址輸入（備用） */}
               <div className="space-y-2">
-                <Label htmlFor="imageUrl" className="text-sm text-muted-foreground">
+                <Label
+                  htmlFor="imageUrl"
+                  className="text-sm text-muted-foreground"
+                >
                   或輸入圖片網址
                 </Label>
                 <Input
@@ -493,7 +521,11 @@ export function EventForm({
               取消
             </Button>
             {allowDraft && formData.status === "draft" ? (
-              <Button type="submit" variant="secondary" disabled={isLoading || isUploading}>
+              <Button
+                type="submit"
+                variant="secondary"
+                disabled={isLoading || isUploading}
+              >
                 {isLoading || isUploading ? "處理中..." : "儲存草稿"}
               </Button>
             ) : null}
@@ -501,10 +533,10 @@ export function EventForm({
               {isLoading || isUploading
                 ? "處理中..."
                 : allowDraft && formData.status === "draft"
-                ? "儲存草稿"
-                : isEditing
-                ? "儲存變更"
-                : "提交審核"}
+                  ? "儲存草稿"
+                  : isEditing
+                    ? "儲存變更"
+                    : "提交審核"}
             </Button>
           </DialogFooter>
         </form>
@@ -512,4 +544,3 @@ export function EventForm({
     </Dialog>
   );
 }
-

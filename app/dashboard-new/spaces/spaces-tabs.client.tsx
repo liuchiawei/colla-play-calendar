@@ -2,28 +2,13 @@
 
 import * as React from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ALL_SPACES } from "@/lib/config/config";
+import { ALL_SPACES, SPACE_BORDER_COLORS } from "@/lib/config/config";
 import { SPACES_PAGE } from "@/lib/message";
 import type { Project } from "@/lib/types/project";
-import { SpaceProjectsCalendar } from "./[slug]/space-projects-calendar.client";
+import { SpaceProjectsCalendar } from "./space-projects-calendar.client";
 import { LayoutGrid } from "lucide-react";
 
 const FILTER_ALL = "all" as const;
-
-/** 各空間對應的 border 色 class（左側邊框），用於月曆上區分空間 */
-const SPACE_BORDER_COLORS: Record<string, string> = {
-  "3f-community-cafe": "border-blue-500",
-  "3f-focus-area": "border-emerald-500",
-  "4f-multipurpose-room": "border-amber-500",
-  "4f-multipurpose-room-1": "border-amber-500",
-  "4f-multipurpose-room-2": "border-amber-500",
-  "4f-podcast-studio": "border-rose-500",
-  "4f-product-photo": "border-violet-500",
-  "4f-event-lounge": "border-cyan-500",
-  "4f-screening-room": "border-orange-500",
-  "4f-tik-&-sip": "border-teal-500",
-  "5f-exhibition-hall": "border-pink-500",
-};
 
 function filterProjectsBySpace(
   projects: Project[],
@@ -93,14 +78,8 @@ export function SpacesTabs({ projects }: SpacesTabsProps) {
         <div className="mt-6 flex-1 min-w-0">
           <SpaceProjectsCalendar
             projects={filteredProjects}
-            spaceName={
-              isAllView
-                ? ""
-                : (ALL_SPACES.find((s) => s.id === selectedFilter)?.name ?? "")
-            }
             showVenue={true}
             spaceBorderColors={isAllView ? SPACE_BORDER_COLORS : undefined}
-            spaceLegend={isAllView ? spaceLegend : undefined}
           />
         </div>
       </Tabs>

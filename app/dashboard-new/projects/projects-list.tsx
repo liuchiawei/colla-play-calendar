@@ -166,7 +166,7 @@ const PROJECT_LIST_SORT_VALUE_GETTERS: {
     const n = parseIntIfNumeric(s);
     return n ?? s;
   },
-  projectNotes: (p) => p.projectNotes ?? "",
+  internalNotes: (p) => p.internalNotes ?? "",
 };
 
 function getAriaSort(
@@ -198,6 +198,19 @@ const HEADER_BTN_BASE =
 const HEADER_BTN_END =
   "group inline-flex w-full items-center justify-end gap-2 rounded-sm hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40";
 
+type ColumnWithSticky = ProjectsListColumnConfig & {
+  stickyHeaderClassName?: string;
+  stickyCellClassName?: string;
+};
+
+function projectsListStickyHeaderClass(column: ProjectsListColumnConfig) {
+  return (column as ColumnWithSticky).stickyHeaderClassName;
+}
+
+function projectsListStickyCellClass(column: ProjectsListColumnConfig) {
+  return (column as ColumnWithSticky).stickyCellClassName;
+}
+
 function ProjectsListTableHeadCell({
   column,
   sort,
@@ -211,7 +224,10 @@ function ProjectsListTableHeadCell({
     return (
       <TableHead
         scope="col"
-        className={"headerClassName" in column ? column.headerClassName : undefined}
+        className={cn(
+          "headerClassName" in column ? column.headerClassName : undefined,
+          projectsListStickyHeaderClass(column),
+        )}
       >
         {column.label}
       </TableHead>
@@ -221,13 +237,14 @@ function ProjectsListTableHeadCell({
   const sortKey = column.id;
   const headerClassName =
     "headerClassName" in column ? column.headerClassName : undefined;
+  const stickyHeaderClassName = projectsListStickyHeaderClass(column);
   const headerButtonJustifyEnd =
     "headerButtonJustifyEnd" in column && column.headerButtonJustifyEnd;
 
   return (
     <TableHead
       scope="col"
-      className={headerClassName}
+      className={cn(headerClassName, stickyHeaderClassName)}
       aria-sort={getAriaSort(sort, sortKey)}
     >
       <button
@@ -328,8 +345,8 @@ function renderProjectsListCell(
       return CURRENCY_FORMATTER_INTEGER.format(project.pendingAmountTotal);
     case "fnbItems":
       return project.fnbItems ?? "—";
-    case "projectNotes":
-      return project.projectNotes ?? "—";
+    case "internalNotes":
+      return project.internalNotes ?? "—";
     case "actions":
       return (
         <div className="flex items-center gap-1">
@@ -550,11 +567,14 @@ export function ProjectsList({ projects }: ProjectsListProps) {
               {sortedProjects.map((project) => {
                 const statusForUi = normalizeProjectStatusForUi(project.status);
                 return (
-                  <TableRow key={project.id}>
+                  <TableRow key={project.id} className="group">
                     {PROJECTS_LIST_COLUMNS.map((column) => (
                       <TableCell
                         key={column.id}
-                        className={column.cellClassName || undefined}
+                        className={cn(
+                          column.cellClassName,
+                          projectsListStickyCellClass(column),
+                        )}
                       >
                         {renderProjectsListCell(
                           column.id,

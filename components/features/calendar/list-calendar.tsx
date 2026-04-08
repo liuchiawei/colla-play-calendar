@@ -39,7 +39,7 @@ import {
   formatMonthEng,
   isEventOnDay,
 } from "@/lib/date-utils";
-import { startOfDay, addDays, isSameDay, endOfDay } from "date-fns";
+import { startOfDay, addDays, endOfDay } from "date-fns";
 import type { EventWithCategory } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/lib/hooks/use-mobile";
@@ -86,6 +86,16 @@ export function ListCalendar({
     return getWeekRange(currentDate);
   }, [isMobile, displayDays, currentDate]);
 
+  const eventRangeStartIso = React.useMemo(
+    () => eventRange.start.toISOString(),
+    [eventRange.start],
+  );
+
+  const eventRangeEndIso = React.useMemo(
+    () => eventRange.end.toISOString(),
+    [eventRange.end],
+  );
+
   const groupedByDay = React.useMemo(() => {
     const map = new Map<string, EventWithCategory[]>();
     for (const day of displayDays) {
@@ -105,8 +115,8 @@ export function ListCalendar({
     setIsLoading(true);
     try {
       const params = new URLSearchParams({
-        start: eventRange.start.toISOString(),
-        end: eventRange.end.toISOString(),
+        start: eventRangeStartIso,
+        end: eventRangeEndIso,
       });
       const response = await fetch(`/api/events?${params}`);
       const data = await response.json();
@@ -118,7 +128,7 @@ export function ListCalendar({
     } finally {
       setIsLoading(false);
     }
-  }, [eventRange.start.toISOString(), eventRange.end.toISOString()]);
+  }, [eventRangeStartIso, eventRangeEndIso]);
 
   React.useEffect(() => {
     fetchEvents();
@@ -138,10 +148,10 @@ export function ListCalendar({
     );
   };
 
-  const goToToday = () => {
-    setDirection(0);
-    setCurrentDate(new Date());
-  };
+  // const goToToday = () => {
+  //   setDirection(0);
+  //   setCurrentDate(new Date());
+  // };
 
   const isToday = (date: Date) => {
     const today = new Date();
@@ -315,7 +325,7 @@ export function ListCalendar({
               </div>
             ) : (
               <ul className="space-y-6 list-none p-0 m-0">
-                {displayDays.map((day, dayIndex) => {
+                {displayDays.map((day) => {
                   const dayKey = day.toISOString();
                   const dayEvents = groupedByDay.get(dayKey) ?? [];
                   if (dayEvents.length === 0) {
@@ -339,7 +349,7 @@ export function ListCalendar({
                           {formatDayHeader(day)}
                         </h2>
                         <ul className="space-y-2 list-none p-0 m-0">
-                          {dayEvents.map((event, eventIndex) => (
+                          {dayEvents.map((event) => (
                             <li
                               key={event.id}
                               className="[content-visibility:auto] [contain-intrinsic-size:auto_6rem]"

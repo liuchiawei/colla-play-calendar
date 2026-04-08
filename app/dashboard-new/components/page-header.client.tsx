@@ -31,14 +31,14 @@ export function PageHeader({ title, description, iconName }: PageHeaderProps) {
             <motion.div
               whileHover={{ rotate: 360, scale: 1.1 }}
               transition={{ duration: 0.5 }}
-              className="rounded-xl bg-gradient-to-br from-accent to-primary p-3 shadow-lg shadow-accent/30"
+              className="rounded-xl bg-linear-to-br from-accent to-primary p-3 shadow-lg shadow-accent/30"
             >
               <Icon className="h-6 w-6 text-white" />
             </motion.div>
           )}
 
           <div>
-            <h1 className="font-display font-extrabold text-3xl bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">
+            <h1 className="font-display font-extrabold text-3xl bg-linear-to-r from-accent to-primary bg-clip-text text-transparent">
               {title}
             </h1>
             {description && (

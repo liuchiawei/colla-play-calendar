@@ -23,7 +23,6 @@ import {
 } from "@/components/ui/select";
 import { AlertCircle, Calendar, Plus } from "lucide-react";
 import Link from "next/link";
-import { formatDate } from "@/lib/date-utils";
 
 export function MyEventsTab() {
   // 使用 SWR hook 獲取活動資料

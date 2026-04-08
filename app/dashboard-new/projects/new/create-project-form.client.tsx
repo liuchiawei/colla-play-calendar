@@ -133,7 +133,6 @@ const createProjectSchema = z
       defaultEquipmentNeedsForm(),
     ),
     fnbItems: z.string().optional(),
-    projectNotes: z.string().optional(),
     collaPlayContactId: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
     internalNotes: z.string().optional(),
     rentals: z
@@ -224,7 +223,6 @@ export function CreateProjectForm({
       chairs: "",
       equipmentNeeds: defaultEquipmentNeedsForm(),
       fnbItems: "",
-      projectNotes: "",
       collaPlayContactId: "",
       internalNotes: "",
       rentals: [{ ...defaultRental }],
@@ -536,24 +534,6 @@ export function CreateProjectForm({
               render={({ field }) => (
                 <FormItem className="sm:col-span-2">
                   <FormLabel>{CREATE_PROJECT_PAGE.labelFnb}</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      {...field}
-                      name={field.name}
-                      rows={2}
-                      className="resize-none"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="projectNotes"
-              render={({ field }) => (
-                <FormItem className="sm:col-span-2">
-                  <FormLabel>{CREATE_PROJECT_PAGE.labelProjectNotes}</FormLabel>
                   <FormControl>
                     <Textarea
                       {...field}
@@ -1003,9 +983,10 @@ export function CreateProjectForm({
                                   `rentals.${index}.endDate` as const;
                                 const curEnd = form.getValues(endPath);
                                 if (!String(curEnd ?? "").trim()) {
+                                  // 同步結束日時勿觸發整表 Zod 驗證，否則開始/結束時間仍空會誤顯必填錯誤
                                   form.setValue(endPath, next, {
                                     shouldDirty: true,
-                                    shouldValidate: true,
+                                    shouldValidate: false,
                                   });
                                 }
                               }}
@@ -1091,6 +1072,14 @@ export function CreateProjectForm({
                             aria-label={
                               CREATE_PROJECT_PAGE.labelStartTimeRequired
                             }
+                            onChange={(e) => {
+                              const el = e.target as HTMLInputElement;
+                              // type=time 在選取過程中可能先觸發 value="" 且 validity.badInput，勿寫入 RHF
+                              if (el.value === "" && el.validity.badInput) {
+                                return;
+                              }
+                              field.onChange(e);
+                            }}
                           />
                         </FormControl>
                         <FormMessage />
@@ -1114,6 +1103,13 @@ export function CreateProjectForm({
                             aria-label={
                               CREATE_PROJECT_PAGE.labelEndTimeRequired
                             }
+                            onChange={(e) => {
+                              const el = e.target as HTMLInputElement;
+                              if (el.value === "" && el.validity.badInput) {
+                                return;
+                              }
+                              field.onChange(e);
+                            }}
                           />
                         </FormControl>
                         <FormMessage />

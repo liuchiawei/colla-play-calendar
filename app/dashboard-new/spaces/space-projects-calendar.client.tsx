@@ -34,10 +34,10 @@ function toDateKey(d: Date): string {
 }
 
 /** 取得專案主要空間 id（第一筆 rental 的第一個 spaceId），供 border 色與圖例對應 */
-function getPrimarySpaceId(project: Project): string | null {
-  const id = project.rentals?.[0]?.spaceIds?.[0];
-  return id ?? null;
-}
+// function getPrimarySpaceId(project: Project): string | null {
+//   const id = project.rentals?.[0]?.spaceIds?.[0];
+//   return id ?? null;
+// }
 
 /** 從所有 rentals 取得不重複的空間名稱（依 id 去重後再依顯示名稱去重），供活動場地顯示 */
 function getUniqueSpaceNames(
@@ -56,11 +56,7 @@ function getUniqueSpaceNames(
 function badgeClassNameByStatus(status: ProjectStatus): string {
   const statusForUi = normalizeProjectStatusForUi(status);
   if (!statusForUi) return cn("border-0 bg-muted text-foreground");
-  return cn(
-    "border-0",
-    getStatusColorClass(statusForUi),
-    "text-white",
-  );
+  return cn("border-0", getStatusColorClass(statusForUi), "text-white");
 }
 
 function ProjectBadgeLink({
@@ -68,7 +64,6 @@ function ProjectBadgeLink({
   dateKey,
   className,
   showVenue = true,
-  spaceBorderClass,
   spaceBorderColors,
 }: {
   project: Project;
@@ -76,8 +71,6 @@ function ProjectBadgeLink({
   dateKey?: string;
   className?: string;
   showVenue?: boolean;
-  /** 依空間套用的框線 class（整圈 Badge 邊框） */
-  spaceBorderClass?: string;
   /** spaceId → 框線顏色 class，用於場域名稱小標的邊框色 */
   spaceBorderColors?: Record<string, string>;
 }) {
@@ -111,7 +104,7 @@ function ProjectBadgeLink({
               <span
                 key={id}
                 className={cn(
-                  "rounded-sm border px-1 py-0.5",
+                  "rounded-full border px-2 py-0.5",
                   spaceBorderColors?.[id] ?? "border-muted",
                 )}
               >
@@ -164,11 +157,6 @@ function DayCellContent({
           dateKey={dateKey}
           className="text-[10px] truncate w-full"
           showVenue={showVenue}
-          spaceBorderClass={
-            spaceBorderColors
-              ? spaceBorderColors[getPrimarySpaceId(project) ?? ""]
-              : undefined
-          }
           spaceBorderColors={spaceBorderColors}
         />
       ))}
@@ -183,23 +171,21 @@ export interface SpaceLegendEntry {
 
 interface SpaceProjectsCalendarProps {
   projects: Project[];
-  spaceName: string;
+  // spaceName: string;
   /** 是否顯示活動場地，預設 true；單一空間頁可傳 false */
   showVenue?: boolean;
   /** spaceId → border 色 class（如 border-l-blue-500），用於區分不同空間 */
   spaceBorderColors?: Record<string, string>;
   /** 圖例項目（空間 id + 名稱），與 spaceBorderColors 一併使用時顯示圖例 */
-  spaceLegend?: SpaceLegendEntry[];
+  // spaceLegend?: SpaceLegendEntry[];
 }
 
 const MAX_SPACES_COLUMNS = 8;
 
 export function SpaceProjectsCalendar({
   projects,
-  spaceName,
   showVenue = true,
   spaceBorderColors,
-  spaceLegend,
 }: SpaceProjectsCalendarProps) {
   const visibleProjects = React.useMemo(() => {
     return projects.filter((p) => {
@@ -397,38 +383,9 @@ export function SpaceProjectsCalendar({
         </p>
       )}
 
+      {/* 圖例 */}
       {hasAnyProjects ? (
         <div className="mt-3 flex flex-col items-center gap-3 text-xs text-muted-foreground">
-          {spaceLegend != null &&
-            spaceLegend.length > 0 &&
-            spaceBorderColors != null && (
-              <div
-                className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2"
-                aria-label="場域圖例"
-              >
-                {spaceLegend.map((entry) => {
-                  const borderClass = spaceBorderColors[entry.id];
-                  return (
-                    <span
-                      key={entry.id}
-                      className="flex items-center gap-1.5"
-                      title={entry.name}
-                    >
-                      <span
-                        className={cn(
-                          "size-3 shrink-0 rounded-sm border-2 border-muted",
-                          borderClass ?? "border-muted-foreground/50",
-                        )}
-                        aria-hidden
-                      />
-                      <span className="truncate max-w-32">
-                        {entry.name}
-                      </span>
-                    </span>
-                  );
-                })}
-              </div>
-            )}
           <div className="flex flex-wrap items-center justify-center gap-4">
             {PROJECT_STATUS_UI_SELECTABLE.map((opt) => (
               <span

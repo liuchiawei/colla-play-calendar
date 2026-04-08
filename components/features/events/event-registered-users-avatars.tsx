@@ -13,8 +13,6 @@ import {
 } from "@/components/ui/tooltip";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import type { UserWithAdmin } from "@/lib/types";
-
 interface RegisteredUser {
   id: string;
   name: string | null;
@@ -82,14 +80,6 @@ export function EventRegisteredUsersAvatars({
   const displayUsers = users.slice(0, maxDisplay);
   // 只計算登入使用者的剩餘數量（因為匿名使用者不會顯示頭像）
   const remainingCount = Math.max(0, users.length - maxDisplay);
-
-  // 取得 fallback 文字（使用者名稱的首字母）
-  const getFallbackText = (user: RegisteredUser) => {
-    if (user.name) {
-      return user.name.charAt(0).toUpperCase();
-    }
-    return "?";
-  };
 
   return (
     <div className={cn("flex items-center -space-x-2", className)}>

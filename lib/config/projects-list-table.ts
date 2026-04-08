@@ -6,6 +6,11 @@
 import { PROJECTS_PAGE } from "@/lib/message";
 
 /**
+ * 第一欄（活動類型）固定寬度（px），含左右 p-4；須與第二欄 sticky 的 `left-[…px]` 一致。
+ */
+export const PROJECTS_LIST_STICKY_COL1_WIDTH_PX = 152;
+
+/**
  * 欄位顯示順序即陣列順序；調整順序時僅改此處即可與表頭／表身對齊。
  */
 export const PROJECTS_LIST_COLUMNS = [
@@ -13,13 +18,27 @@ export const PROJECTS_LIST_COLUMNS = [
     id: "eventType",
     sortable: true,
     label: PROJECTS_PAGE.columnActivityType,
-    cellClassName: "min-w-0 max-w-[120px] truncate",
+    // 寬度須與 PROJECTS_LIST_STICKY_COL1_WIDTH_PX 一致（供 Tailwind JIT 靜態掃描）
+    headerClassName: "w-[120px] min-w-[120px] max-w-[120px]",
+    cellClassName: "w-[120px] min-w-[120px] max-w-[120px] truncate",
+    //表頭
+    stickyHeaderClassName:
+      "sticky left-0 z-30 bg-card border-r border-border/30",
+    //儲存格
+    stickyCellClassName:
+      "sticky left-0 z-20 bg-card border-r border-border/30 group-hover:bg-muted",
   },
   {
     id: "eventOrVenueUse",
     sortable: true,
     label: PROJECTS_PAGE.columnEventOrVenueUse,
-    cellClassName: "min-w-0 max-w-[180px] truncate",
+    // 212 = 180 內容區 + 左右 p-4；left-[152px] 須等於 PROJECTS_LIST_STICKY_COL1_WIDTH_PX
+    headerClassName: "w-[212px] min-w-[212px] max-w-[212px]",
+    cellClassName: "w-[212px] min-w-[212px] max-w-[212px] truncate",
+    stickyHeaderClassName:
+      "sticky left-[120px] z-30 bg-card border-r border-border/30",
+    stickyCellClassName:
+      "sticky left-[120px] z-[21] bg-card border-r border-border/30 group-hover:bg-muted",
   },
   {
     id: "customer",
@@ -140,9 +159,9 @@ export const PROJECTS_LIST_COLUMNS = [
     cellClassName: "min-w-0 max-w-[140px] truncate",
   },
   {
-    id: "projectNotes",
+    id: "internalNotes",
     sortable: true,
-    label: PROJECTS_PAGE.columnProjectNotes,
+    label: PROJECTS_PAGE.columnInternalNotes,
     cellClassName: "min-w-0 max-w-[180px] truncate",
   },
   {
@@ -155,8 +174,7 @@ export const PROJECTS_LIST_COLUMNS = [
 ] as const;
 
 /** 單一欄位設定列 */
-export type ProjectsListColumnConfig =
-  (typeof PROJECTS_LIST_COLUMNS)[number];
+export type ProjectsListColumnConfig = (typeof PROJECTS_LIST_COLUMNS)[number];
 
 /** 可排序欄位鍵 */
 export type ProjectsListSortKey = Extract<

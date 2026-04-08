@@ -6,7 +6,6 @@
 import * as React from "react";
 import { motion } from "motion/react";
 import {
-  Plus,
   Pencil,
   Trash2,
   Calendar,
@@ -46,9 +45,7 @@ import {
 } from "@/components/ui/dialog";
 import type {
   EventWithCategory,
-  EventInput,
   Category,
-  EventRegistrationWithUser,
   EventStatus,
 } from "@/lib/types";
 

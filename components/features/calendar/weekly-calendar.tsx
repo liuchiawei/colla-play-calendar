@@ -111,6 +111,16 @@ export function WeeklyCalendar({
     }
   }, [isMobile, displayDays, currentDate]);
 
+  const eventRangeStartIso = React.useMemo(
+    () => eventRange.start.toISOString(),
+    [eventRange.start],
+  );
+
+  const eventRangeEndIso = React.useMemo(
+    () => eventRange.end.toISOString(),
+    [eventRange.end],
+  );
+
   const timeSlots = generateTimeSlots();
 
   // イベントデータを取得
@@ -118,8 +128,8 @@ export function WeeklyCalendar({
     setIsLoading(true);
     try {
       const params = new URLSearchParams({
-        start: eventRange.start.toISOString(),
-        end: eventRange.end.toISOString(),
+        start: eventRangeStartIso,
+        end: eventRangeEndIso,
       });
       const response = await fetch(`/api/events?${params}`);
       const data = await response.json();
@@ -131,7 +141,7 @@ export function WeeklyCalendar({
     } finally {
       setIsLoading(false);
     }
-  }, [eventRange.start.toISOString(), eventRange.end.toISOString()]);
+  }, [eventRangeStartIso, eventRangeEndIso]);
 
   // 週が変更されたらイベントを再取得
   React.useEffect(() => {
@@ -155,10 +165,10 @@ export function WeeklyCalendar({
   };
 
   // 今週へ移動
-  const goToToday = () => {
-    setDirection(0);
-    setCurrentDate(new Date());
-  };
+  // const goToToday = () => {
+  //   setDirection(0);
+  //   setCurrentDate(new Date());
+  // };
 
   // 今日かどうかチェック
   const isToday = (date: Date) => {

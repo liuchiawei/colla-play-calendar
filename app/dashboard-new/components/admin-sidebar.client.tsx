@@ -28,9 +28,14 @@ export function AdminSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
-      <SidebarHeader className="bg-primary py-6">
-        <div className="space-y-2 min-w-0">
-          <h2 className="font-display font-bold text-lg text-white">
+      <SidebarHeader className="bg-primary py-6 px-4">
+        <Link
+          href="/dashboard-new"
+          className={`space-y-2 min-w-0 flex flex-col justify-center ${state === "expanded" ? "items-start" : "items-center"}`}
+        >
+          <h2
+            className={`font-display font-bold text-white ${state === "expanded" ? "text-lg" : "text-2xl"}`}
+          >
             {state === "expanded"
               ? STORE_MESSAGES.name
               : STORE_MESSAGES.name.charAt(0)}
@@ -40,7 +45,7 @@ export function AdminSidebar() {
               {STORE_MESSAGES.subtitle}
             </p>
           )}
-        </div>
+        </Link>
         {state === "expanded" && (
           <ThemeToggle className="absolute top-3 right-3 shrink-0 text-primary-foreground hover:bg-primary-foreground/20 focus-visible:ring-primary-foreground" />
         )}
@@ -65,7 +70,7 @@ export function AdminSidebar() {
                     group relative overflow-hidden transition-all duration-300
                     ${
                       isActive
-                        ? "bg-gradient-to-r from-accent to-primary text-white shadow-lg shadow-accent/50 hover:shadow-xl hover:shadow-accent/60"
+                        ? "bg-linear-to-r from-accent to-primary text-white shadow-lg shadow-accent/50 hover:shadow-xl hover:shadow-accent/60"
                         : "hover:text-foreground hover:bg-accent/10 dark:hover:bg-accent/5"
                     }
                   `}

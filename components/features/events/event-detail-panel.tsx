@@ -5,6 +5,7 @@
 
 import * as React from "react";
 import { motion, AnimatePresence } from "motion/react";
+import Image from "next/image";
 import {
   Calendar,
   Clock,
@@ -46,7 +47,7 @@ export function EventDetailPanel({
             className="h-full flex flex-col"
           >
             {/* ヘッダー：タイトルとダイアログボタン */}
-            <div className="p-4 border-b border-border/50 bg-card/50 backdrop-blur-sm flex-shrink-0">
+            <div className="p-4 border-b border-border/50 bg-card/50 backdrop-blur-sm shrink-0">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <h2 className="text-xl font-bold text-foreground leading-tight mb-2">
@@ -79,12 +80,14 @@ export function EventDetailPanel({
                 {/* ヘッダー画像またはカラーバナー */}
                 {(event.imageBlobUrl || event.imageUrl) && (
                   <div className="relative h-48 rounded-lg overflow-hidden mb-4">
-                    <img
+                    <Image
+                      width={1000}
+                      height={1000}
                       src={event.imageBlobUrl || event.imageUrl || ""}
                       alt={event.title}
                       className="w-full h-full object-cover"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-card/80 via-transparent to-transparent" />
+                    <div className="absolute inset-0 bg-linear-to-t from-card/80 via-transparent to-transparent" />
                   </div>
                 )}
 

@@ -23,7 +23,7 @@ import {
   normalizeProjectStatusForUi,
 } from "@/lib/config/project-status";
 import type { Project } from "@/lib/types/project";
-import { SpaceProjectsCalendar } from "./space-projects-calendar.client";
+import { SpaceProjectsCalendar } from "../space-projects-calendar.client";
 import { cn } from "@/lib/utils";
 
 const DATE_FORMATTER = new Intl.DateTimeFormat("zh-TW", {
@@ -90,7 +90,6 @@ export function SpaceProjectsContent({
         <TabsContent value="calendar" className="mt-6 flex-1 min-w-0">
           <SpaceProjectsCalendar
             projects={projects}
-            spaceName={spaceName}
             showVenue={false}
           />
         </TabsContent>

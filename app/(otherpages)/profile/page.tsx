@@ -5,6 +5,11 @@ import { headers } from "next/headers";
 import { Suspense } from "react";
 import { auth } from "@/lib/auth";
 import { getProfile } from "@/lib/services/profile/profile.service";
+import {
+  buildLoginUrlWithNext,
+  buildPathWithSearch,
+  type NextSearchParams,
+} from "@/lib/utils/login-next";
 import { ProfileTabs } from "./profile-tabs";
 import SectionContainer from "@/components/layout/section-container";
 import { ProfileFormSkeleton } from "@/components/features/user/profile-form-skeleton";
@@ -13,13 +18,13 @@ import { ProfileFormSkeleton } from "@/components/features/user/profile-form-ske
 export const dynamic = "force-dynamic";
 
 // 異步資料獲取組件
-async function ProfileContent() {
+async function ProfileContent({ nextPath }: { nextPath: string }) {
   // 取得登入狀態
   const session = await auth.api.getSession({ headers: await headers() });
 
   // 若未登入，導向登入頁面
   if (!session?.user) {
-    redirect("/login");
+    redirect(buildLoginUrlWithNext(nextPath));
   }
 
   const userId = session.user.id;
@@ -36,11 +41,18 @@ async function ProfileContent() {
   return <ProfileTabs initialProfile={profile} />;
 }
 
-export default async function ProfilePage() {
+interface PageProps {
+  searchParams?: Promise<NextSearchParams>;
+}
+
+export default async function ProfilePage({ searchParams }: PageProps) {
+  const sp = searchParams ? await searchParams : undefined;
+  const nextPath = buildPathWithSearch("/profile", sp);
+
   return (
     <SectionContainer>
       <Suspense fallback={<ProfileFormSkeleton />}>
-        <ProfileContent />
+        <ProfileContent nextPath={nextPath} />
       </Suspense>
     </SectionContainer>
   );

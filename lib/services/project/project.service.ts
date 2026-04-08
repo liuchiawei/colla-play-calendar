@@ -239,6 +239,7 @@ function mapRowToProject(
     fnbItems: string | null;
     totalAttendees: string | null;
     projectNotes: string | null;
+    internalNotes: string | null;
     equipmentNeeds: unknown;
     rentals: Array<{
       spaceIds: string[];
@@ -298,6 +299,7 @@ function mapRowToProject(
     fnbItems: row.fnbItems ?? null,
     totalAttendees: row.totalAttendees ?? null,
     projectNotes: row.projectNotes ?? null,
+    internalNotes: row.internalNotes ?? null,
     equipmentNeeds:
       row.equipmentNeeds == null
         ? null

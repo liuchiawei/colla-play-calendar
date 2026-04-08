@@ -137,6 +137,20 @@ export const ALL_SPACES: Space[] = [
   spaceFromSlug("3F", "focus-area"),
 ];
 
+export const SPACE_BORDER_COLORS: Record<string, string> = {
+  "3f-community-cafe": "border-white",
+  "3f-focus-area": "border-white",
+  "4f-multipurpose-room": "border-white",
+  "4f-multipurpose-room-1": "border-white",
+  "4f-multipurpose-room-2": "border-white",
+  "4f-podcast-studio": "border-white",
+  "4f-product-photo": "border-white",
+  "4f-event-lounge": "border-white",
+  "4f-screening-room": "border-white",
+  "4f-tik-&-sip": "border-white",
+  "5f-exhibition-hall": "border-white",
+};
+
 export const SPACES_3F: Space[] = ALL_SPACES.filter((s) => s.floor === "3F");
 export const SPACES_4F: Space[] = ALL_SPACES.filter((s) => s.floor === "4F");
 export const SPACES_5F: Space[] = ALL_SPACES.filter((s) => s.floor === "5F");

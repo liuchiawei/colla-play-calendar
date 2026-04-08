@@ -5,15 +5,27 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import {
+  buildLoginUrlWithNext,
+  buildPathWithSearch,
+  type NextSearchParams,
+} from "@/lib/utils/login-next";
 import DashboardClient from "./components/dashboard.client";
 
-export default async function DashboardPage() {
+interface PageProps {
+  searchParams?: Promise<NextSearchParams>;
+}
+
+export default async function DashboardPage({ searchParams }: PageProps) {
+  const sp = searchParams ? await searchParams : undefined;
+  const nextPath = buildPathWithSearch("/dashboard", sp);
+
   // 取得登入狀態
   const session = await auth.api.getSession({ headers: await headers() });
 
   // 若未登入，導向登入頁面
   if (!session?.user) {
-    redirect("/login");
+    redirect(buildLoginUrlWithNext(nextPath));
   }
 
   const userId = session.user.id;

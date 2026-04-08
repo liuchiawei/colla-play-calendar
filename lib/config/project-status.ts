@@ -55,7 +55,7 @@ export const PROJECT_STATUS_OPTIONS: Array<{
   {
     value: "confirmed",
     labelKey: "statusConfirmed",
-    colorClass: "bg-primary",
+    colorClass: "bg-teal-600",
   },
   {
     value: "deposit_paid",
