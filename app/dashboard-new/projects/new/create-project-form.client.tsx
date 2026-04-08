@@ -983,9 +983,10 @@ export function CreateProjectForm({
                                   `rentals.${index}.endDate` as const;
                                 const curEnd = form.getValues(endPath);
                                 if (!String(curEnd ?? "").trim()) {
+                                  // 同步結束日時勿觸發整表 Zod 驗證，否則開始/結束時間仍空會誤顯必填錯誤
                                   form.setValue(endPath, next, {
                                     shouldDirty: true,
-                                    shouldValidate: true,
+                                    shouldValidate: false,
                                   });
                                 }
                               }}
@@ -1071,6 +1072,14 @@ export function CreateProjectForm({
                             aria-label={
                               CREATE_PROJECT_PAGE.labelStartTimeRequired
                             }
+                            onChange={(e) => {
+                              const el = e.target as HTMLInputElement;
+                              // type=time 在選取過程中可能先觸發 value="" 且 validity.badInput，勿寫入 RHF
+                              if (el.value === "" && el.validity.badInput) {
+                                return;
+                              }
+                              field.onChange(e);
+                            }}
                           />
                         </FormControl>
                         <FormMessage />
@@ -1094,6 +1103,13 @@ export function CreateProjectForm({
                             aria-label={
                               CREATE_PROJECT_PAGE.labelEndTimeRequired
                             }
+                            onChange={(e) => {
+                              const el = e.target as HTMLInputElement;
+                              if (el.value === "" && el.validity.badInput) {
+                                return;
+                              }
+                              field.onChange(e);
+                            }}
                           />
                         </FormControl>
                         <FormMessage />
