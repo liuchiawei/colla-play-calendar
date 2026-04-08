@@ -15,7 +15,7 @@ export default function MainContainer() {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="flex-1"
         >
-          <h2 className="text-xl font-bold text-foreground mb-2 font-[var(--font-outfit)]">
+          <h2 className="text-xl font-bold text-foreground mb-2">
             Daily Schedule
           </h2>
           <p className="text-muted-foreground">
