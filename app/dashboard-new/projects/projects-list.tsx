@@ -22,6 +22,12 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Pagination,
   PaginationContent,
@@ -51,7 +57,10 @@ import {
 import {
   getStatusLabel,
   getStatusColorClass,
+  getUiProjectStatus,
   normalizeProjectStatusForUi,
+  PROJECT_STATUS_UI_SELECTABLE,
+  type ProjectStatusUi,
 } from "@/lib/config/project-status";
 import {
   getEffectiveProjectStatus,
@@ -72,6 +81,11 @@ import { deleteProject, downloadProjectDetailCsv } from "./[id]/actions";
 
 /** 專案表格每頁筆數（列表為客戶端 slice，僅影響 DOM 與互動） */
 const PROJECTS_LIST_PAGE_SIZE = 25;
+
+function summarizeSelected(count: number, emptyLabel: string): string {
+  if (count <= 0) return emptyLabel;
+  return `已選 ${count}`;
+}
 
 function formatTemplate(
   template: string,
@@ -249,14 +263,8 @@ function parseIntIfNumeric(value: string | null | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function statusLabelForSort(project: Project, todayYmd: string): string {
-  const eff = getEffectiveProjectStatus(project, todayYmd);
-  const statusForUi = normalizeProjectStatusForUi(eff);
-  return statusForUi ? getStatusLabel(eff) : "";
-}
-
 /** 與 ProjectsListSortKey 對齊；增刪欄位時須同步更新 */
-function makeProjectListSortValueGetters(todayYmd: string): {
+function makeProjectListSortValueGetters(): {
   [K in ProjectsListSortKey]: (project: Project) => string | number | null;
 } {
   return {
@@ -272,7 +280,6 @@ function makeProjectListSortValueGetters(todayYmd: string): {
   eventEndTime: (p) => parseTimeToMinutes(p.rentals?.[0]?.endTime),
   contactPerson: (p) => p.contactPerson ?? "",
   amount: (p) => p.amount ?? null,
-  status: (p) => statusLabelForSort(p, todayYmd),
   tables: (p) => {
     const n = parseIntIfNumeric(p.tables);
     return n ?? p.tables ?? "";
@@ -391,6 +398,95 @@ function ProjectsListTableHeadCell({
           dir={sort?.key === sortKey ? sort.dir : "asc"}
         />
       </button>
+    </TableHead>
+  );
+}
+
+function ProjectsListStatusHeadCell({
+  column,
+  selectedStatusValues,
+  onUpdateSelectedStatusValues,
+}: {
+  column: ProjectsListColumnConfig;
+  selectedStatusValues: ReadonlySet<ProjectStatusUi>;
+  onUpdateSelectedStatusValues: (
+    next: React.SetStateAction<Set<ProjectStatusUi>>,
+  ) => void;
+}) {
+  const headerClassName =
+    "headerClassName" in column ? column.headerClassName : undefined;
+  const stickyHeaderClassName = projectsListStickyHeaderClass(column);
+
+  return (
+    <TableHead scope="col" className={cn(headerClassName, stickyHeaderClassName)}>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="gap-1.5"
+            aria-label={`${PROJECTS_PAGE.columnStatus}篩選（${summarizeSelected(selectedStatusValues.size, "全部")}）`}
+          >
+            {PROJECTS_PAGE.columnStatus}：
+            <span className="text-muted-foreground">
+              {summarizeSelected(selectedStatusValues.size, "全部")}
+            </span>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-[min(18rem,90vw)] p-3">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-medium">{PROJECTS_PAGE.columnStatus}</p>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-8 px-2"
+              onClick={() => onUpdateSelectedStatusValues(new Set())}
+              disabled={selectedStatusValues.size === 0}
+            >
+              清除
+            </Button>
+          </div>
+          <div className="mt-2 flex flex-col gap-2">
+            {PROJECT_STATUS_UI_SELECTABLE.map((opt) => {
+              const uiValue = normalizeProjectStatusForUi(opt.value);
+              if (!uiValue) return null;
+              const checked = selectedStatusValues.has(uiValue);
+              return (
+                <label
+                  key={opt.value}
+                  className={cn(
+                    "flex items-center gap-2 rounded-md border border-border/60 px-2 py-2 text-sm hover:bg-accent/40",
+                    checked && "bg-accent/30",
+                  )}
+                >
+                  <Checkbox
+                    checked={checked}
+                    onCheckedChange={(next) => {
+                      onUpdateSelectedStatusValues((prev) => {
+                        const set = new Set(prev);
+                        if (next) set.add(uiValue);
+                        else set.delete(uiValue);
+                        return set;
+                      });
+                    }}
+                    aria-label={`選取狀態：${PROJECTS_PAGE[opt.labelKey]}`}
+                  />
+                  <span
+                    className={cn(
+                      "min-w-0 truncate",
+                      uiValue === "completed" && "text-muted-foreground",
+                    )}
+                  >
+                    {PROJECTS_PAGE[opt.labelKey]}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </PopoverContent>
+      </Popover>
     </TableHead>
   );
 }
@@ -577,27 +673,46 @@ export function ProjectsList({ projects }: ProjectsListProps) {
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [sort, setSort] = useState<SortState>(null);
   const [page, setPage] = useState(1);
+  const [selectedStatusValues, setSelectedStatusValues] = useState<
+    Set<ProjectStatusUi>
+  >(() => new Set());
 
   const todayYmd = useMemo(() => getTaipeiTodayYmd(), []);
   const sortValueGetters = useMemo(
-    () => makeProjectListSortValueGetters(todayYmd),
-    [todayYmd],
+    () => makeProjectListSortValueGetters(),
+    [],
+  );
+
+  const updateSelectedStatusValues = useCallback(
+    (next: React.SetStateAction<Set<ProjectStatusUi>>) => {
+      setPage(1);
+      setSelectedStatusValues(next);
+    },
+    [],
   );
 
   const sortedProjects = useMemo(() => {
     const localeCompareZhTw = (a: string, b: string) =>
       a.localeCompare(b, "zh-TW", { sensitivity: "base" });
 
+    const pinRank = (project: Project): number => {
+      if (selectedStatusValues.size === 0) return 0;
+      const uiStatus = getUiProjectStatus(project, todayYmd);
+      return uiStatus && selectedStatusValues.has(uiStatus) ? 0 : 1;
+    };
+
     if (!sort) {
       const todayStart = startOfDay(new Date());
       const withMeta = projects.map((project, originalIndex) => ({
         project,
         originalIndex,
+        pinRank: pinRank(project),
         completedRank: isCompletedBucket(project, todayYmd) ? 1 : 0,
         distance: getNearestActivityCalendarDistance(project, todayStart),
       }));
 
       withMeta.sort((a, b) => {
+        if (a.pinRank !== b.pinRank) return a.pinRank - b.pinRank;
         if (a.completedRank !== b.completedRank) {
           return a.completedRank - b.completedRank;
         }
@@ -616,9 +731,11 @@ export function ProjectsList({ projects }: ProjectsListProps) {
       project,
       originalIndex,
       value: getter(project),
+      pinRank: pinRank(project),
     }));
 
     withIndex.sort((a, b) => {
+      if (a.pinRank !== b.pinRank) return a.pinRank - b.pinRank;
       const dirMultiplier = sort.dir === "asc" ? 1 : -1;
       const aVal = a.value;
       const bVal = b.value;
@@ -647,7 +764,7 @@ export function ProjectsList({ projects }: ProjectsListProps) {
     });
 
     return withIndex.map((x) => x.project);
-  }, [projects, sort, sortValueGetters, todayYmd]);
+  }, [projects, selectedStatusValues, sort, sortValueGetters, todayYmd]);
 
   const totalPages = Math.max(
     1,
@@ -763,14 +880,26 @@ export function ProjectsList({ projects }: ProjectsListProps) {
               </TableCaption>
               <TableHeader>
                 <TableRow>
-                  {PROJECTS_LIST_COLUMNS.map((column) => (
-                    <ProjectsListTableHeadCell
-                      key={column.id}
-                      column={column}
-                      sort={sort}
-                      onToggleSort={toggleSort}
-                    />
-                  ))}
+                  {PROJECTS_LIST_COLUMNS.map((column) => {
+                    if (column.id === "status") {
+                      return (
+                        <ProjectsListStatusHeadCell
+                          key={column.id}
+                          column={column}
+                          selectedStatusValues={selectedStatusValues}
+                          onUpdateSelectedStatusValues={updateSelectedStatusValues}
+                        />
+                      );
+                    }
+                    return (
+                      <ProjectsListTableHeadCell
+                        key={column.id}
+                        column={column}
+                        sort={sort}
+                        onToggleSort={toggleSort}
+                      />
+                    );
+                  })}
                 </TableRow>
               </TableHeader>
               <TableBody className="[&_tr:last-child_td:first-child]:rounded-bl-xl">

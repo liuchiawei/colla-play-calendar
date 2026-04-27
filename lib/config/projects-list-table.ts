@@ -88,7 +88,7 @@ export const PROJECTS_LIST_COLUMNS = [
   },
   {
     id: "status",
-    sortable: true,
+    sortable: false,
     label: PROJECTS_PAGE.columnStatus,
     cellClassName: "",
   },
