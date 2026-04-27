@@ -34,6 +34,12 @@ export const COMMON_ACTIONS = {
   save: "儲存",
   cancel: "取消",
   delete: "刪除",
+  clear: "清除",
+} as const;
+
+// Common UI placeholders / labels (通用 UI 文案)
+export const COMMON_PLACEHOLDERS = {
+  dash: "—",
 } as const;
 
 // Common Auth Messages (通用權限/登入訊息)
@@ -221,6 +227,7 @@ export const PROJECTS_PAGE = {
   statusDepositPaid: "已付訂",
   statusCompleted: "已完成",
   statusCancelled: "取消",
+  statusCancelledOption: "已取消",
   emptyProjects: "尚無專案或搜尋無結果",
   emptySpaceBookingsThisWeek: "本週無場地預訂",
   tabListView: "列表",
@@ -235,6 +242,12 @@ export const PROJECTS_PAGE = {
   downloadListCsvResetMonthAria: "將日期區間重設為目前月份",
   listPaginationSummary: "顯示第 {start}–{end} 筆，共 {total} 筆",
   listPaginationSrOnly: "，第 {page} 頁，共 {pages} 頁",
+  paginationPageAria: "第 {page} 頁",
+  filterAll: "全部",
+  selectedCount: "已選 {count}",
+  statusFilterAria: "{label}篩選（{selectedSummary}）",
+  statusSelectAria: "選取狀態：{label}",
+  statusUpdateAria: "更新狀態：{name}",
 } as const;
 
 /** 餐飲金額尚未確定：列表／詳情／CSV 顯示與表單勾選（單一來源） */
@@ -398,6 +411,7 @@ export const PROJECT_DETAIL_PAGE = {
   deleteConfirmDescription: "刪除後無法復原，確定要刪除此專案嗎？",
   deleteConfirmConfirm: "刪除",
   deleteConfirmCancel: "取消",
+  deleteConfirmDeleting: "刪除中…",
 
   deleteRentalConfirmTitle: "確認移除此筆租借",
   deleteRentalConfirmDescription: "移除此筆租借後無法復原，確定要移除嗎？",

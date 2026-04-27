@@ -60,9 +60,12 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   CREATE_PROJECT_PAGE,
+  COMMON_ERRORS,
+  COMMON_PLACEHOLDERS,
   PROJECTS_PAGE,
   PROJECT_DETAIL_PAGE,
   FNB_AMOUNT_PENDING_LABEL,
+  COMMON_ACTIONS,
 } from "@/lib/message";
 import {
   getStatusLabel,
@@ -101,12 +104,12 @@ const PROJECTS_LIST_HOVER_PREVIEW_THRESHOLD = 8;
 
 function summarizeSelected(count: number, emptyLabel: string): string {
   if (count <= 0) return emptyLabel;
-  return `已選 ${count}`;
+  return formatTemplate(PROJECTS_PAGE.selectedCount, { count });
 }
 
 function shouldEnableHoverPreview(value: string): boolean {
   const trimmed = value.trim();
-  if (!trimmed || trimmed === "—") return false;
+  if (!trimmed || trimmed === COMMON_PLACEHOLDERS.dash) return false;
   return trimmed.length > PROJECTS_LIST_HOVER_PREVIEW_THRESHOLD;
 }
 
@@ -530,11 +533,17 @@ function ProjectsListStatusHeadCell({
             variant="ghost"
             size="sm"
             className="gap-1.5"
-            aria-label={`${PROJECTS_PAGE.columnStatus}篩選（${summarizeSelected(selectedStatusValues.size, "全部")}）`}
+            aria-label={formatTemplate(PROJECTS_PAGE.statusFilterAria, {
+              label: PROJECTS_PAGE.columnStatus,
+              selectedSummary: summarizeSelected(
+                selectedStatusValues.size,
+                PROJECTS_PAGE.filterAll,
+              ),
+            })}
           >
             {PROJECTS_PAGE.columnStatus}：
             <span className="text-muted-foreground">
-              {summarizeSelected(selectedStatusValues.size, "全部")}
+              {summarizeSelected(selectedStatusValues.size, PROJECTS_PAGE.filterAll)}
             </span>
           </Button>
         </PopoverTrigger>
@@ -549,7 +558,7 @@ function ProjectsListStatusHeadCell({
               onClick={() => onUpdateSelectedStatusValues(new Set())}
               disabled={selectedStatusValues.size === 0}
             >
-              清除
+              {COMMON_ACTIONS.clear}
             </Button>
           </div>
           <div className="mt-2 flex flex-col gap-2">
@@ -575,7 +584,9 @@ function ProjectsListStatusHeadCell({
                         return set;
                       });
                     }}
-                    aria-label={`選取狀態：${PROJECTS_PAGE[opt.labelKey]}`}
+                    aria-label={formatTemplate(PROJECTS_PAGE.statusSelectAria, {
+                      label: PROJECTS_PAGE[opt.labelKey],
+                    })}
                   />
                   <span
                     className={cn(
@@ -616,7 +627,7 @@ function renderProjectsListCell(
 ): React.ReactNode {
   switch (columnId) {
     case "eventType":
-      return project.eventType?.trim() ? project.eventType : "—";
+      return project.eventType?.trim() ? project.eventType : COMMON_PLACEHOLDERS.dash;
     case "eventOrVenueUse":
       return (
         <ProjectsListMaybeTooltipText value={project.eventOrVenueUse}>
@@ -642,7 +653,7 @@ function renderProjectsListCell(
           getProjectDateKeySummary(project, {
             maxShown: 2,
             formatDate: (d) => DATE_FORMATTER.format(d),
-          }) ?? "—";
+          }) ?? COMMON_PLACEHOLDERS.dash;
         return (
           <ProjectsListMaybeTooltipText value={summary}>
             <span className="block min-w-0 truncate">{summary}</span>
@@ -651,18 +662,18 @@ function renderProjectsListCell(
       }
     case "eventStartTime": {
       const dk = getEarliestRentalDateKey(project);
-      if (!dk) return "—";
+      if (!dk) return COMMON_PLACEHOLDERS.dash;
       const { minStart } = getRentalTimeMinutesForDateKey(project, dk);
-      if (minStart == null) return "—";
+      if (minStart == null) return COMMON_PLACEHOLDERS.dash;
       const hh = String(Math.floor(minStart / 60)).padStart(2, "0");
       const mm = String(minStart % 60).padStart(2, "0");
       return `${hh}:${mm}`;
     }
     case "eventEndTime": {
       const dk = getEarliestRentalDateKey(project);
-      if (!dk) return "—";
+      if (!dk) return COMMON_PLACEHOLDERS.dash;
       const { maxEnd } = getRentalTimeMinutesForDateKey(project, dk);
-      if (maxEnd == null) return "—";
+      if (maxEnd == null) return COMMON_PLACEHOLDERS.dash;
       const hh = String(Math.floor(maxEnd / 60)).padStart(2, "0");
       const mm = String(maxEnd % 60).padStart(2, "0");
       return `${hh}:${mm}`;
@@ -717,7 +728,9 @@ function renderProjectsListCell(
                 "h-8 w-full justify-start border-transparent bg-transparent px-2 py-1 shadow-none hover:bg-accent/40 focus-visible:ring-primary/40",
                 isUpdating && "opacity-80",
               )}
-              aria-label={`更新狀態：${project.eventOrVenueUse}`}
+              aria-label={formatTemplate(PROJECTS_PAGE.statusUpdateAria, {
+                name: project.eventOrVenueUse,
+              })}
             >
               <SelectValue>
                 <span className="flex min-w-0 items-center gap-2">
@@ -732,10 +745,10 @@ function renderProjectsListCell(
                   />
                   <span className="min-w-0 truncate">
                     {selectValue === "negotiating"
-                      ? "洽談中"
+                      ? PROJECTS_PAGE.statusNegotiating
                       : selectValue === "confirmed"
-                        ? "已確定"
-                        : "已取消"}
+                        ? PROJECTS_PAGE.statusConfirmed
+                        : PROJECTS_PAGE.statusCancelledOption}
                   </span>
                   {isUpdating ? (
                     <Loader2 className="ml-auto size-3.5 animate-spin text-muted-foreground" />
@@ -744,9 +757,13 @@ function renderProjectsListCell(
               </SelectValue>
             </SelectTrigger>
             <SelectContent align="start">
-              <SelectItem value="negotiating">洽談中</SelectItem>
-              <SelectItem value="confirmed">已確定</SelectItem>
-              <SelectItem value="cancelled">已取消</SelectItem>
+              <SelectItem value="negotiating">
+                {PROJECTS_PAGE.statusNegotiating}
+              </SelectItem>
+              <SelectItem value="confirmed">{PROJECTS_PAGE.statusConfirmed}</SelectItem>
+              <SelectItem value="cancelled">
+                {PROJECTS_PAGE.statusCancelledOption}
+              </SelectItem>
             </SelectContent>
           </Select>
           {errorMessage ? (
@@ -758,18 +775,20 @@ function renderProjectsListCell(
       );
     }
     case "totalAttendees":
-      return project.totalAttendees != null ? project.totalAttendees : "—";
+      return project.totalAttendees != null
+        ? project.totalAttendees
+        : COMMON_PLACEHOLDERS.dash;
     case "tables":
-      return project.tables ?? "—";
+      return project.tables ?? COMMON_PLACEHOLDERS.dash;
     case "chairs":
-      return project.chairs != null ? project.chairs : "—";
+      return project.chairs != null ? project.chairs : COMMON_PLACEHOLDERS.dash;
     case "otherEquipment":
       {
         const line =
           formatEquipmentNeedsLine(
             project.equipmentNeeds,
             EQUIPMENT_NEEDS_LINE_LABELS,
-          ) ?? "—";
+          ) ?? COMMON_PLACEHOLDERS.dash;
         return (
           <ProjectsListMaybeHoverCardText value={line}>
             <span className="block min-w-0 truncate">{line}</span>
@@ -788,7 +807,7 @@ function renderProjectsListCell(
       return CURRENCY_FORMATTER_INTEGER.format(project.pendingAmountTotal);
     case "fnbItems":
       {
-        const items = project.fnbItems ?? "—";
+        const items = project.fnbItems ?? COMMON_PLACEHOLDERS.dash;
         return (
           <ProjectsListMaybeHoverCardText value={items}>
             <span className="block min-w-0 truncate">{items}</span>
@@ -797,7 +816,7 @@ function renderProjectsListCell(
       }
     case "internalNotes":
       {
-        const notes = project.internalNotes ?? "—";
+        const notes = project.internalNotes ?? COMMON_PLACEHOLDERS.dash;
         return (
           <ProjectsListMaybeHoverCardText value={notes}>
             <span className="block min-w-0 truncate">{notes}</span>
@@ -869,7 +888,7 @@ function renderProjectsListCell(
                   disabled={actionsCtx.deletingId === project.id}
                 >
                   {actionsCtx.deletingId === project.id
-                    ? "刪除中…"
+                    ? PROJECT_DETAIL_PAGE.deleteConfirmDeleting
                     : PROJECT_DETAIL_PAGE.deleteConfirmConfirm}
                 </AlertDialogAction>
               </AlertDialogFooter>
@@ -1090,7 +1109,7 @@ export function ProjectsList({ projects }: ProjectsListProps) {
           });
           setStatusErrorById((prev) => ({
             ...prev,
-            [projectId]: result.error || "更新失敗",
+            [projectId]: result.error || COMMON_ERRORS.updateFailed,
           }));
           setStatusUpdatingId(null);
           return;
@@ -1230,7 +1249,9 @@ export function ProjectsList({ projects }: ProjectsListProps) {
                           type="button"
                           isActive={item === activePage}
                           onClick={() => setPage(item)}
-                          aria-label={`第 ${item} 頁`}
+                          aria-label={formatTemplate(PROJECTS_PAGE.paginationPageAria, {
+                            page: item,
+                          })}
                         >
                           {item}
                         </PaginationLink>
