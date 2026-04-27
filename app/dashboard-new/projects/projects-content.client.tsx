@@ -750,7 +750,12 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
                         }}
                         aria-label={`選取狀態：${PROJECTS_PAGE[opt.labelKey]}`}
                       />
-                      <span className="min-w-0 truncate">
+                      <span
+                        className={cn(
+                          "min-w-0 truncate",
+                          uiValue === "completed" && "text-muted-foreground",
+                        )}
+                      >
                         {PROJECTS_PAGE[opt.labelKey]}
                       </span>
                     </label>

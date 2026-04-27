@@ -171,7 +171,7 @@ export const PROJECTS_PAGE = {
   statusNegotiating: "洽談中",
   statusConfirmed: "已確定",
   statusDepositPaid: "已付訂",
-  statusCompleted: "完成",
+  statusCompleted: "已完成",
   statusCancelled: "取消",
   emptyProjects: "尚無專案或搜尋無結果",
   emptySpaceBookingsThisWeek: "本週無場地預訂",

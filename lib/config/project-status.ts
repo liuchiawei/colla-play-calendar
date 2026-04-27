@@ -8,10 +8,11 @@ import type { ProjectStatus } from "@/lib/types/project";
 
 export type ProjectStatusUi = "negotiating" | "confirmed" | "completed";
 
-/** 表單／篩選／圖例僅露出此兩種；其餘狀態仍可由 getStatusLabel 顯示 */
+/** 表單／篩選／圖例僅露出此三種；其餘狀態仍可由 getStatusLabel 顯示 */
 export const PROJECT_STATUS_UI_SELECTABLE_VALUES = [
   "negotiating",
   "confirmed",
+  "completed",
 ] as const satisfies readonly ProjectStatus[];
 
 /**
@@ -65,7 +66,7 @@ export const PROJECT_STATUS_OPTIONS: Array<{
   {
     value: "completed",
     labelKey: "statusCompleted",
-    colorClass: "bg-emerald-600",
+    colorClass: "bg-neutral-400 dark:bg-neutral-600",
   },
   {
     value: "cancelled",

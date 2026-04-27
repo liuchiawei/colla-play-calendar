@@ -309,11 +309,18 @@ function renderProjectsListCell(
       return CURRENCY_FORMATTER_INTEGER.format(project.amount);
     case "status":
       return statusForUi ? (
-        <span className="flex items-center gap-2">
+        <span
+          className={cn(
+            "flex items-center gap-2",
+            statusForUi === "completed" && "text-muted-foreground",
+          )}
+        >
           <span
             className={cn(
               "size-2 shrink-0 rounded-full",
-              getStatusColorClass(statusForUi),
+              statusForUi === "completed"
+                ? "bg-muted-foreground"
+                : getStatusColorClass(statusForUi),
             )}
             aria-hidden
           />
