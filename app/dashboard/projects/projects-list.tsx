@@ -896,6 +896,7 @@ function renderProjectsListCell(
                     type="button"
                     variant="ghost"
                     size="icon-sm"
+                    className="text-destructive hover:bg-destructive"
                     aria-label={PROJECTS_PAGE.actionDeleteAria}
                   >
                     <Trash2 className="size-4" />
