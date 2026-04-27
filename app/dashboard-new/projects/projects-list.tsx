@@ -61,6 +61,7 @@ import {
 } from "@/lib/config/projects-list-table";
 import type { Project } from "@/lib/types/project";
 import { cn } from "@/lib/utils";
+import { differenceInCalendarDays, startOfDay } from "date-fns";
 import { formatRentalDateRangeForTable } from "@/lib/utils/project";
 import { formatEquipmentNeedsLine } from "@/lib/utils/project-equipment-needs";
 import { deleteProject, downloadProjectDetailCsv } from "./[id]/actions";
@@ -170,6 +171,70 @@ function parseDateToEpochMs(value: string | undefined): number | null {
     : new Date(value);
   const ms = d.getTime();
   return Number.isFinite(ms) ? ms : null;
+}
+
+/** 預設排序：解析 ISO / date-only 為 Date（與篩選／列表日期欄一致） */
+function parseDateToDateOnly(value: string | undefined | null): Date | null {
+  if (!value) return null;
+  const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value);
+  const d = dateOnly ? new Date(`${value}T12:00:00`) : new Date(value);
+  const ms = d.getTime();
+  return Number.isFinite(ms) ? d : null;
+}
+
+/** 租借起訖整理為時間序區間（與 projects-content rentalToDateRange 對齊） */
+function rentalToOrderedDateRange(
+  rental: NonNullable<Project["rentals"]>[number],
+): { from: Date; to: Date } | null {
+  const from = parseDateToDateOnly(rental.date);
+  const to = parseDateToDateOnly(rental.endDate ?? rental.date);
+  if (!from || !to) return null;
+  if (from <= to) return { from, to };
+  return { from: to, to: from };
+}
+
+/** 今日（日曆起點）到區間〔含〕最近距離（天數）；今天在區間內為 0 */
+function minCalendarDistanceToInclusiveRange(
+  todayStart: Date,
+  rangeStart: Date,
+  rangeEnd: Date,
+): number {
+  const t = startOfDay(todayStart).getTime();
+  const sd = startOfDay(rangeStart).getTime();
+  const ed = startOfDay(rangeEnd).getTime();
+  if (t >= sd && t <= ed) return 0;
+  if (t < sd) return differenceInCalendarDays(startOfDay(rangeStart), startOfDay(todayStart));
+  return differenceInCalendarDays(startOfDay(todayStart), startOfDay(rangeEnd));
+}
+
+/** 預設排序：與今天日曆距離最小的活動日（多段租借取最小距離；無有效租借則 fallback project.date） */
+function getNearestActivityCalendarDistance(
+  project: Project,
+  todayStart: Date,
+): number {
+  let minDist = Infinity;
+  const rentals = project.rentals;
+  if (rentals?.length) {
+    for (const r of rentals) {
+      const range = rentalToOrderedDateRange(r);
+      if (!range) continue;
+      const d = minCalendarDistanceToInclusiveRange(
+        todayStart,
+        range.from,
+        range.to,
+      );
+      if (d < minDist) minDist = d;
+    }
+  }
+  if (minDist !== Infinity) return minDist;
+  const single = parseDateToDateOnly(project.date);
+  if (!single) return Infinity;
+  return minCalendarDistanceToInclusiveRange(todayStart, single, single);
+}
+
+/** 預設排序：已完成專案置於非完成之後（僅依 DB status） */
+function isCompletedBucket(project: Project): boolean {
+  return project.status === "completed";
 }
 
 function parseIntIfNumeric(value: string | null | undefined): number | null {
@@ -504,10 +569,30 @@ export function ProjectsList({ projects }: ProjectsListProps) {
   const [page, setPage] = useState(1);
 
   const sortedProjects = useMemo(() => {
-    if (!sort) return projects;
-
     const localeCompareZhTw = (a: string, b: string) =>
       a.localeCompare(b, "zh-TW", { sensitivity: "base" });
+
+    if (!sort) {
+      const todayStart = startOfDay(new Date());
+      const withMeta = projects.map((project, originalIndex) => ({
+        project,
+        originalIndex,
+        completedRank: isCompletedBucket(project) ? 1 : 0,
+        distance: getNearestActivityCalendarDistance(project, todayStart),
+      }));
+
+      withMeta.sort((a, b) => {
+        if (a.completedRank !== b.completedRank) {
+          return a.completedRank - b.completedRank;
+        }
+        if (a.distance !== b.distance) {
+          return a.distance - b.distance;
+        }
+        return a.originalIndex - b.originalIndex;
+      });
+
+      return withMeta.map((x) => x.project);
+    }
 
     const getter = PROJECT_LIST_SORT_VALUE_GETTERS[sort.key];
 
