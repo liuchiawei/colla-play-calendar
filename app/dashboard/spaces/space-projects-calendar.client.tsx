@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { SPACE_DETAIL_PAGE, PROJECTS_PAGE } from "@/lib/message";
 import {
   PROJECT_STATUS_UI_SELECTABLE,
+  PROJECT_STATUS_UI_LEGEND,
   getStatusColorClass,
   getUiProjectStatus,
   normalizeProjectStatusForUi,
@@ -225,7 +226,11 @@ export function SpaceProjectsCalendar({
   const visibleProjects = React.useMemo(() => {
     return projects.filter((p) => {
       const statusForUi = getUiProjectStatus(p, todayYmd);
-      return statusForUi === "negotiating" || statusForUi === "confirmed";
+      return (
+        statusForUi === "negotiating" ||
+        statusForUi === "confirmed" ||
+        statusForUi === "completed"
+      );
     });
   }, [projects, todayYmd]);
 
@@ -436,7 +441,7 @@ export function SpaceProjectsCalendar({
       {hasAnyProjects ? (
         <div className="mt-3 flex flex-col items-center gap-3 text-xs text-muted-foreground">
           <div className="flex flex-wrap items-center justify-center gap-4">
-            {PROJECT_STATUS_UI_SELECTABLE.map((opt) => (
+            {PROJECT_STATUS_UI_LEGEND.map((opt) => (
               <span
                 key={opt.value}
                 className="flex items-center gap-1.5 md:hidden"
@@ -447,13 +452,13 @@ export function SpaceProjectsCalendar({
               </span>
             ))}
             <span className="hidden md:flex flex-wrap items-center gap-2">
-              {PROJECT_STATUS_UI_SELECTABLE.map((opt) => (
+              {PROJECT_STATUS_UI_LEGEND.map((opt) => (
                 <Badge
                   key={opt.value}
                   className={cn(
                     "text-xs font-medium border-0",
                     getStatusColorClass(opt.value),
-                    opt.value !== "cancelled" && "text-white",
+                    "text-white",
                   )}
                 >
                   {PROJECTS_PAGE[opt.labelKey]}
