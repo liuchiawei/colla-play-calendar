@@ -103,7 +103,7 @@ export const PROJECT_STATUS_UI_SELECTABLE = PROJECT_STATUS_OPTIONS.filter((o) =>
 
 /** 週曆等視圖的圖例用（含已完成，但不提供篩選選取） */
 export const PROJECT_STATUS_UI_LEGEND = PROJECT_STATUS_OPTIONS.filter((o) =>
-  (["negotiating", "confirmed", "completed"] as const).includes(
+  (["negotiating", "confirmed", "completed"] as readonly ProjectStatus[]).includes(
     o.value,
   ),
 );
