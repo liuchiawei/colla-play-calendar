@@ -36,6 +36,12 @@ import {
   getTaipeiTodayYmd,
 } from "@/lib/utils/project-effective-status";
 
+const PROJECT_DETAIL_CACHE_TTL_SECONDS = 60;
+
+export function projectDetailTag(projectId: string): string {
+  return `admin:project:${projectId}`;
+}
+
 /** 與其他專案租借時段衝突（API 可回 409） */
 export class ProjectRentalConflictError extends Error {
   override readonly name = "ProjectRentalConflictError";
@@ -455,6 +461,67 @@ async function getProjectByIdImpl(
 }
 
 export const getProjectById = cache(getProjectByIdImpl);
+
+/**
+ * 取得單一專案（含 rentals）：跨 request 短暫快取 + per-project tag
+ *
+ * 注意：此快取用於「頁面讀取」的加速；更新後請用 revalidateTag(projectDetailTag(id), 'max') 立即失效。
+ */
+export async function getCachedProjectById(
+  id: string,
+): Promise<ProjectWithRentals | null> {
+  return unstable_cache(
+    async () => {
+      const project = await prisma.project.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          customerName: true,
+          customerPhone: true,
+          company: true,
+          taxId: true,
+          eventOrVenueUse: true,
+          eventType: true,
+          totalAttendees: true,
+          tables: true,
+          chairs: true,
+          fnbItems: true,
+          projectNotes: true,
+          collaPlayContactId: true,
+          internalNotes: true,
+          equipmentNeeds: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+          rentals: {
+            select: {
+              id: true,
+              projectId: true,
+              date: true,
+              endDate: true,
+              startTime: true,
+              endTime: true,
+              setupMinutesBefore: true,
+              teardownMinutesAfter: true,
+              rentalAmount: true,
+              fnbAmount: true,
+              fnbAmountPending: true,
+              paidAmount: true,
+              pendingAmount: true,
+              spaceIds: true,
+            },
+          },
+        },
+      });
+      return project as ProjectWithRentals | null;
+    },
+    ["admin-project-by-id", id],
+    {
+      revalidate: PROJECT_DETAIL_CACHE_TTL_SECONDS,
+      tags: [projectDetailTag(id)],
+    },
+  )();
+}
 
 /**
  * 取得某場域下的專案列表（project_rental.spaceIds 包含該場域 id 的專案）

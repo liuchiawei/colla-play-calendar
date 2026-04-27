@@ -13,6 +13,7 @@ import {
   deleteProjectRental,
   updateProjectRental,
   getProjectById,
+  projectDetailTag,
 } from "@/lib/services/project/project.service";
 import { getAdminContactOptions } from "@/lib/services/admin-contact.service";
 import {
@@ -67,6 +68,7 @@ export async function updateProject(id: string, input: UpdateProjectInput): Prom
     revalidatePath("/dashboard/projects");
     revalidatePath(`/dashboard/projects/${id}`);
     revalidateTag(ADMIN_PROJECTS_LIST_CACHE_TAG, "max");
+    revalidateTag(projectDetailTag(id), "max");
     return { success: true, data };
   } catch (e) {
     const message = e instanceof Error ? e.message : "更新失敗";
@@ -83,6 +85,7 @@ export async function deleteProject(id: string): Promise<DeleteProjectResult> {
     await deleteProjectService(id);
     revalidatePath("/dashboard/projects");
     revalidateTag(ADMIN_PROJECTS_LIST_CACHE_TAG, "max");
+    revalidateTag(projectDetailTag(id), "max");
     redirect("/dashboard/projects");
   } catch (e) {
     const message = e instanceof Error ? e.message : "刪除失敗";
@@ -98,6 +101,7 @@ export async function deleteRental(rentalId: string): Promise<DeleteRentalResult
     revalidatePath("/dashboard/projects");
     revalidatePath(`/dashboard/projects/${projectId}`);
     revalidateTag(ADMIN_PROJECTS_LIST_CACHE_TAG, "max");
+    revalidateTag(projectDetailTag(projectId), "max");
     return { success: true };
   } catch (e) {
     const message = e instanceof Error ? e.message : "移除失敗";
@@ -116,6 +120,7 @@ export async function updateRental(
     revalidatePath("/dashboard/projects");
     revalidatePath(`/dashboard/projects/${data.projectId}`);
     revalidateTag(ADMIN_PROJECTS_LIST_CACHE_TAG, "max");
+    revalidateTag(projectDetailTag(data.projectId), "max");
     return { success: true, data };
   } catch (e) {
     const message = e instanceof Error ? e.message : "更新失敗";
@@ -133,6 +138,7 @@ export async function updateProjectStatus(id: string, status: ProjectStatus): Pr
     revalidatePath("/dashboard/projects");
     revalidatePath(`/dashboard/projects/${id}`);
     revalidateTag(ADMIN_PROJECTS_LIST_CACHE_TAG, "max");
+    revalidateTag(projectDetailTag(id), "max");
     return { success: true, data };
   } catch (e) {
     const message = e instanceof Error ? e.message : "更新失敗";

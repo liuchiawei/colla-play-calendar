@@ -8,7 +8,7 @@ import { DashboardShell } from "../../components/dashboard-shell.client";
 import { PageHeader } from "../../components/page-header.client";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { getProjectById } from "@/lib/services/project/project.service";
+import { getCachedProjectById } from "@/lib/services/project/project.service";
 import { getAdminContactOptions } from "@/lib/services/admin-contact.service";
 import { PROJECT_DETAIL_PAGE } from "@/lib/message";
 import { ProjectDetailContent } from "./project-detail-content.client";
@@ -35,7 +35,7 @@ function ProjectDetailSkeleton() {
 
 async function ProjectDetail({ id }: { id: string }) {
   const [project, adminOptions] = await Promise.all([
-    getProjectById(id),
+    getCachedProjectById(id),
     getAdminContactOptions(),
   ]);
   if (!project) {
