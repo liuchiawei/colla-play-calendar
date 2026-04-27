@@ -72,7 +72,7 @@ export function SpaceProjectsContent({
 
   return (
     <div className="flex-1 p-6 flex flex-col gap-6">
-      <Link href="/dashboard-new/spaces" className="self-start">
+      <Link href="/dashboard/spaces" className="self-start">
         <Button variant="ghost" size="sm" className="gap-2">
           <ArrowLeft className="size-4" aria-hidden />
           {SPACE_DETAIL_PAGE.buttonBackToList}
@@ -173,7 +173,7 @@ export function SpaceProjectsContent({
                         </TableCell>
                         <TableCell className="min-w-0 max-w-[180px] truncate">
                           <Link
-                            href={`/dashboard-new/projects/${project.id}`}
+                            href={`/dashboard/projects/${project.id}`}
                             className="font-medium text-primary hover:underline focus:outline-none focus:underline"
                           >
                             {project.eventOrVenueUse}

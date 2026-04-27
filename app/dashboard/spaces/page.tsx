@@ -24,7 +24,7 @@ export default async function SpacesPage({ searchParams }: PageProps) {
   const h = await headers();
   const session = await auth.api.getSession({ headers: h });
   const sp = searchParams ? await searchParams : undefined;
-  const nextPath = buildPathWithSearch("/dashboard-new/spaces", sp);
+  const nextPath = buildPathWithSearch("/dashboard/spaces", sp);
 
   if (!session?.user) {
     redirect(buildLoginUrlWithNext(nextPath));

@@ -528,7 +528,7 @@ function renderProjectsListCell(
     case "eventOrVenueUse":
       return (
         <Link
-          href={`/dashboard-new/projects/${project.id}`}
+          href={`/dashboard/projects/${project.id}`}
           className="font-medium text-primary hover:underline focus:outline-none focus:underline"
         >
           {project.eventOrVenueUse}
@@ -688,7 +688,7 @@ function renderProjectsListCell(
             asChild
             aria-label={PROJECTS_PAGE.actionEditAria}
           >
-            <Link href={`/dashboard-new/projects/${project.id}`}>
+            <Link href={`/dashboard/projects/${project.id}`}>
               <Pencil className="size-4" />
             </Link>
           </Button>

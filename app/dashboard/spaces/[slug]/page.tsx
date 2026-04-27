@@ -56,7 +56,7 @@ export default async function SpaceDetailPage({ params, searchParams }: PageProp
   const h = await headers();
   const session = await auth.api.getSession({ headers: h });
   const sp = searchParams ? await searchParams : undefined;
-  const nextPath = buildPathWithSearch(`/dashboard-new/spaces/${slug}`, sp);
+  const nextPath = buildPathWithSearch(`/dashboard/spaces/${slug}`, sp);
 
   if (!session?.user) {
     redirect(buildLoginUrlWithNext(nextPath));
@@ -72,7 +72,7 @@ export default async function SpaceDetailPage({ params, searchParams }: PageProp
 
   const redirectTarget = DEPRECATED_SPACE_REDIRECT[slug];
   if (redirectTarget) {
-    redirect(`/dashboard-new/spaces/${redirectTarget}`);
+    redirect(`/dashboard/spaces/${redirectTarget}`);
   }
 
   const space = getSpaceById(slug);

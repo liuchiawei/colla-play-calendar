@@ -294,7 +294,7 @@ export function CreateProjectForm({
           });
           return;
         }
-        router.push("/dashboard-new/projects");
+        router.push("/dashboard/projects");
       } catch {
         form.setError("root", { message: "網路錯誤，請稍後再試" });
       }

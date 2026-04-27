@@ -29,7 +29,7 @@ function SpacePreviewItem({ space }: { space: Space }) {
   return (
     <li className="min-w-0 list-none">
       <Link
-        href={`/dashboard-new/spaces/${space.id}`}
+        href={`/dashboard/spaces/${space.id}`}
         className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border/50 last:border-0 min-w-0 hover:bg-accent/20 rounded-xs"
       >
         <span className="text-sm font-medium truncate">{space.name}</span>
@@ -66,7 +66,7 @@ export function OverviewContent({
             {DASHBOARD_OVERVIEW.spacesSectionTitle}
           </h2>
           <Link
-            href="/dashboard-new/spaces"
+            href="/dashboard/spaces"
             className="text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm shrink-0"
             aria-label={DASHBOARD_OVERVIEW.seeAllSpacesAria}
           >
@@ -92,7 +92,7 @@ export function OverviewContent({
             {DASHBOARD_OVERVIEW.recentProjectsTitle}
           </h2>
           <Link
-            href="/dashboard-new/projects"
+            href="/dashboard/projects"
             className="text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm shrink-0"
             aria-label={DASHBOARD_OVERVIEW.seeAllProjectsAria}
           >
@@ -113,7 +113,7 @@ export function OverviewContent({
               return (
                 <li key={project.id}>
                 <Link
-                  href={`/dashboard-new/projects/${project.id}`}
+                  href={`/dashboard/projects/${project.id}`}
                   className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border/50 last:border-0 min-w-0 hover:bg-accent/20 rounded-xs"
                 >
                   <div className="min-w-0 flex-1">

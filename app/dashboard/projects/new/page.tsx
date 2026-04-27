@@ -23,7 +23,7 @@ export default async function NewProjectPage({ searchParams }: PageProps) {
   const h = await headers();
   const session = await auth.api.getSession({ headers: h });
   const sp = searchParams ? await searchParams : undefined;
-  const nextPath = buildPathWithSearch("/dashboard-new/projects/new", sp);
+  const nextPath = buildPathWithSearch("/dashboard/projects/new", sp);
 
   if (!session?.user) {
     redirect(buildLoginUrlWithNext(nextPath));

@@ -75,7 +75,7 @@ function ProjectBadgeLink({
       className={cn(badgeClassForProject(project, todayYmd), className)}
     >
       <Link
-        href={`/dashboard-new/projects/${project.id}`}
+        href={`/dashboard/projects/${project.id}`}
         className="flex flex-col"
       >
         <span className="text-wrap">{project.eventOrVenueUse}</span>

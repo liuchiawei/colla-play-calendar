@@ -367,7 +367,7 @@ export const PROJECT_DETAIL_PAGE = {
   notFound: "找不到此專案",
 } as const;
 
-// Users Page (成員管理頁 /dashboard-new/users)
+// Users Page (成員管理頁 /dashboard/users)
 export const USERS_PAGE = {
   title: "成員管理",
   description: "檢視與管理所有成員",

@@ -97,7 +97,7 @@ function ProjectBadgeLink({
       )}
     >
       <Link
-        href={`/dashboard-new/projects/${project.id}`}
+        href={`/dashboard/projects/${project.id}`}
         className="flex flex-col py-2"
       >
         <span className="text-wrap line-clamp-2">
