@@ -31,6 +31,17 @@ import {
 } from "date-fns";
 import { cn } from "@/lib/utils";
 
+const WEEKDAY_MIN = ["日", "一", "二", "三", "四", "五", "六"] as const;
+const WEEKDAY_FULL = [
+  "星期日",
+  "星期一",
+  "星期二",
+  "星期三",
+  "星期四",
+  "星期五",
+  "星期六",
+] as const;
+
 function toDateKey(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -340,6 +351,7 @@ export function SpaceProjectsCalendar({
                       </th>
                       {monthDateKeys.map((dateKey) => {
                         const dayDate = new Date(dateKey + "T12:00:00");
+                        const weekdayIndex = dayDate.getDay() as 0 | 1 | 2 | 3 | 4 | 5 | 6;
                         return (
                           <th
                             key={dateKey}
@@ -348,8 +360,19 @@ export function SpaceProjectsCalendar({
                               "p-2 text-center font-medium text-xs md:text-sm text-muted-foreground w-12 min-w-10 border-r border-border/30 last:border-r-0",
                               isToday(dayDate) && "bg-primary/10 text-primary",
                             )}
+                            aria-label={`${dayDate.getDate()} 日（${WEEKDAY_FULL[weekdayIndex]}）`}
                           >
-                            {dayDate.getDate()}
+                            <div className="flex flex-col items-center gap-0.5">
+                              <span className="leading-none">{dayDate.getDate()}</span>
+                              <span
+                                className={cn(
+                                  "text-[10px] leading-none opacity-80",
+                                  isToday(dayDate) && "text-primary",
+                                )}
+                              >
+                                {WEEKDAY_MIN[weekdayIndex]}
+                              </span>
+                            </div>
                           </th>
                         );
                       })}
