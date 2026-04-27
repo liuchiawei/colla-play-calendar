@@ -8,6 +8,7 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  Copy,
   Download,
   Loader2,
   Pencil,
@@ -839,6 +840,16 @@ function renderProjectsListCell(
             ) : (
               <Download className="size-4" />
             )}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            asChild
+            aria-label={PROJECTS_PAGE.actionDuplicateAria}
+          >
+            <Link href={`/dashboard/projects/new?duplicateFrom=${project.id}`}>
+              <Copy className="size-4" />
+            </Link>
           </Button>
           <Button
             variant="ghost"

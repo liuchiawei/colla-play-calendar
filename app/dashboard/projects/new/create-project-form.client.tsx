@@ -7,6 +7,7 @@ import {
   useForm,
   useFieldArray,
   useWatch,
+  type Resolver,
 } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
@@ -61,15 +62,30 @@ const SHOW_SETUP_TEARDOWN_FIELDS = false;
 
 export function CreateProjectForm({
   adminOptions,
+  prefill,
 }: {
   adminOptions: { id: string; name: string }[];
+  prefill?: Partial<ProjectFormValues> | undefined;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
+  const defaultValues = React.useMemo(() => {
+    const base = defaultProjectFormValues();
+    if (!prefill) return base;
+    return {
+      ...base,
+      ...prefill,
+      equipmentNeeds: prefill.equipmentNeeds
+        ? { ...base.equipmentNeeds, ...prefill.equipmentNeeds }
+        : base.equipmentNeeds,
+      rentals: prefill.rentals ? prefill.rentals : base.rentals,
+    } satisfies ProjectFormValues;
+  }, [prefill]);
+
   const form = useForm<ProjectFormValues>({
-    resolver: zodResolver(projectFormSchema),
-    defaultValues: defaultProjectFormValues(),
+    resolver: zodResolver(projectFormSchema) as unknown as Resolver<ProjectFormValues>,
+    defaultValues,
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -218,7 +234,10 @@ export function CreateProjectForm({
                     </span>
                   </FormLabel>
                   <FormControl>
-                    <Input {...field} name={field.name} />
+                    <Input
+                      {...field}
+                      name={field.name}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -236,7 +255,11 @@ export function CreateProjectForm({
                     </span>
                   </FormLabel>
                   <FormControl>
-                    <Input {...field} inputMode="numeric" name={field.name} />
+                    <Input
+                      {...field}
+                      inputMode="numeric"
+                      name={field.name}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

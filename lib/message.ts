@@ -221,6 +221,7 @@ export const PROJECTS_PAGE = {
   columnPendingAmount: "待付",
   columnActions: "操作",
   actionEditAria: "編輯此專案",
+  actionDuplicateAria: "複製此專案",
   actionDeleteAria: "刪除此專案",
   statusNegotiating: "洽談中",
   statusConfirmed: "已確定",

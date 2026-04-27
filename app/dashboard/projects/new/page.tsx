@@ -9,6 +9,9 @@ import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { CREATE_PROJECT_PAGE } from "@/lib/message";
 import { getAdminContactOptions } from "@/lib/services/admin-contact.service";
+import { getCachedProjectById } from "@/lib/services/project/project.service";
+import type { ProjectFormValues } from "@/lib/config/project-form-config";
+import { buildDuplicateProjectPrefill } from "@/lib/utils/project-duplicate";
 import {
   buildLoginUrlWithNext,
   buildPathWithSearch,
@@ -17,6 +20,14 @@ import {
 
 interface PageProps {
   searchParams?: Promise<NextSearchParams>;
+}
+
+function parseDuplicateFrom(sp: NextSearchParams | undefined): string | null {
+  if (!sp) return null;
+  const raw = sp.duplicateFrom;
+  if (typeof raw !== "string") return null;
+  const trimmed = raw.trim();
+  return trimmed ? trimmed : null;
 }
 
 export default async function NewProjectPage({ searchParams }: PageProps) {
@@ -38,6 +49,15 @@ export default async function NewProjectPage({ searchParams }: PageProps) {
   }
 
   const adminOptions = await getAdminContactOptions();
+  const duplicateFrom = parseDuplicateFrom(sp);
+
+  let prefill: Partial<ProjectFormValues> | undefined;
+  if (duplicateFrom) {
+    const src = await getCachedProjectById(duplicateFrom);
+    if (src) {
+      prefill = buildDuplicateProjectPrefill(src);
+    }
+  }
   return (
     <DashboardShell>
       <PageHeader
@@ -46,7 +66,7 @@ export default async function NewProjectPage({ searchParams }: PageProps) {
         iconName="FolderKanban"
       />
 
-      <CreateProjectForm adminOptions={adminOptions} />
+      <CreateProjectForm adminOptions={adminOptions} prefill={prefill} />
     </DashboardShell>
   );
 }

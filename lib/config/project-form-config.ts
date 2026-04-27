@@ -278,7 +278,7 @@ export function formValuesToUpdateInput(
   };
 }
 
-export const editProjectFormSchema = projectFormSchema.extend({
+export const editProjectFormSchema = projectFormSchema.safeExtend({
   status: z
     .enum(["negotiating", "confirmed", "cancelled", "completed"])
     .optional(),
