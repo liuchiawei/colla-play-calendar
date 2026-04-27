@@ -185,6 +185,8 @@ export const PROJECTS_PAGE = {
   downloadListCsvConfirm: "下載",
   downloadListCsvResetMonth: "重設為當月",
   downloadListCsvResetMonthAria: "將日期區間重設為目前月份",
+  listPaginationSummary: "顯示第 {start}–{end} 筆，共 {total} 筆",
+  listPaginationSrOnly: "，第 {page} 頁，共 {pages} 頁",
 } as const;
 
 /** 餐飲金額尚未確定：列表／詳情／CSV 顯示與表單勾選（單一來源） */

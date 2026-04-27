@@ -68,6 +68,16 @@ import { deleteProject, downloadProjectDetailCsv } from "./[id]/actions";
 /** 專案表格每頁筆數（列表為客戶端 slice，僅影響 DOM 與互動） */
 const PROJECTS_LIST_PAGE_SIZE = 25;
 
+function formatTemplate(
+  template: string,
+  vars: Record<string, string | number>,
+): string {
+  return template.replace(/\{(\w+)\}/g, (_, key: string) => {
+    const v = vars[key];
+    return v == null ? "" : String(v);
+  });
+}
+
 /**
  * 產生分頁按鈕序列（頁碼或省略號），總頁數大時收斂顯示。
  */
@@ -560,6 +570,23 @@ export function ProjectsList({ projects }: ProjectsListProps) {
   const paginationItems =
     sortedProjects.length > 0 ? buildPaginationItems(activePage, totalPages) : [];
 
+  const paginationSummaryText = formatTemplate(
+    PROJECTS_PAGE.listPaginationSummary,
+    {
+      start: rangeStart,
+      end: rangeEnd,
+      total: sortedProjects.length,
+    },
+  );
+
+  const paginationSrOnlyText = formatTemplate(
+    PROJECTS_PAGE.listPaginationSrOnly,
+    {
+      page: activePage,
+      pages: totalPages,
+    },
+  );
+
   function toggleSort(nextKey: ProjectsListSortKey) {
     setSort((prev) => {
       if (!prev || prev.key !== nextKey) return { key: nextKey, dir: "asc" };
@@ -675,9 +702,9 @@ export function ProjectsList({ projects }: ProjectsListProps) {
 
           <div className="flex flex-col gap-3 border-t border-border px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-muted-foreground tabular-nums md:w-full">
-              顯示第 {rangeStart}–{rangeEnd} 筆，共 {sortedProjects.length} 筆
+              {paginationSummaryText}
               <span className="sr-only">
-                ，第 {activePage} 頁，共 {totalPages} 頁
+                {paginationSrOnlyText}
               </span>
             </p>
 
