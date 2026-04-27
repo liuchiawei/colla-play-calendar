@@ -9,10 +9,11 @@ import { zhTW } from "date-fns/locale";
 
 import { PROJECTS_LIST_COLUMNS } from "@/lib/config/projects-list-table";
 import type { ProjectsListColumnId } from "@/lib/config/projects-list-table";
+import { getStatusLabel, normalizeProjectStatusForUi } from "@/lib/config/project-status";
 import {
-  getStatusLabel,
-  normalizeProjectStatusForUi,
-} from "@/lib/config/project-status";
+  getEffectiveProjectStatus,
+  getTaipeiTodayYmd,
+} from "@/lib/utils/project-effective-status";
 import { CREATE_PROJECT_PAGE, FNB_AMOUNT_PENDING_LABEL } from "@/lib/message";
 import type { Project } from "@/lib/types/project";
 import { formatRentalDateRangeForTable } from "@/lib/utils/project";
@@ -92,8 +93,10 @@ export function filterProjectsForDateRange(
 function formatProjectCellPlain(
   columnId: ProjectsListColumnId,
   project: Project,
+  todayYmd: string,
 ): string {
-  const statusForUi = normalizeProjectStatusForUi(project.status);
+  const eff = getEffectiveProjectStatus(project, todayYmd);
+  const statusForUi = normalizeProjectStatusForUi(eff);
 
   switch (columnId) {
     case "eventType":
@@ -121,7 +124,7 @@ function formatProjectCellPlain(
     case "amount":
       return CURRENCY_FORMATTER_INTEGER.format(project.amount);
     case "status":
-      return statusForUi ? getStatusLabel(statusForUi) : "";
+      return statusForUi ? getStatusLabel(eff) : "";
     case "totalAttendees":
       return project.totalAttendees != null ? project.totalAttendees : "—";
     case "tables":
@@ -166,12 +169,13 @@ const LIST_COLUMN_IDS = PROJECTS_LIST_COLUMNS.filter(
  * 產生與列表欄位一致（不含操作欄）的 CSV 字串，含 UTF-8 BOM。
  */
 export function buildProjectsListCsv(projects: Project[]): string {
+  const todayYmd = getTaipeiTodayYmd();
   const header = LIST_COLUMN_IDS.map((c) => escapeCsvCell(c.label)).join(",");
   const rows: string[] = [header];
 
   for (const p of projects) {
     const line = LIST_COLUMN_IDS.map((c) =>
-      escapeCsvCell(formatProjectCellPlain(c.id, p)),
+      escapeCsvCell(formatProjectCellPlain(c.id, p, todayYmd)),
     ).join(",");
     rows.push(line);
   }

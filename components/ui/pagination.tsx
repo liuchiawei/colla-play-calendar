@@ -71,11 +71,11 @@ const PaginationPrevious = ({
     aria-label="上一頁"
     variant="outline"
     size="default"
-    className={cn("gap-1 px-3 size-9", className)}
+    className={cn("gap-1 px-3 size-9 md:w-full", className)}
     {...props}
   >
     <ChevronLeftIcon className="size-4" />
-    <span className="hidden sm:inline">{text}</span>
+    <span className="hidden md:inline">{text}</span>
   </Button>
 );
 
@@ -88,10 +88,10 @@ const PaginationNext = ({
     aria-label="下一頁"
     variant="outline"
     size="default"
-    className={cn("gap-1 px-3 size-9", className)}
+    className={cn("gap-1 px-3 size-9 md:w-full", className)}
     {...props}
   >
-    <span className="hidden sm:inline">{text}</span>
+    <span className="hidden md:inline">{text}</span>
     <ChevronRightIcon className="size-4" />
   </Button>
 );

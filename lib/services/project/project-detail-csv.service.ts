@@ -12,10 +12,11 @@ import { format } from "date-fns";
 import { zhTW } from "date-fns/locale";
 
 import { getSpaceNameById } from "@/lib/config/config";
+import { getStatusLabel, normalizeProjectStatusForUi } from "@/lib/config/project-status";
 import {
-  getStatusLabel,
-  normalizeProjectStatusForUi,
-} from "@/lib/config/project-status";
+  getEffectiveProjectStatus,
+  getTaipeiTodayYmd,
+} from "@/lib/utils/project-effective-status";
 import {
   CREATE_PROJECT_PAGE,
   PROJECT_DETAIL_PAGE,
@@ -149,10 +150,11 @@ export function buildProjectDetailCsv(
       .map(escapeCsvCell)
       .join(","),
   );
-  const statusForUi = normalizeProjectStatusForUi(project.status);
+  const eff = getEffectiveProjectStatus(project, getTaipeiTodayYmd());
+  const statusForUi = normalizeProjectStatusForUi(eff);
   if (statusForUi) {
     rows.push(
-      [PROJECT_DETAIL_PAGE.labelStatus, getStatusLabel(statusForUi)]
+      [PROJECT_DETAIL_PAGE.labelStatus, getStatusLabel(eff)]
         .map(escapeCsvCell)
         .join(","),
     );

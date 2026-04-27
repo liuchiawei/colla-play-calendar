@@ -2,10 +2,11 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import {
+  ADMIN_PROJECTS_LIST_CACHE_TAG,
   updateProject as updateProjectService,
   deleteProject as deleteProjectService,
   updateProjectStatus as updateProjectStatusService,
@@ -65,6 +66,7 @@ export async function updateProject(id: string, input: UpdateProjectInput): Prom
     const data = await updateProjectService(id, input);
     revalidatePath("/dashboard-new/projects");
     revalidatePath(`/dashboard-new/projects/${id}`);
+    revalidateTag(ADMIN_PROJECTS_LIST_CACHE_TAG, "max");
     return { success: true, data };
   } catch (e) {
     const message = e instanceof Error ? e.message : "更新失敗";
@@ -80,6 +82,7 @@ export async function deleteProject(id: string): Promise<DeleteProjectResult> {
   try {
     await deleteProjectService(id);
     revalidatePath("/dashboard-new/projects");
+    revalidateTag(ADMIN_PROJECTS_LIST_CACHE_TAG, "max");
     redirect("/dashboard-new/projects");
   } catch (e) {
     const message = e instanceof Error ? e.message : "刪除失敗";
@@ -94,6 +97,7 @@ export async function deleteRental(rentalId: string): Promise<DeleteRentalResult
     const { projectId } = await deleteProjectRental(rentalId);
     revalidatePath("/dashboard-new/projects");
     revalidatePath(`/dashboard-new/projects/${projectId}`);
+    revalidateTag(ADMIN_PROJECTS_LIST_CACHE_TAG, "max");
     return { success: true };
   } catch (e) {
     const message = e instanceof Error ? e.message : "移除失敗";
@@ -111,6 +115,7 @@ export async function updateRental(
     const data = await updateProjectRental(rentalId, input);
     revalidatePath("/dashboard-new/projects");
     revalidatePath(`/dashboard-new/projects/${data.projectId}`);
+    revalidateTag(ADMIN_PROJECTS_LIST_CACHE_TAG, "max");
     return { success: true, data };
   } catch (e) {
     const message = e instanceof Error ? e.message : "更新失敗";
@@ -127,6 +132,7 @@ export async function updateProjectStatus(id: string, status: ProjectStatus): Pr
     const data = await updateProjectStatusService(id, status);
     revalidatePath("/dashboard-new/projects");
     revalidatePath(`/dashboard-new/projects/${id}`);
+    revalidateTag(ADMIN_PROJECTS_LIST_CACHE_TAG, "max");
     return { success: true, data };
   } catch (e) {
     const message = e instanceof Error ? e.message : "更新失敗";

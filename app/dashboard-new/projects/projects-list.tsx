@@ -3,6 +3,7 @@
 import type React from "react";
 import { useCallback, useMemo, useTransition, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowDown,
   ArrowUp,
@@ -22,6 +23,28 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,19 +65,88 @@ import {
 import {
   getStatusLabel,
   getStatusColorClass,
+  getUiProjectStatus,
   normalizeProjectStatusForUi,
+  PROJECT_STATUS_UI_SELECTABLE,
+  type ProjectStatusUi,
 } from "@/lib/config/project-status";
+import {
+  getEffectiveProjectStatus,
+  getTaipeiTodayYmd,
+} from "@/lib/utils/project-effective-status";
 import {
   PROJECTS_LIST_COLUMNS,
   type ProjectsListColumnConfig,
   type ProjectsListColumnId,
   type ProjectsListSortKey,
 } from "@/lib/config/projects-list-table";
-import type { Project } from "@/lib/types/project";
+import type { Project, ProjectStatus } from "@/lib/types/project";
 import { cn } from "@/lib/utils";
+import { differenceInCalendarDays, startOfDay } from "date-fns";
 import { formatRentalDateRangeForTable } from "@/lib/utils/project";
 import { formatEquipmentNeedsLine } from "@/lib/utils/project-equipment-needs";
-import { deleteProject, downloadProjectDetailCsv } from "./[id]/actions";
+import {
+  deleteProject,
+  downloadProjectDetailCsv,
+  updateProjectStatus,
+} from "./[id]/actions";
+
+/** 專案表格每頁筆數（列表為客戶端 slice，僅影響 DOM 與互動） */
+const PROJECTS_LIST_PAGE_SIZE = 25;
+
+function summarizeSelected(count: number, emptyLabel: string): string {
+  if (count <= 0) return emptyLabel;
+  return `已選 ${count}`;
+}
+
+function formatTemplate(
+  template: string,
+  vars: Record<string, string | number>,
+): string {
+  return template.replace(/\{(\w+)\}/g, (_, key: string) => {
+    const v = vars[key];
+    return v == null ? "" : String(v);
+  });
+}
+
+/**
+ * 產生分頁按鈕序列（頁碼或省略號），總頁數大時收斂顯示。
+ */
+function buildPaginationItems(
+  currentPage: number,
+  totalPages: number,
+): Array<number | "ellipsis"> {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, i) => i + 1);
+  }
+
+  const result: Array<number | "ellipsis"> = [];
+  result.push(1);
+
+  if (currentPage <= 4) {
+    result.push(2, 3, 4, 5, "ellipsis", totalPages);
+  } else if (currentPage >= totalPages - 3) {
+    result.push(
+      "ellipsis",
+      totalPages - 4,
+      totalPages - 3,
+      totalPages - 2,
+      totalPages - 1,
+      totalPages,
+    );
+  } else {
+    result.push(
+      "ellipsis",
+      currentPage - 1,
+      currentPage,
+      currentPage + 1,
+      "ellipsis",
+      totalPages,
+    );
+  }
+
+  return result;
+}
 
 const DATE_FORMATTER = new Intl.DateTimeFormat("zh-TW", {
   dateStyle: "short",
@@ -111,6 +203,70 @@ function parseDateToEpochMs(value: string | undefined): number | null {
   return Number.isFinite(ms) ? ms : null;
 }
 
+/** 預設排序：解析 ISO / date-only 為 Date（與篩選／列表日期欄一致） */
+function parseDateToDateOnly(value: string | undefined | null): Date | null {
+  if (!value) return null;
+  const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value);
+  const d = dateOnly ? new Date(`${value}T12:00:00`) : new Date(value);
+  const ms = d.getTime();
+  return Number.isFinite(ms) ? d : null;
+}
+
+/** 租借起訖整理為時間序區間（與 projects-content rentalToDateRange 對齊） */
+function rentalToOrderedDateRange(
+  rental: NonNullable<Project["rentals"]>[number],
+): { from: Date; to: Date } | null {
+  const from = parseDateToDateOnly(rental.date);
+  const to = parseDateToDateOnly(rental.endDate ?? rental.date);
+  if (!from || !to) return null;
+  if (from <= to) return { from, to };
+  return { from: to, to: from };
+}
+
+/** 今日（日曆起點）到區間〔含〕最近距離（天數）；今天在區間內為 0 */
+function minCalendarDistanceToInclusiveRange(
+  todayStart: Date,
+  rangeStart: Date,
+  rangeEnd: Date,
+): number {
+  const t = startOfDay(todayStart).getTime();
+  const sd = startOfDay(rangeStart).getTime();
+  const ed = startOfDay(rangeEnd).getTime();
+  if (t >= sd && t <= ed) return 0;
+  if (t < sd) return differenceInCalendarDays(startOfDay(rangeStart), startOfDay(todayStart));
+  return differenceInCalendarDays(startOfDay(todayStart), startOfDay(rangeEnd));
+}
+
+/** 預設排序：與今天日曆距離最小的活動日（多段租借取最小距離；無有效租借則 fallback project.date） */
+function getNearestActivityCalendarDistance(
+  project: Project,
+  todayStart: Date,
+): number {
+  let minDist = Infinity;
+  const rentals = project.rentals;
+  if (rentals?.length) {
+    for (const r of rentals) {
+      const range = rentalToOrderedDateRange(r);
+      if (!range) continue;
+      const d = minCalendarDistanceToInclusiveRange(
+        todayStart,
+        range.from,
+        range.to,
+      );
+      if (d < minDist) minDist = d;
+    }
+  }
+  if (minDist !== Infinity) return minDist;
+  const single = parseDateToDateOnly(project.date);
+  if (!single) return Infinity;
+  return minCalendarDistanceToInclusiveRange(todayStart, single, single);
+}
+
+/** 預設排序：已完成專案置於非完成之後（含租借結束後視為已完成） */
+function isCompletedBucket(project: Project, todayYmd: string): boolean {
+  return getEffectiveProjectStatus(project, todayYmd) === "completed";
+}
+
 function parseIntIfNumeric(value: string | null | undefined): number | null {
   if (!value) return null;
   const trimmed = value.trim();
@@ -119,15 +275,11 @@ function parseIntIfNumeric(value: string | null | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function statusLabelForSort(project: Project): string {
-  const statusForUi = normalizeProjectStatusForUi(project.status);
-  return statusForUi ? getStatusLabel(statusForUi) : "";
-}
-
 /** 與 ProjectsListSortKey 對齊；增刪欄位時須同步更新 */
-const PROJECT_LIST_SORT_VALUE_GETTERS: {
+function makeProjectListSortValueGetters(): {
   [K in ProjectsListSortKey]: (project: Project) => string | number | null;
-} = {
+} {
+  return {
   eventType: (p) => p.eventType ?? "",
   customer: (p) => p.customer ?? "",
   eventOrVenueUse: (p) => p.eventOrVenueUse ?? "",
@@ -140,7 +292,6 @@ const PROJECT_LIST_SORT_VALUE_GETTERS: {
   eventEndTime: (p) => parseTimeToMinutes(p.rentals?.[0]?.endTime),
   contactPerson: (p) => p.contactPerson ?? "",
   amount: (p) => p.amount ?? null,
-  status: (p) => statusLabelForSort(p),
   tables: (p) => {
     const n = parseIntIfNumeric(p.tables);
     return n ?? p.tables ?? "";
@@ -168,6 +319,7 @@ const PROJECT_LIST_SORT_VALUE_GETTERS: {
   },
   internalNotes: (p) => p.internalNotes ?? "",
 };
+}
 
 function getAriaSort(
   sort: SortState,
@@ -262,6 +414,95 @@ function ProjectsListTableHeadCell({
   );
 }
 
+function ProjectsListStatusHeadCell({
+  column,
+  selectedStatusValues,
+  onUpdateSelectedStatusValues,
+}: {
+  column: ProjectsListColumnConfig;
+  selectedStatusValues: ReadonlySet<ProjectStatusUi>;
+  onUpdateSelectedStatusValues: (
+    next: React.SetStateAction<Set<ProjectStatusUi>>,
+  ) => void;
+}) {
+  const headerClassName =
+    "headerClassName" in column ? column.headerClassName : undefined;
+  const stickyHeaderClassName = projectsListStickyHeaderClass(column);
+
+  return (
+    <TableHead scope="col" className={cn(headerClassName, stickyHeaderClassName)}>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="gap-1.5"
+            aria-label={`${PROJECTS_PAGE.columnStatus}篩選（${summarizeSelected(selectedStatusValues.size, "全部")}）`}
+          >
+            {PROJECTS_PAGE.columnStatus}：
+            <span className="text-muted-foreground">
+              {summarizeSelected(selectedStatusValues.size, "全部")}
+            </span>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-[min(18rem,90vw)] p-3">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-medium">{PROJECTS_PAGE.columnStatus}</p>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-8 px-2"
+              onClick={() => onUpdateSelectedStatusValues(new Set())}
+              disabled={selectedStatusValues.size === 0}
+            >
+              清除
+            </Button>
+          </div>
+          <div className="mt-2 flex flex-col gap-2">
+            {PROJECT_STATUS_UI_SELECTABLE.map((opt) => {
+              const uiValue = normalizeProjectStatusForUi(opt.value);
+              if (!uiValue) return null;
+              const checked = selectedStatusValues.has(uiValue);
+              return (
+                <label
+                  key={opt.value}
+                  className={cn(
+                    "flex items-center gap-2 rounded-md border border-border/60 px-2 py-2 text-sm hover:bg-accent/40",
+                    checked && "bg-accent/30",
+                  )}
+                >
+                  <Checkbox
+                    checked={checked}
+                    onCheckedChange={(next) => {
+                      onUpdateSelectedStatusValues((prev) => {
+                        const set = new Set(prev);
+                        if (next) set.add(uiValue);
+                        else set.delete(uiValue);
+                        return set;
+                      });
+                    }}
+                    aria-label={`選取狀態：${PROJECTS_PAGE[opt.labelKey]}`}
+                  />
+                  <span
+                    className={cn(
+                      "min-w-0 truncate",
+                      uiValue === "completed" && "text-muted-foreground",
+                    )}
+                  >
+                    {PROJECTS_PAGE[opt.labelKey]}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </PopoverContent>
+      </Popover>
+    </TableHead>
+  );
+}
+
 type ActionsCellContext = {
   downloadingId: string | null;
   deletingId: string | null;
@@ -269,12 +510,16 @@ type ActionsCellContext = {
   onDownloadCsv: (projectId: string) => void;
   onDeleteConfirm: (projectId: string) => void;
   onAlertOpenChange: (open: boolean) => void;
+  statusUpdatingId: string | null;
+  statusErrorById: Readonly<Record<string, string | undefined>>;
+  statusOverrideById: Readonly<Record<string, ProjectStatus | undefined>>;
+  onUpdateProjectStatus: (project: Project, next: ProjectStatus) => void;
 };
 
 function renderProjectsListCell(
   columnId: ProjectsListColumnId,
   project: Project,
-  statusForUi: ReturnType<typeof normalizeProjectStatusForUi>,
+  todayYmd: string,
   actionsCtx: ActionsCellContext,
 ): React.ReactNode {
   switch (columnId) {
@@ -307,19 +552,92 @@ function renderProjectsListCell(
       return project.contactPerson;
     case "amount":
       return CURRENCY_FORMATTER_INTEGER.format(project.amount);
-    case "status":
-      return statusForUi ? (
-        <span className="flex items-center gap-2">
-          <span
-            className={cn(
-              "size-2 shrink-0 rounded-full",
-              getStatusColorClass(statusForUi),
-            )}
-            aria-hidden
-          />
-          {getStatusLabel(statusForUi)}
-        </span>
-      ) : null;
+    case "status": {
+      const effBase = getEffectiveProjectStatus(project, todayYmd);
+      if (effBase === "completed") {
+        const statusForUi = normalizeProjectStatusForUi(effBase);
+        return statusForUi ? (
+          <span className="flex items-center gap-2 text-muted-foreground">
+            <span
+              className={cn("size-2 shrink-0 rounded-full", "bg-muted-foreground")}
+              aria-hidden
+            />
+            {getStatusLabel(effBase)}
+          </span>
+        ) : null;
+      }
+
+      const overrideStatus = actionsCtx.statusOverrideById[project.id];
+      const eff = getEffectiveProjectStatus(
+        overrideStatus ? { ...project, status: overrideStatus } : project,
+        todayYmd,
+      );
+      const statusForUi = normalizeProjectStatusForUi(eff);
+
+      const isUpdating = actionsCtx.statusUpdatingId === project.id;
+      const errorMessage = actionsCtx.statusErrorById[project.id];
+
+      const selectValue: Extract<ProjectStatusUi, "negotiating" | "confirmed" | "cancelled"> =
+        statusForUi === "confirmed" || statusForUi === "cancelled"
+          ? statusForUi
+          : "negotiating";
+
+      return (
+        <div className="flex flex-col gap-1">
+          <Select
+            value={selectValue}
+            onValueChange={(next) => {
+              const nextDbStatus = next as ProjectStatus;
+              actionsCtx.onUpdateProjectStatus(project, nextDbStatus);
+            }}
+            disabled={isUpdating}
+          >
+            <SelectTrigger
+              size="sm"
+              className={cn(
+                "h-8 w-full justify-start border-transparent bg-transparent px-2 py-1 shadow-none hover:bg-accent/40 focus-visible:ring-primary/40",
+                isUpdating && "opacity-80",
+              )}
+              aria-label={`更新狀態：${project.eventOrVenueUse}`}
+            >
+              <SelectValue>
+                <span className="flex min-w-0 items-center gap-2">
+                  <span
+                    className={cn(
+                      "size-2 shrink-0 rounded-full",
+                      selectValue === "cancelled"
+                        ? getStatusColorClass("cancelled")
+                        : getStatusColorClass(eff),
+                    )}
+                    aria-hidden
+                  />
+                  <span className="min-w-0 truncate">
+                    {selectValue === "negotiating"
+                      ? "洽談中"
+                      : selectValue === "confirmed"
+                        ? "已確定"
+                        : "已取消"}
+                  </span>
+                  {isUpdating ? (
+                    <Loader2 className="ml-auto size-3.5 animate-spin text-muted-foreground" />
+                  ) : null}
+                </span>
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent align="start">
+              <SelectItem value="negotiating">洽談中</SelectItem>
+              <SelectItem value="confirmed">已確定</SelectItem>
+              <SelectItem value="cancelled">已取消</SelectItem>
+            </SelectContent>
+          </Select>
+          {errorMessage ? (
+            <p className="text-xs text-destructive" role="alert">
+              {errorMessage}
+            </p>
+          ) : null}
+        </div>
+      );
+    }
     case "totalAttendees":
       return project.totalAttendees != null ? project.totalAttendees : "—";
     case "tables":
@@ -428,27 +746,83 @@ function renderProjectsListCell(
 }
 
 export function ProjectsList({ projects }: ProjectsListProps) {
+  const router = useRouter();
   const [, startTransition] = useTransition();
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [sort, setSort] = useState<SortState>(null);
+  const [page, setPage] = useState(1);
+  const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
+  const [statusErrorById, setStatusErrorById] = useState<
+    Record<string, string | undefined>
+  >({});
+  const [statusOverrideById, setStatusOverrideById] = useState<
+    Record<string, ProjectStatus | undefined>
+  >({});
+  const [selectedStatusValues, setSelectedStatusValues] = useState<
+    Set<ProjectStatusUi>
+  >(() => new Set());
+
+  const todayYmd = useMemo(() => getTaipeiTodayYmd(), []);
+  const sortValueGetters = useMemo(
+    () => makeProjectListSortValueGetters(),
+    [],
+  );
+
+  const updateSelectedStatusValues = useCallback(
+    (next: React.SetStateAction<Set<ProjectStatusUi>>) => {
+      setPage(1);
+      setSelectedStatusValues(next);
+    },
+    [],
+  );
 
   const sortedProjects = useMemo(() => {
-    if (!sort) return projects;
-
     const localeCompareZhTw = (a: string, b: string) =>
       a.localeCompare(b, "zh-TW", { sensitivity: "base" });
 
-    const getter = PROJECT_LIST_SORT_VALUE_GETTERS[sort.key];
+    const pinRank = (project: Project): number => {
+      if (selectedStatusValues.size === 0) return 0;
+      const uiStatus = getUiProjectStatus(project, todayYmd);
+      return uiStatus && selectedStatusValues.has(uiStatus) ? 0 : 1;
+    };
+
+    if (!sort) {
+      const todayStart = startOfDay(new Date());
+      const withMeta = projects.map((project, originalIndex) => ({
+        project,
+        originalIndex,
+        pinRank: pinRank(project),
+        completedRank: isCompletedBucket(project, todayYmd) ? 1 : 0,
+        distance: getNearestActivityCalendarDistance(project, todayStart),
+      }));
+
+      withMeta.sort((a, b) => {
+        if (a.pinRank !== b.pinRank) return a.pinRank - b.pinRank;
+        if (a.completedRank !== b.completedRank) {
+          return a.completedRank - b.completedRank;
+        }
+        if (a.distance !== b.distance) {
+          return a.distance - b.distance;
+        }
+        return a.originalIndex - b.originalIndex;
+      });
+
+      return withMeta.map((x) => x.project);
+    }
+
+    const getter = sortValueGetters[sort.key];
 
     const withIndex = projects.map((project, originalIndex) => ({
       project,
       originalIndex,
       value: getter(project),
+      pinRank: pinRank(project),
     }));
 
     withIndex.sort((a, b) => {
+      if (a.pinRank !== b.pinRank) return a.pinRank - b.pinRank;
       const dirMultiplier = sort.dir === "asc" ? 1 : -1;
       const aVal = a.value;
       const bVal = b.value;
@@ -477,7 +851,46 @@ export function ProjectsList({ projects }: ProjectsListProps) {
     });
 
     return withIndex.map((x) => x.project);
-  }, [projects, sort]);
+  }, [projects, selectedStatusValues, sort, sortValueGetters, todayYmd]);
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(sortedProjects.length / PROJECTS_LIST_PAGE_SIZE),
+  );
+
+  const activePage = Math.min(Math.max(1, page), totalPages);
+
+  const paginatedProjects = useMemo(() => {
+    const start = (activePage - 1) * PROJECTS_LIST_PAGE_SIZE;
+    return sortedProjects.slice(start, start + PROJECTS_LIST_PAGE_SIZE);
+  }, [sortedProjects, activePage]);
+
+  const rangeStart =
+    sortedProjects.length === 0 ? 0 : (activePage - 1) * PROJECTS_LIST_PAGE_SIZE + 1;
+  const rangeEnd = Math.min(
+    activePage * PROJECTS_LIST_PAGE_SIZE,
+    sortedProjects.length,
+  );
+
+  const paginationItems =
+    sortedProjects.length > 0 ? buildPaginationItems(activePage, totalPages) : [];
+
+  const paginationSummaryText = formatTemplate(
+    PROJECTS_PAGE.listPaginationSummary,
+    {
+      start: rangeStart,
+      end: rangeEnd,
+      total: sortedProjects.length,
+    },
+  );
+
+  const paginationSrOnlyText = formatTemplate(
+    PROJECTS_PAGE.listPaginationSrOnly,
+    {
+      page: activePage,
+      pages: totalPages,
+    },
+  );
 
   function toggleSort(nextKey: ProjectsListSortKey) {
     setSort((prev) => {
@@ -517,6 +930,45 @@ export function ProjectsList({ projects }: ProjectsListProps) {
     });
   }, []);
 
+  const handleUpdateProjectStatus = useCallback(
+    (project: Project, nextStatus: ProjectStatus) => {
+      const projectId = project.id;
+      setStatusUpdatingId(projectId);
+      setStatusErrorById((prev) => ({ ...prev, [projectId]: undefined }));
+
+      const optimisticStatus: ProjectStatus =
+        nextStatus === "confirmed" ? "confirmed" : nextStatus;
+
+      setStatusOverrideById((prev) => ({ ...prev, [projectId]: optimisticStatus }));
+
+      startTransition(async () => {
+        const result = await updateProjectStatus(projectId, optimisticStatus);
+        if (!result.success) {
+          setStatusOverrideById((prev) => {
+            const next = { ...prev };
+            delete next[projectId];
+            return next;
+          });
+          setStatusErrorById((prev) => ({
+            ...prev,
+            [projectId]: result.error || "更新失敗",
+          }));
+          setStatusUpdatingId(null);
+          return;
+        }
+
+        setStatusUpdatingId(null);
+        setStatusOverrideById((prev) => {
+          const next = { ...prev };
+          delete next[projectId];
+          return next;
+        });
+        router.refresh();
+      });
+    },
+    [router, startTransition],
+  );
+
   const actionsCellCtx = useMemo<ActionsCellContext>(
     () => ({
       downloadingId,
@@ -527,12 +979,20 @@ export function ProjectsList({ projects }: ProjectsListProps) {
       onAlertOpenChange: (open) => {
         if (!open) setDeleteError(null);
       },
+      statusUpdatingId,
+      statusErrorById,
+      statusOverrideById,
+      onUpdateProjectStatus: handleUpdateProjectStatus,
     }),
     [
       downloadingId,
       deletingId,
       deleteError,
       handleDownloadCsv,
+      handleUpdateProjectStatus,
+      statusErrorById,
+      statusOverrideById,
+      statusUpdatingId,
     ],
   );
 
@@ -546,49 +1006,112 @@ export function ProjectsList({ projects }: ProjectsListProps) {
           {PROJECTS_PAGE.emptyProjects}
         </p>
       ) : (
-        <div className="min-w-0 overflow-x-auto">
-          <Table>
-            <TableCaption className="sr-only">
-              {PROJECTS_PAGE.tableCaption}
-            </TableCaption>
-            <TableHeader>
-              <TableRow>
-                {PROJECTS_LIST_COLUMNS.map((column) => (
-                  <ProjectsListTableHeadCell
-                    key={column.id}
-                    column={column}
-                    sort={sort}
-                    onToggleSort={toggleSort}
-                  />
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody className="[&_tr:last-child_td:first-child]:rounded-bl-xl">
-              {sortedProjects.map((project) => {
-                const statusForUi = normalizeProjectStatusForUi(project.status);
-                return (
-                  <TableRow key={project.id} className="group">
-                    {PROJECTS_LIST_COLUMNS.map((column) => (
-                      <TableCell
+        <div className="min-w-0 flex flex-col">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableCaption className="sr-only">
+                {PROJECTS_PAGE.tableCaption}
+              </TableCaption>
+              <TableHeader>
+                <TableRow>
+                  {PROJECTS_LIST_COLUMNS.map((column) => {
+                    if (column.id === "status") {
+                      return (
+                        <ProjectsListStatusHeadCell
+                          key={column.id}
+                          column={column}
+                          selectedStatusValues={selectedStatusValues}
+                          onUpdateSelectedStatusValues={updateSelectedStatusValues}
+                        />
+                      );
+                    }
+                    return (
+                      <ProjectsListTableHeadCell
                         key={column.id}
-                        className={cn(
-                          column.cellClassName,
-                          projectsListStickyCellClass(column),
-                        )}
-                      >
-                        {renderProjectsListCell(
-                          column.id,
-                          project,
-                          statusForUi,
-                          actionsCellCtx,
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                        column={column}
+                        sort={sort}
+                        onToggleSort={toggleSort}
+                      />
+                    );
+                  })}
+                </TableRow>
+              </TableHeader>
+              <TableBody className="[&_tr:last-child_td:first-child]:rounded-bl-xl">
+                {paginatedProjects.map((project) => (
+                    <TableRow key={project.id} className="group">
+                      {PROJECTS_LIST_COLUMNS.map((column) => (
+                        <TableCell
+                          key={column.id}
+                          className={cn(
+                            column.cellClassName,
+                            projectsListStickyCellClass(column),
+                          )}
+                        >
+                          {renderProjectsListCell(
+                            column.id,
+                            project,
+                            todayYmd,
+                            actionsCellCtx,
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          <div className="flex flex-col gap-3 border-t border-border px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground tabular-nums md:w-full">
+              {paginationSummaryText}
+              <span className="sr-only">
+                {paginationSrOnlyText}
+              </span>
+            </p>
+
+            {totalPages > 1 ? (
+              <Pagination className="mx-0 w-full justify-end">
+                <PaginationContent className="w-full flex-wrap justify-end gap-1">
+                  <PaginationItem>
+                    <PaginationPrevious
+                      type="button"
+                      disabled={activePage <= 1}
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    />
+                  </PaginationItem>
+
+                  {paginationItems.map((item, idx) =>
+                    item === "ellipsis" ? (
+                      <PaginationItem key={`e-${idx}`}>
+                        <PaginationEllipsis />
+                      </PaginationItem>
+                    ) : (
+                      <PaginationItem key={item}>
+                        <PaginationLink
+                          type="button"
+                          isActive={item === activePage}
+                          onClick={() => setPage(item)}
+                          aria-label={`第 ${item} 頁`}
+                        >
+                          {item}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ),
+                  )}
+
+                  <PaginationItem>
+                    <PaginationNext
+                      type="button"
+                      disabled={activePage >= totalPages}
+                      onClick={() =>
+                        setPage((p) => Math.min(totalPages, p + 1))
+                      }
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            ) : null}
+          </div>
         </div>
       )}
     </section>

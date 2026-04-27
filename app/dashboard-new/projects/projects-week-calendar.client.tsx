@@ -25,6 +25,10 @@ import {
   getStatusColorClass,
   normalizeProjectStatusForUi,
 } from "@/lib/config/project-status";
+import {
+  getEffectiveProjectStatus,
+  getTaipeiTodayYmd,
+} from "@/lib/utils/project-effective-status";
 import type { Project, ProjectStatus } from "@/lib/types/project";
 import { getProjectTimeRange } from "@/lib/utils/project";
 import { expandRentalDateKeys } from "@/lib/utils/project-rental-interval";
@@ -41,12 +45,13 @@ function projectDateKey(project: Project): string {
   return project.date.slice(0, 10);
 }
 
-function badgeClassNameByStatus(status: ProjectStatus): string {
-  const statusForUi = normalizeProjectStatusForUi(status);
+function badgeClassForProject(project: Project, todayYmd: string): string {
+  const eff = getEffectiveProjectStatus(project, todayYmd);
+  const statusForUi = normalizeProjectStatusForUi(eff);
   if (!statusForUi) return cn("rounded-sm border-0 bg-muted text-foreground");
   return cn(
     "rounded-sm border-0",
-    getStatusColorClass(statusForUi),
+    getStatusColorClass(eff),
     "text-white",
   );
 }
@@ -54,18 +59,20 @@ function badgeClassNameByStatus(status: ProjectStatus): string {
 function ProjectBadgeLink({
   project,
   dateKey,
+  todayYmd,
   className,
 }: {
   project: Project;
   /** 週曆格子的日期 key，有傳則顯示該日 rental 的時段 */
   dateKey?: string;
+  todayYmd: string;
   className?: string;
 }) {
   const timeRange = getProjectTimeRange(project, dateKey);
   return (
     <Badge
       asChild
-      className={cn(badgeClassNameByStatus(project.status), className)}
+      className={cn(badgeClassForProject(project, todayYmd), className)}
     >
       <Link
         href={`/dashboard-new/projects/${project.id}`}
@@ -108,9 +115,11 @@ function DayColumnHeader({ day, isToday }: { day: Date; isToday: boolean }) {
 function DayColumnContent({
   projects,
   dateKey,
+  todayYmd,
 }: {
   projects: Project[];
   dateKey?: string;
+  todayYmd: string;
 }) {
   if (projects.length === 0) {
     return (
@@ -126,6 +135,7 @@ function DayColumnContent({
           key={project.id}
           project={project}
           dateKey={dateKey}
+          todayYmd={todayYmd}
           className="text-[10px] truncate w-full"
         />
       ))}
@@ -140,6 +150,7 @@ interface ProjectsWeekCalendarProps {
 export function ProjectsWeekCalendar({ projects }: ProjectsWeekCalendarProps) {
   const [currentDate, setCurrentDate] = React.useState(() => new Date());
   const [calendarOpen, setCalendarOpen] = React.useState(false);
+  const todayYmd = React.useMemo(() => getTaipeiTodayYmd(), []);
 
   const displayDays = React.useMemo(
     () => getWeekDays(currentDate),
@@ -356,6 +367,7 @@ export function ProjectsWeekCalendar({ projects }: ProjectsWeekCalendarProps) {
                             <DayColumnContent
                               projects={dayProjects}
                               dateKey={dateKey}
+                              todayYmd={todayYmd}
                             />
                           </div>
                         );
@@ -380,7 +392,11 @@ export function ProjectsWeekCalendar({ projects }: ProjectsWeekCalendarProps) {
                   )}
                 >
                   <DayColumnHeader day={day} isToday={isToday(day)} />
-                  <DayColumnContent projects={dayProjects} dateKey={dayKey} />
+                  <DayColumnContent
+                    projects={dayProjects}
+                    dateKey={dayKey}
+                    todayYmd={todayYmd}
+                  />
                 </div>
               );
             })}

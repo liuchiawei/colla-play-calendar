@@ -5,19 +5,28 @@
 
 import { PROJECTS_PAGE } from "@/lib/message";
 import type { ProjectStatus } from "@/lib/types/project";
+import {
+  getEffectiveProjectStatus,
+  getTaipeiTodayYmd,
+  type ProjectLikeForEffectiveStatus,
+} from "@/lib/utils/project-effective-status";
 
-export type ProjectStatusUi = "negotiating" | "confirmed" | "completed";
+export type ProjectStatusUi =
+  | "negotiating"
+  | "confirmed"
+  | "cancelled"
+  | "completed";
 
-/** 表單／篩選／圖例僅露出此兩種；其餘狀態仍可由 getStatusLabel 顯示 */
+/** 表單／篩選／圖例僅露出此三種；completed 仍可顯示但不提供選取 */
 export const PROJECT_STATUS_UI_SELECTABLE_VALUES = [
   "negotiating",
   "confirmed",
+  "cancelled",
 ] as const satisfies readonly ProjectStatus[];
 
 /**
  * UI 正規化：不改 DB 架構，只在前端把狀態合併/隱藏
  * - deposit_paid -> confirmed（顯示一致）
- * - cancelled -> null（前端不顯示狀態文字/選單）
  */
 export function normalizeProjectStatusForUi(
   status: ProjectStatus,
@@ -25,13 +34,26 @@ export function normalizeProjectStatusForUi(
   switch (status) {
     case "deposit_paid":
       return "confirmed";
-    case "cancelled":
-      return null;
     case "negotiating":
     case "confirmed":
+    case "cancelled":
     case "completed":
       return status;
   }
+}
+
+/**
+ * 租借結束日已過則視為已完成後，再套用 UI 正規化（與 normalizeProjectStatusForUi 一致）
+ * @param todayYmd 省略時使用台北當日曆日期
+ */
+export function getUiProjectStatus(
+  project: ProjectLikeForEffectiveStatus,
+  todayYmd?: string,
+): ProjectStatusUi | null {
+  const ymd = todayYmd ?? getTaipeiTodayYmd();
+  return normalizeProjectStatusForUi(
+    getEffectiveProjectStatus(project, ymd),
+  );
 }
 
 export const PROJECT_STATUS_OPTIONS: Array<{
@@ -65,7 +87,7 @@ export const PROJECT_STATUS_OPTIONS: Array<{
   {
     value: "completed",
     labelKey: "statusCompleted",
-    colorClass: "bg-emerald-600",
+    colorClass: "bg-neutral-400 dark:bg-neutral-600",
   },
   {
     value: "cancelled",
@@ -93,11 +115,7 @@ const STATUS_BY_VALUE = new Map(
 /** 依狀態回傳顯示用標籤（從 PROJECTS_PAGE 取文案） */
 export function getStatusLabel(status: ProjectStatus): string {
   const normalized = normalizeProjectStatusForUi(status);
-  if (normalized === null) {
-    // cancelled 目前仍保留標籤以供既有呼叫點/除錯使用；
-    // 但新的 UI 應該在 normalize === null 時直接不渲染。
-    return PROJECTS_PAGE.statusCancelled;
-  }
+  if (normalized === null) return "";
   const option = STATUS_BY_VALUE.get(normalized);
   if (!option) return normalized;
   return PROJECTS_PAGE[option.labelKey];

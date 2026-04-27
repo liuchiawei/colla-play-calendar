@@ -19,10 +19,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { PROJECTS_PAGE } from "@/lib/message";
 import { ALL_SPACES, getSpaceNameById } from "@/lib/config/config";
 import {
+  getUiProjectStatus,
   normalizeProjectStatusForUi,
   PROJECT_STATUS_UI_SELECTABLE,
   type ProjectStatusUi,
 } from "@/lib/config/project-status";
+import { getTaipeiTodayYmd } from "@/lib/utils/project-effective-status";
 import type { Project } from "@/lib/types/project";
 import {
   buildProjectsListCsv,
@@ -166,6 +168,8 @@ function projectMatchesSelectedActivityTypes(
 }
 
 export function ProjectsContent({ projects }: ProjectsContentProps) {
+  const todayYmd = React.useMemo(() => getTaipeiTodayYmd(), []);
+
   const [searchQuery, setSearchQuery] = React.useState("");
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [listCsvPopoverOpen, setListCsvPopoverOpen] = React.useState(false);
@@ -201,6 +205,28 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
     );
   }, [projects]);
 
+  /** 列表篩選／搜尋變更時重掛載 ProjectsList，重設分頁與欄位排序狀態 */
+  const projectsListResetKey = React.useMemo(
+    () =>
+      [
+        searchQuery,
+        [...selectedSpaceIds].sort().join(","),
+        [...selectedStatusValues].sort().join(","),
+        [...selectedContactPeople].sort().join(","),
+        [...selectedActivityTypeValues].sort().join(","),
+        selectedDateRange?.from?.getTime() ?? "",
+        selectedDateRange?.to?.getTime() ?? "",
+      ].join("|"),
+    [
+      searchQuery,
+      selectedActivityTypeValues,
+      selectedContactPeople,
+      selectedDateRange,
+      selectedSpaceIds,
+      selectedStatusValues,
+    ],
+  );
+
   const filteredProjects = React.useMemo(() => {
     const searched = filterProjectsFuzzy(projects, searchQuery);
 
@@ -232,9 +258,9 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
         if (!matchViaRental && !matchViaProjectSpaceName) return false;
       }
 
-      // status (normalized to UI)
+      // status（含租借結束後視為已完成）
       if (selectedStatusValues.size > 0) {
-        const uiStatus = normalizeProjectStatusForUi(project.status);
+        const uiStatus = getUiProjectStatus(project, todayYmd);
         if (!uiStatus || !selectedStatusValues.has(uiStatus)) return false;
       }
 
@@ -283,6 +309,7 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
     selectedDateRange,
     selectedSpaceIds,
     selectedStatusValues,
+    todayYmd,
   ]);
 
   const searchInputId = "projects-search";
@@ -750,7 +777,12 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
                         }}
                         aria-label={`選取狀態：${PROJECTS_PAGE[opt.labelKey]}`}
                       />
-                      <span className="min-w-0 truncate">
+                      <span
+                        className={cn(
+                          "min-w-0 truncate",
+                          uiValue === "completed" && "text-muted-foreground",
+                        )}
+                      >
                         {PROJECTS_PAGE[opt.labelKey]}
                       </span>
                     </label>
@@ -862,7 +894,10 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
         </TabsList>
 
         <TabsContent value="list" className="flex-1 min-w-0 w-full">
-          <ProjectsList projects={filteredProjects} />
+          <ProjectsList
+            key={projectsListResetKey}
+            projects={filteredProjects}
+          />
         </TabsContent>
 
         <TabsContent value="week" className="flex-1 min-w-0 w-full">

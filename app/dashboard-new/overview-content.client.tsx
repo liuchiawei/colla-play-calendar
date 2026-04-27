@@ -1,12 +1,17 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import { DASHBOARD_OVERVIEW } from "@/lib/message";
 import {
   getStatusLabel,
   getStatusColorClass,
-  normalizeProjectStatusForUi,
+  getUiProjectStatus,
 } from "@/lib/config/project-status";
+import {
+  getEffectiveProjectStatus,
+  getTaipeiTodayYmd,
+} from "@/lib/utils/project-effective-status";
 import type { Project } from "@/lib/types/project";
 import type { Space } from "@/lib/config/config";
 import { cn } from "@/lib/utils";
@@ -45,6 +50,8 @@ export function OverviewContent({
   previewSpaces,
   recentProjects,
 }: OverviewContentProps) {
+  const todayYmd = useMemo(() => getTaipeiTodayYmd(), []);
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <section
@@ -101,7 +108,8 @@ export function OverviewContent({
         ) : (
           <ul className="flex-1 list-none p-0 m-0" role="list">
             {recentProjects.map((project) => {
-              const statusForUi = normalizeProjectStatusForUi(project.status);
+              const statusForUi = getUiProjectStatus(project, todayYmd);
+              const eff = getEffectiveProjectStatus(project, todayYmd);
               return (
                 <li key={project.id}>
                 <Link
@@ -121,11 +129,11 @@ export function OverviewContent({
                           <span
                             className={cn(
                               "size-1.5 shrink-0 rounded-full",
-                              getStatusColorClass(statusForUi),
+                              getStatusColorClass(eff),
                             )}
                             aria-hidden
                           />
-                          {getStatusLabel(statusForUi)}
+                          {getStatusLabel(eff)}
                         </>
                       ) : null}
                     </span>

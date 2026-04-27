@@ -5,6 +5,7 @@
  */
 
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import { Prisma } from "@/lib/generated/prisma/client";
 import prisma from "@/lib/prisma";
 import { getSpaceNameById } from "@/lib/config/config";
@@ -30,6 +31,10 @@ import {
   rentalBoundsMs,
   spaceIdsIntersect,
 } from "@/lib/utils/project-rental-interval";
+import {
+  getEffectiveProjectStatus,
+  getTaipeiTodayYmd,
+} from "@/lib/utils/project-effective-status";
 
 /** 與其他專案租借時段衝突（API 可回 409） */
 export class ProjectRentalConflictError extends Error {
@@ -316,14 +321,10 @@ function mapRowToProject(
   };
 }
 
-/**
- * 取得專案列表（供 dashboard 列表頁使用）
- *
- * 查詢 Project 含 rentals，依 createdAt 降序，並 map 成列表用 Project 型別。
- *
- * @returns Promise<Project[]>
- */
-export async function getProjectsForList(): Promise<Project[]> {
+/** 管理後台專案列表 unstable_cache 標籤；變更專案資料後須 revalidateTag */
+export const ADMIN_PROJECTS_LIST_CACHE_TAG = "admin-projects-list";
+
+async function fetchProjectsForListUncached(): Promise<Project[]> {
   const [rows, adminOptions] = await Promise.all([
     prisma.project.findMany({
       include: { rentals: true },
@@ -333,6 +334,27 @@ export async function getProjectsForList(): Promise<Project[]> {
   ]);
   const adminNameById = new Map(adminOptions.map((o) => [o.id, o.name]));
   return rows.map((row) => mapRowToProject(row, adminNameById));
+}
+
+const getProjectsForListCached = unstable_cache(
+  fetchProjectsForListUncached,
+  ["get-projects-for-list"],
+  {
+    tags: [ADMIN_PROJECTS_LIST_CACHE_TAG],
+    revalidate: 300,
+  },
+);
+
+/**
+ * 取得專案列表（供 dashboard 列表頁使用）
+ *
+ * 查詢 Project 含 rentals，依 createdAt 降序，並 map 成列表用 Project 型別。
+ * 以 unstable_cache 跨請求快取，寫入後請 revalidateTag(ADMIN_PROJECTS_LIST_CACHE_TAG)。
+ *
+ * @returns Promise<Project[]>
+ */
+export async function getProjectsForList(): Promise<Project[]> {
+  return getProjectsForListCached();
 }
 
 /**
@@ -363,9 +385,9 @@ export const getOverviewStats = cache(async (): Promise<OverviewStatsData> => {
   const start = `${y}-${m}-01`;
   const lastDay = new Date(y, now.getMonth() + 1, 0).getDate();
   const end = `${y}-${m}-${String(lastDay).padStart(2, "0")}`;
-  const todayStr = `${y}-${m}-${String(now.getDate()).padStart(2, "0")}`;
+  const todayYmd = getTaipeiTodayYmd(now);
 
-  const [monthlySum, negotiatingCount, confirmedCount, todayReservations] =
+  const [monthlySum, projectsForEffectiveStats, todayReservations] =
     await Promise.all([
       prisma.projectRental
         .aggregate({
@@ -376,12 +398,35 @@ export const getOverviewStats = cache(async (): Promise<OverviewStatsData> => {
           _sum: { rentalAmount: true, fnbAmount: true },
         })
         .then((r) => (r._sum.rentalAmount ?? 0) + (r._sum.fnbAmount ?? 0)),
-      prisma.project.count({ where: { status: "negotiating" } }),
-      prisma.project.count({
-        where: { status: { in: ["confirmed", "deposit_paid"] } },
+      prisma.project.findMany({
+        where: {
+          status: { notIn: ["cancelled", "completed"] },
+        },
+        select: {
+          status: true,
+          rentals: { select: { date: true, endDate: true } },
+        },
       }),
-      prisma.projectRental.count({ where: { date: todayStr } }),
+      prisma.projectRental.count({ where: { date: todayYmd } }),
     ]);
+
+  let negotiatingCount = 0;
+  let confirmedCount = 0;
+  for (const row of projectsForEffectiveStats) {
+    const eff = getEffectiveProjectStatus(
+      {
+        status: row.status as ProjectStatus,
+        rentals: row.rentals.map((r) => ({
+          date: r.date,
+          endDate: r.endDate,
+        })),
+      },
+      todayYmd,
+    );
+    if (eff === "completed") continue;
+    if (eff === "negotiating") negotiatingCount++;
+    else if (eff === "confirmed" || eff === "deposit_paid") confirmedCount++;
+  }
 
   return {
     monthlyRentalIncome: monthlySum,

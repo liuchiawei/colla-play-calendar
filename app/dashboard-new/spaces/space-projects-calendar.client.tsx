@@ -9,8 +9,13 @@ import { SPACE_DETAIL_PAGE, PROJECTS_PAGE } from "@/lib/message";
 import {
   PROJECT_STATUS_UI_SELECTABLE,
   getStatusColorClass,
+  getUiProjectStatus,
   normalizeProjectStatusForUi,
 } from "@/lib/config/project-status";
+import {
+  getEffectiveProjectStatus,
+  getTaipeiTodayYmd,
+} from "@/lib/utils/project-effective-status";
 import type { Project, ProjectStatus } from "@/lib/types/project";
 import { getProjectTimeRange } from "@/lib/utils/project";
 import { expandRentalDateKeys } from "@/lib/utils/project-rental-interval";
@@ -53,15 +58,17 @@ function getUniqueSpaceNames(
   });
 }
 
-function badgeClassNameByStatus(status: ProjectStatus): string {
-  const statusForUi = normalizeProjectStatusForUi(status);
+function badgeClassForProject(project: Project, todayYmd: string): string {
+  const eff = getEffectiveProjectStatus(project, todayYmd);
+  const statusForUi = normalizeProjectStatusForUi(eff);
   if (!statusForUi) return cn("border-0 bg-muted text-foreground");
-  return cn("border-0", getStatusColorClass(statusForUi), "text-white");
+  return cn("border-0", getStatusColorClass(eff), "text-white");
 }
 
 function ProjectBadgeLink({
   project,
   dateKey,
+  todayYmd,
   className,
   showVenue = true,
   spaceBorderColors,
@@ -69,6 +76,7 @@ function ProjectBadgeLink({
   project: Project;
   /** 格子日期 key（YYYY-MM-DD），有傳則顯示該日 rental 的時段 */
   dateKey?: string;
+  todayYmd: string;
   className?: string;
   showVenue?: boolean;
   /** spaceId → 框線顏色 class，用於場域名稱小標的邊框色 */
@@ -84,7 +92,7 @@ function ProjectBadgeLink({
       asChild
       className={cn(
         "rounded-sm",
-        badgeClassNameByStatus(project.status),
+        badgeClassForProject(project, todayYmd),
         className,
       )}
     >
@@ -133,11 +141,13 @@ function StatusDot({ status }: { status: ProjectStatus }) {
 function DayCellContent({
   projects,
   dateKey,
+  todayYmd,
   showVenue,
   spaceBorderColors,
 }: {
   projects: Project[];
   dateKey: string;
+  todayYmd: string;
   showVenue?: boolean;
   spaceBorderColors?: Record<string, string>;
 }) {
@@ -155,6 +165,7 @@ function DayCellContent({
           key={project.id}
           project={project}
           dateKey={dateKey}
+          todayYmd={todayYmd}
           className="text-[10px] truncate w-full"
           showVenue={showVenue}
           spaceBorderColors={spaceBorderColors}
@@ -187,12 +198,14 @@ export function SpaceProjectsCalendar({
   showVenue = true,
   spaceBorderColors,
 }: SpaceProjectsCalendarProps) {
+  const todayYmd = React.useMemo(() => getTaipeiTodayYmd(), []);
+
   const visibleProjects = React.useMemo(() => {
     return projects.filter((p) => {
-      const statusForUi = normalizeProjectStatusForUi(p.status);
+      const statusForUi = getUiProjectStatus(p, todayYmd);
       return statusForUi === "negotiating" || statusForUi === "confirmed";
     });
-  }, [projects]);
+  }, [projects, todayYmd]);
 
   const [currentDate, setCurrentDate] = React.useState(() =>
     startOfMonth(new Date()),
@@ -357,6 +370,7 @@ export function SpaceProjectsCalendar({
                               <DayCellContent
                                 projects={dayProjects}
                                 dateKey={dateKey}
+                                todayYmd={todayYmd}
                                 showVenue={showVenue}
                                 spaceBorderColors={spaceBorderColors}
                               />
