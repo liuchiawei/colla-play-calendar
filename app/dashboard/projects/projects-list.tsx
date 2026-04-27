@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import {
   Popover,
   PopoverContent,
@@ -56,6 +57,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   CREATE_PROJECT_PAGE,
   PROJECTS_PAGE,
@@ -94,9 +96,59 @@ import {
 /** 專案表格每頁筆數（列表為客戶端 slice，僅影響 DOM 與互動） */
 const PROJECTS_LIST_PAGE_SIZE = 25;
 
+/** 專案列表：hover 顯示完整內容的長度門檻 */
+const PROJECTS_LIST_HOVER_PREVIEW_THRESHOLD = 8;
+
 function summarizeSelected(count: number, emptyLabel: string): string {
   if (count <= 0) return emptyLabel;
   return `已選 ${count}`;
+}
+
+function shouldEnableHoverPreview(value: string): boolean {
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === "—") return false;
+  return trimmed.length > PROJECTS_LIST_HOVER_PREVIEW_THRESHOLD;
+}
+
+function ProjectsListMaybeTooltipText({
+  value,
+  children,
+}: {
+  value: string;
+  children: React.ReactNode;
+}): React.ReactNode {
+  if (!shouldEnableHoverPreview(value)) return children;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent className="max-w-[min(28rem,90vw)] max-h-72 overflow-auto whitespace-pre-wrap wrap-break-word">
+        {value}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function ProjectsListMaybeHoverCardText({
+  value,
+  children,
+}: {
+  value: string;
+  children: React.ReactNode;
+}): React.ReactNode {
+  if (!shouldEnableHoverPreview(value)) return children;
+
+  return (
+    <HoverCard openDelay={80} closeDelay={50}>
+      <HoverCardTrigger asChild>{children}</HoverCardTrigger>
+      <HoverCardContent
+        align="start"
+        className="w-[min(34rem,90vw)] max-h-80 overflow-auto whitespace-pre-wrap wrap-break-word p-3 text-sm leading-relaxed"
+      >
+        {value}
+      </HoverCardContent>
+    </HoverCard>
+  );
 }
 
 function formatTemplate(
@@ -567,24 +619,36 @@ function renderProjectsListCell(
       return project.eventType?.trim() ? project.eventType : "—";
     case "eventOrVenueUse":
       return (
-        <Link
-          href={`/dashboard/projects/${project.id}`}
-          className="font-medium text-primary hover:underline focus:outline-none focus:underline"
-        >
-          {project.eventOrVenueUse}
-        </Link>
+        <ProjectsListMaybeTooltipText value={project.eventOrVenueUse}>
+          <Link
+            href={`/dashboard/projects/${project.id}`}
+            className="font-medium text-primary hover:underline focus:outline-none focus:underline"
+          >
+            {project.eventOrVenueUse}
+          </Link>
+        </ProjectsListMaybeTooltipText>
       );
     case "customer":
-      return project.customer;
+      return (
+        <ProjectsListMaybeTooltipText value={project.customer}>
+          <span className="block min-w-0 truncate">{project.customer}</span>
+        </ProjectsListMaybeTooltipText>
+      );
     case "space":
       return project.space;
     case "date":
-      return (
-        getProjectDateKeySummary(project, {
-          maxShown: 2,
-          formatDate: (d) => DATE_FORMATTER.format(d),
-        }) ?? "—"
-      );
+      {
+        const summary =
+          getProjectDateKeySummary(project, {
+            maxShown: 2,
+            formatDate: (d) => DATE_FORMATTER.format(d),
+          }) ?? "—";
+        return (
+          <ProjectsListMaybeTooltipText value={summary}>
+            <span className="block min-w-0 truncate">{summary}</span>
+          </ProjectsListMaybeTooltipText>
+        );
+      }
     case "eventStartTime": {
       const dk = getEarliestRentalDateKey(project);
       if (!dk) return "—";
@@ -700,12 +764,18 @@ function renderProjectsListCell(
     case "chairs":
       return project.chairs != null ? project.chairs : "—";
     case "otherEquipment":
-      return (
-        formatEquipmentNeedsLine(
-          project.equipmentNeeds,
-          EQUIPMENT_NEEDS_LINE_LABELS,
-        ) ?? "—"
-      );
+      {
+        const line =
+          formatEquipmentNeedsLine(
+            project.equipmentNeeds,
+            EQUIPMENT_NEEDS_LINE_LABELS,
+          ) ?? "—";
+        return (
+          <ProjectsListMaybeHoverCardText value={line}>
+            <span className="block min-w-0 truncate">{line}</span>
+          </ProjectsListMaybeHoverCardText>
+        );
+      }
     case "rentalAmountTotal":
       return CURRENCY_FORMATTER_INTEGER.format(project.rentalAmountTotal);
     case "fnbAmountTotal":
@@ -717,9 +787,23 @@ function renderProjectsListCell(
     case "pendingAmountTotal":
       return CURRENCY_FORMATTER_INTEGER.format(project.pendingAmountTotal);
     case "fnbItems":
-      return project.fnbItems ?? "—";
+      {
+        const items = project.fnbItems ?? "—";
+        return (
+          <ProjectsListMaybeHoverCardText value={items}>
+            <span className="block min-w-0 truncate">{items}</span>
+          </ProjectsListMaybeHoverCardText>
+        );
+      }
     case "internalNotes":
-      return project.internalNotes ?? "—";
+      {
+        const notes = project.internalNotes ?? "—";
+        return (
+          <ProjectsListMaybeHoverCardText value={notes}>
+            <span className="block min-w-0 truncate">{notes}</span>
+          </ProjectsListMaybeHoverCardText>
+        );
+      }
     case "actions":
       return (
         <div className="flex items-center gap-1">
