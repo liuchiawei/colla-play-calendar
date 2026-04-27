@@ -11,6 +11,8 @@ import {
   type ProjectLikeForEffectiveStatus,
 } from "@/lib/utils/project-effective-status";
 
+export { getTaipeiTodayYmd };
+
 export type ProjectStatusUi =
   | "negotiating"
   | "confirmed"

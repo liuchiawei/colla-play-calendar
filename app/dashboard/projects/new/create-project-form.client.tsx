@@ -7,10 +7,8 @@ import {
   useForm,
   useFieldArray,
   useWatch,
-  type Resolver,
 } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { format } from "date-fns";
 import { zhTW } from "date-fns/locale";
 import { CalendarIcon, Plus, Trash2 } from "lucide-react";
@@ -49,155 +47,17 @@ import {
   PROJECT_ACTIVITY_CUSTOM_SENTINEL,
   PROJECT_ACTIVITY_TYPE_OPTIONS,
   PROJECT_ACTIVITY_TYPE_OTHER,
-  isActivityTypePresetFieldValue,
-  resolveEventTypeFromForm,
 } from "@/lib/constants/project-form";
-import { defaultEquipmentNeedsForm } from "@/lib/utils/project-equipment-needs";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  intervalsOverlap,
-  isValidRentalTimeWindow,
-  rentalBoundsMs,
-  spaceIdsIntersect,
-} from "@/lib/utils/project-rental-interval";
+  DEFAULT_RENTAL_FORM_VALUES,
+  defaultProjectFormValues,
+  formValuesToCreateInput,
+  projectFormSchema,
+  type ProjectFormValues,
+} from "@/lib/config/project-form-config";
 
 const SHOW_SETUP_TEARDOWN_FIELDS = false;
-
-const rentalItemSchema = z
-  .object({
-    spaceIds: z.array(z.string()).min(1, CREATE_PROJECT_PAGE.errorRequired),
-    date: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
-    endDate: z.string().optional().default(""),
-    startTime: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
-    endTime: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
-    setupMinutesBefore: z.number().min(0).optional(),
-    teardownMinutesAfter: z.number().min(0).optional(),
-    rentalAmount: z.coerce.number().min(0),
-    fnbAmount: z.coerce.number().min(0),
-    fnbAmountPending: z.boolean().default(false),
-    paidAmount: z.coerce.number().min(0),
-  })
-  .refine(
-    (data) =>
-      isValidRentalTimeWindow({
-        date: data.date,
-        endDate: data.endDate?.trim() || null,
-        startTime: data.startTime,
-        endTime: data.endTime,
-      }),
-    {
-      message: CREATE_PROJECT_PAGE.errorInvalidRentalWindow,
-      path: ["endTime"],
-    },
-  );
-
-const equipmentNeedsFormSchema = z.object({
-  microphone: z.boolean(),
-  extensionCord: z.boolean(),
-  projector: z.boolean(),
-  whiteboard: z.boolean(),
-  noOtherEquipmentNeeds: z.boolean(),
-});
-
-const createProjectSchema = z
-  .object({
-    customerName: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
-    customerPhone: z
-      .string()
-      .optional()
-      .refine((val) => !val || /^[\d\s\-]+$/.test(val), {
-        message: CREATE_PROJECT_PAGE.errorPhoneInvalid,
-      }),
-    company: z.string().optional(),
-    taxId: z.string().optional(),
-    activityTypePreset: z
-      .string()
-      .min(1, CREATE_PROJECT_PAGE.errorActivityTypeRequired)
-      .refine((s) => isActivityTypePresetFieldValue(s), {
-        message: CREATE_PROJECT_PAGE.errorActivityTypeRequired,
-      }),
-    activityCustomDetail: z.string().optional().default(""),
-    eventOrVenueUse: z
-      .string()
-      .trim()
-      .min(1, CREATE_PROJECT_PAGE.errorRequired),
-    totalAttendees: z
-      .string()
-      .refine((s) => s.trim().length > 0, CREATE_PROJECT_PAGE.errorRequired),
-    tables: z
-      .string()
-      .refine((s) => s.trim().length > 0, CREATE_PROJECT_PAGE.errorRequired),
-    chairs: z
-      .string()
-      .refine((s) => s.trim().length > 0, CREATE_PROJECT_PAGE.errorRequired),
-    equipmentNeeds: equipmentNeedsFormSchema.default(() =>
-      defaultEquipmentNeedsForm(),
-    ),
-    fnbItems: z.string().optional(),
-    collaPlayContactId: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
-    internalNotes: z.string().optional(),
-    rentals: z
-      .array(rentalItemSchema)
-      .min(1, CREATE_PROJECT_PAGE.errorRequired),
-  })
-  .superRefine((data, ctx) => {
-    const needsCustom =
-      data.activityTypePreset === PROJECT_ACTIVITY_CUSTOM_SENTINEL ||
-      data.activityTypePreset === PROJECT_ACTIVITY_TYPE_OTHER;
-    if (needsCustom && !data.activityCustomDetail.trim()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: CREATE_PROJECT_PAGE.errorActivityTypeOtherRequired,
-        path: ["activityCustomDetail"],
-      });
-    }
-    const rentals = data.rentals;
-    for (let i = 0; i < rentals.length; i++) {
-      const a = rentals[i];
-      const boundsA = rentalBoundsMs({
-        date: a.date,
-        endDate: a.endDate?.trim() || null,
-        startTime: a.startTime,
-        endTime: a.endTime,
-      });
-      if (!boundsA) continue;
-      for (let j = i + 1; j < rentals.length; j++) {
-        const b = rentals[j];
-        if (!spaceIdsIntersect(a.spaceIds, b.spaceIds)) continue;
-        const boundsB = rentalBoundsMs({
-          date: b.date,
-          endDate: b.endDate?.trim() || null,
-          startTime: b.startTime,
-          endTime: b.endTime,
-        });
-        if (!boundsB) continue;
-        if (intervalsOverlap(boundsA, boundsB)) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: CREATE_PROJECT_PAGE.errorRentalOverlapInternal,
-            path: ["rentals", i, "spaceIds"],
-          });
-          return;
-        }
-      }
-    }
-  });
-
-type CreateProjectFormValues = z.infer<typeof createProjectSchema>;
-
-const defaultRental: CreateProjectFormValues["rentals"][0] = {
-  spaceIds: [],
-  date: "",
-  endDate: "",
-  startTime: "",
-  endTime: "",
-  setupMinutesBefore: 0,
-  teardownMinutesAfter: 0,
-  rentalAmount: 0,
-  fnbAmount: 0,
-  fnbAmountPending: false,
-  paidAmount: 0,
-};
 
 export function CreateProjectForm({
   adminOptions,
@@ -207,27 +67,9 @@ export function CreateProjectForm({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  const form = useForm<CreateProjectFormValues>({
-    resolver: zodResolver(
-      createProjectSchema,
-    ) as Resolver<CreateProjectFormValues>,
-    defaultValues: {
-      customerName: "",
-      customerPhone: "",
-      company: "",
-      taxId: "",
-      activityTypePreset: "",
-      activityCustomDetail: "",
-      eventOrVenueUse: "",
-      totalAttendees: "",
-      tables: "",
-      chairs: "",
-      equipmentNeeds: defaultEquipmentNeedsForm(),
-      fnbItems: "",
-      collaPlayContactId: "",
-      internalNotes: "",
-      rentals: [{ ...defaultRental }],
-    },
+  const form = useForm<ProjectFormValues>({
+    resolver: zodResolver(projectFormSchema),
+    defaultValues: defaultProjectFormValues(),
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -244,40 +86,8 @@ export function CreateProjectForm({
     watchedActivityPreset === PROJECT_ACTIVITY_CUSTOM_SENTINEL ||
     watchedActivityPreset === PROJECT_ACTIVITY_TYPE_OTHER;
 
-  const onSubmit = form.handleSubmit((data: CreateProjectFormValues) => {
-    const {
-      activityTypePreset,
-      activityCustomDetail,
-      equipmentNeeds,
-      eventOrVenueUse,
-      totalAttendees,
-      tables,
-      chairs,
-      ...rest
-    } = data;
-    const payload: CreateProjectInput = {
-      ...rest,
-      totalAttendees: totalAttendees.trim(),
-      tables: tables.trim(),
-      chairs: chairs.trim(),
-      eventOrVenueUse,
-      eventType: resolveEventTypeFromForm(
-        activityTypePreset,
-        activityCustomDetail ?? "",
-      ),
-      customerPhone: data.customerPhone ?? "",
-      equipmentNeeds,
-      rentals: data.rentals.map((r) => {
-        const endDateTrim = r.endDate?.trim() ?? "";
-        return {
-          ...r,
-          endDate: endDateTrim ? endDateTrim : undefined,
-          setupMinutesBefore: r.setupMinutesBefore ?? 0,
-          teardownMinutesAfter: r.teardownMinutesAfter ?? 0,
-          pendingAmount: computeProjectRentalPendingAmount(r),
-        };
-      }),
-    };
+  const onSubmit = form.handleSubmit((data: ProjectFormValues) => {
+    const payload: CreateProjectInput = formValuesToCreateInput(data);
     startTransition(async () => {
       try {
         const response = await fetch("/api/projects", {
@@ -1307,7 +1117,7 @@ export function CreateProjectForm({
             <Button
               type="button"
               variant="outline"
-              onClick={() => append({ ...defaultRental })}
+              onClick={() => append({ ...DEFAULT_RENTAL_FORM_VALUES })}
               className="w-fit gap-2"
             >
               <Plus className="size-4" aria-hidden />
