@@ -8,6 +8,7 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  Copy,
   Download,
   Loader2,
   Pencil,
@@ -146,7 +147,7 @@ function ProjectsListMaybeHoverCardText({
       <HoverCardTrigger asChild>{children}</HoverCardTrigger>
       <HoverCardContent
         align="start"
-        className="w-[min(34rem,90vw)] max-h-80 overflow-auto whitespace-pre-wrap wrap-break-word p-3 text-sm leading-relaxed"
+        className="w-full max-w-lg whitespace-pre-wrap wrap-break-word p-3 text-sm leading-relaxed"
       >
         {value}
       </HoverCardContent>
@@ -826,45 +827,85 @@ function renderProjectsListCell(
     case "actions":
       return (
         <div className="flex items-center gap-1">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            aria-label={PROJECT_DETAIL_PAGE.buttonDownloadCsv}
-            onClick={() => actionsCtx.onDownloadCsv(project.id)}
-            disabled={actionsCtx.downloadingId === project.id}
-          >
-            {actionsCtx.downloadingId === project.id ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <Download className="size-4" />
-            )}
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            asChild
-            aria-label={PROJECTS_PAGE.actionEditAria}
-          >
-            <Link href={`/dashboard/projects/${project.id}`}>
-              <Pencil className="size-4" />
-            </Link>
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label={PROJECT_DETAIL_PAGE.buttonDownloadCsv}
+                onClick={() => actionsCtx.onDownloadCsv(project.id)}
+                disabled={actionsCtx.downloadingId === project.id}
+              >
+                {actionsCtx.downloadingId === project.id ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Download className="size-4" />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top" sideOffset={4}>
+              {PROJECTS_PAGE.actionDownloadTooltip}
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                asChild
+                aria-label={PROJECTS_PAGE.actionDuplicateAria}
+              >
+                <Link href={`/dashboard/projects/new?duplicateFrom=${project.id}`}>
+                  <Copy className="size-4" />
+                </Link>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top" sideOffset={4}>
+              {PROJECTS_PAGE.actionDuplicateTooltip}
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                asChild
+                aria-label={PROJECTS_PAGE.actionEditAria}
+              >
+                <Link href={`/dashboard/projects/${project.id}`}>
+                  <Pencil className="size-4" />
+                </Link>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top" sideOffset={4}>
+              {PROJECTS_PAGE.actionEditTooltip}
+            </TooltipContent>
+          </Tooltip>
           <AlertDialog
             onOpenChange={(open) => {
               actionsCtx.onAlertOpenChange(open);
             }}
           >
-            <AlertDialogTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                aria-label={PROJECTS_PAGE.actionDeleteAria}
-              >
-                <Trash2 className="size-4" />
-              </Button>
-            </AlertDialogTrigger>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={PROJECTS_PAGE.actionDeleteAria}
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                </AlertDialogTrigger>
+              </TooltipTrigger>
+              <TooltipContent side="top" sideOffset={4}>
+                {PROJECTS_PAGE.actionDeleteTooltip}
+              </TooltipContent>
+            </Tooltip>
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>
