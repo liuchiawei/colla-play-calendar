@@ -5,6 +5,7 @@
  */
 
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import { Prisma } from "@/lib/generated/prisma/client";
 import prisma from "@/lib/prisma";
 import { getSpaceNameById } from "@/lib/config/config";
@@ -316,14 +317,10 @@ function mapRowToProject(
   };
 }
 
-/**
- * 取得專案列表（供 dashboard 列表頁使用）
- *
- * 查詢 Project 含 rentals，依 createdAt 降序，並 map 成列表用 Project 型別。
- *
- * @returns Promise<Project[]>
- */
-export async function getProjectsForList(): Promise<Project[]> {
+/** 管理後台專案列表 unstable_cache 標籤；變更專案資料後須 revalidateTag */
+export const ADMIN_PROJECTS_LIST_CACHE_TAG = "admin-projects-list";
+
+async function fetchProjectsForListUncached(): Promise<Project[]> {
   const [rows, adminOptions] = await Promise.all([
     prisma.project.findMany({
       include: { rentals: true },
@@ -333,6 +330,27 @@ export async function getProjectsForList(): Promise<Project[]> {
   ]);
   const adminNameById = new Map(adminOptions.map((o) => [o.id, o.name]));
   return rows.map((row) => mapRowToProject(row, adminNameById));
+}
+
+const getProjectsForListCached = unstable_cache(
+  fetchProjectsForListUncached,
+  ["get-projects-for-list"],
+  {
+    tags: [ADMIN_PROJECTS_LIST_CACHE_TAG],
+    revalidate: 300,
+  },
+);
+
+/**
+ * 取得專案列表（供 dashboard 列表頁使用）
+ *
+ * 查詢 Project 含 rentals，依 createdAt 降序，並 map 成列表用 Project 型別。
+ * 以 unstable_cache 跨請求快取，寫入後請 revalidateTag(ADMIN_PROJECTS_LIST_CACHE_TAG)。
+ *
+ * @returns Promise<Project[]>
+ */
+export async function getProjectsForList(): Promise<Project[]> {
+  return getProjectsForListCached();
 }
 
 /**

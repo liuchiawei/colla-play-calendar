@@ -1,8 +1,10 @@
 // POST /api/projects - 建立新專案（create-new-project）
 // GET /api/projects - 專案列表
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { requireAuth } from "@/lib/services/auth/auth-server.service";
 import {
+  ADMIN_PROJECTS_LIST_CACHE_TAG,
   createProject,
   getProjectsForList,
   ProjectRentalConflictError,
@@ -192,6 +194,8 @@ export async function POST(request: NextRequest) {
     }
 
     const project = await createProject(validated.data);
+    revalidatePath("/dashboard-new/projects");
+    revalidateTag(ADMIN_PROJECTS_LIST_CACHE_TAG, "max");
 
     return NextResponse.json<ApiResponse<ProjectWithRentals>>(
       { success: true, data: project },

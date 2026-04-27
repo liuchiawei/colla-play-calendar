@@ -23,6 +23,15 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -55,6 +64,48 @@ import { cn } from "@/lib/utils";
 import { formatRentalDateRangeForTable } from "@/lib/utils/project";
 import { formatEquipmentNeedsLine } from "@/lib/utils/project-equipment-needs";
 import { deleteProject, downloadProjectDetailCsv } from "./[id]/actions";
+
+/** 專案表格每頁筆數（列表為客戶端 slice，僅影響 DOM 與互動） */
+const PROJECTS_LIST_PAGE_SIZE = 25;
+
+/**
+ * 產生分頁按鈕序列（頁碼或省略號），總頁數大時收斂顯示。
+ */
+function buildPaginationItems(
+  currentPage: number,
+  totalPages: number,
+): Array<number | "ellipsis"> {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, i) => i + 1);
+  }
+
+  const result: Array<number | "ellipsis"> = [];
+  result.push(1);
+
+  if (currentPage <= 4) {
+    result.push(2, 3, 4, 5, "ellipsis", totalPages);
+  } else if (currentPage >= totalPages - 3) {
+    result.push(
+      "ellipsis",
+      totalPages - 4,
+      totalPages - 3,
+      totalPages - 2,
+      totalPages - 1,
+      totalPages,
+    );
+  } else {
+    result.push(
+      "ellipsis",
+      currentPage - 1,
+      currentPage,
+      currentPage + 1,
+      "ellipsis",
+      totalPages,
+    );
+  }
+
+  return result;
+}
 
 const DATE_FORMATTER = new Intl.DateTimeFormat("zh-TW", {
   dateStyle: "short",
@@ -440,6 +491,7 @@ export function ProjectsList({ projects }: ProjectsListProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [sort, setSort] = useState<SortState>(null);
+  const [page, setPage] = useState(1);
 
   const sortedProjects = useMemo(() => {
     if (!sort) return projects;
@@ -485,6 +537,28 @@ export function ProjectsList({ projects }: ProjectsListProps) {
 
     return withIndex.map((x) => x.project);
   }, [projects, sort]);
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(sortedProjects.length / PROJECTS_LIST_PAGE_SIZE),
+  );
+
+  const activePage = Math.min(Math.max(1, page), totalPages);
+
+  const paginatedProjects = useMemo(() => {
+    const start = (activePage - 1) * PROJECTS_LIST_PAGE_SIZE;
+    return sortedProjects.slice(start, start + PROJECTS_LIST_PAGE_SIZE);
+  }, [sortedProjects, activePage]);
+
+  const rangeStart =
+    sortedProjects.length === 0 ? 0 : (activePage - 1) * PROJECTS_LIST_PAGE_SIZE + 1;
+  const rangeEnd = Math.min(
+    activePage * PROJECTS_LIST_PAGE_SIZE,
+    sortedProjects.length,
+  );
+
+  const paginationItems =
+    sortedProjects.length > 0 ? buildPaginationItems(activePage, totalPages) : [];
 
   function toggleSort(nextKey: ProjectsListSortKey) {
     setSort((prev) => {
@@ -553,49 +627,103 @@ export function ProjectsList({ projects }: ProjectsListProps) {
           {PROJECTS_PAGE.emptyProjects}
         </p>
       ) : (
-        <div className="min-w-0 overflow-x-auto">
-          <Table>
-            <TableCaption className="sr-only">
-              {PROJECTS_PAGE.tableCaption}
-            </TableCaption>
-            <TableHeader>
-              <TableRow>
-                {PROJECTS_LIST_COLUMNS.map((column) => (
-                  <ProjectsListTableHeadCell
-                    key={column.id}
-                    column={column}
-                    sort={sort}
-                    onToggleSort={toggleSort}
-                  />
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody className="[&_tr:last-child_td:first-child]:rounded-bl-xl">
-              {sortedProjects.map((project) => {
-                const statusForUi = normalizeProjectStatusForUi(project.status);
-                return (
-                  <TableRow key={project.id} className="group">
-                    {PROJECTS_LIST_COLUMNS.map((column) => (
-                      <TableCell
-                        key={column.id}
-                        className={cn(
-                          column.cellClassName,
-                          projectsListStickyCellClass(column),
-                        )}
-                      >
-                        {renderProjectsListCell(
-                          column.id,
-                          project,
-                          statusForUi,
-                          actionsCellCtx,
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+        <div className="min-w-0 flex flex-col">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableCaption className="sr-only">
+                {PROJECTS_PAGE.tableCaption}
+              </TableCaption>
+              <TableHeader>
+                <TableRow>
+                  {PROJECTS_LIST_COLUMNS.map((column) => (
+                    <ProjectsListTableHeadCell
+                      key={column.id}
+                      column={column}
+                      sort={sort}
+                      onToggleSort={toggleSort}
+                    />
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody className="[&_tr:last-child_td:first-child]:rounded-bl-xl">
+                {paginatedProjects.map((project) => {
+                  const statusForUi = normalizeProjectStatusForUi(project.status);
+                  return (
+                    <TableRow key={project.id} className="group">
+                      {PROJECTS_LIST_COLUMNS.map((column) => (
+                        <TableCell
+                          key={column.id}
+                          className={cn(
+                            column.cellClassName,
+                            projectsListStickyCellClass(column),
+                          )}
+                        >
+                          {renderProjectsListCell(
+                            column.id,
+                            project,
+                            statusForUi,
+                            actionsCellCtx,
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+
+          <div className="flex flex-col gap-3 border-t border-border px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground tabular-nums md:w-full">
+              顯示第 {rangeStart}–{rangeEnd} 筆，共 {sortedProjects.length} 筆
+              <span className="sr-only">
+                ，第 {activePage} 頁，共 {totalPages} 頁
+              </span>
+            </p>
+
+            {totalPages > 1 ? (
+              <Pagination className="mx-0 w-full justify-end">
+                <PaginationContent className="w-full flex-wrap justify-end gap-1">
+                  <PaginationItem>
+                    <PaginationPrevious
+                      type="button"
+                      disabled={activePage <= 1}
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    />
+                  </PaginationItem>
+
+                  {paginationItems.map((item, idx) =>
+                    item === "ellipsis" ? (
+                      <PaginationItem key={`e-${idx}`}>
+                        <PaginationEllipsis />
+                      </PaginationItem>
+                    ) : (
+                      <PaginationItem key={item}>
+                        <PaginationLink
+                          type="button"
+                          isActive={item === activePage}
+                          onClick={() => setPage(item)}
+                          aria-label={`第 ${item} 頁`}
+                        >
+                          {item}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ),
+                  )}
+
+                  <PaginationItem>
+                    <PaginationNext
+                      type="button"
+                      disabled={activePage >= totalPages}
+                      onClick={() =>
+                        setPage((p) => Math.min(totalPages, p + 1))
+                      }
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            ) : null}
+          </div>
         </div>
       )}
     </section>

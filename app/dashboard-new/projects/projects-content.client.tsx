@@ -201,6 +201,28 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
     );
   }, [projects]);
 
+  /** 列表篩選／搜尋變更時重掛載 ProjectsList，重設分頁與欄位排序狀態 */
+  const projectsListResetKey = React.useMemo(
+    () =>
+      [
+        searchQuery,
+        [...selectedSpaceIds].sort().join(","),
+        [...selectedStatusValues].sort().join(","),
+        [...selectedContactPeople].sort().join(","),
+        [...selectedActivityTypeValues].sort().join(","),
+        selectedDateRange?.from?.getTime() ?? "",
+        selectedDateRange?.to?.getTime() ?? "",
+      ].join("|"),
+    [
+      searchQuery,
+      selectedActivityTypeValues,
+      selectedContactPeople,
+      selectedDateRange,
+      selectedSpaceIds,
+      selectedStatusValues,
+    ],
+  );
+
   const filteredProjects = React.useMemo(() => {
     const searched = filterProjectsFuzzy(projects, searchQuery);
 
@@ -867,7 +889,10 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
         </TabsList>
 
         <TabsContent value="list" className="flex-1 min-w-0 w-full">
-          <ProjectsList projects={filteredProjects} />
+          <ProjectsList
+            key={projectsListResetKey}
+            projects={filteredProjects}
+          />
         </TabsContent>
 
         <TabsContent value="week" className="flex-1 min-w-0 w-full">
