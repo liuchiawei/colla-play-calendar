@@ -213,6 +213,7 @@ const editProjectSchema = z
       .enum([
         "negotiating",
         "confirmed",
+        "cancelled",
         "completed",
       ])
       .optional(),
