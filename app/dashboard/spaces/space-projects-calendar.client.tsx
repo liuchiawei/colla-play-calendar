@@ -17,7 +17,7 @@ import {
   getTaipeiTodayYmd,
 } from "@/lib/utils/project-effective-status";
 import type { Project, ProjectStatus } from "@/lib/types/project";
-import { getProjectTimeRange } from "@/lib/utils/project";
+import { getProjectTimeRangesForDateKey, getProjectTimeRange } from "@/lib/utils/project";
 import { expandRentalDateKeys } from "@/lib/utils/project-rental-interval";
 import { ALL_SPACES, getSpaceNameById } from "@/lib/config/config";
 import { formatMonthYear } from "@/lib/date-utils";
@@ -68,6 +68,7 @@ function badgeClassForProject(project: Project, todayYmd: string): string {
 function ProjectBadgeLink({
   project,
   dateKey,
+  contextSpaceId,
   todayYmd,
   className,
   showVenue = true,
@@ -76,17 +77,24 @@ function ProjectBadgeLink({
   project: Project;
   /** 格子日期 key（YYYY-MM-DD），有傳則顯示該日 rental 的時段 */
   dateKey?: string;
+  /** 目前 row 的空間 id；有傳則 badge 內僅顯示該空間名稱 */
+  contextSpaceId?: string;
   todayYmd: string;
   className?: string;
   showVenue?: boolean;
   /** spaceId → 框線顏色 class，用於場域名稱小標的邊框色 */
   spaceBorderColors?: Record<string, string>;
 }) {
-  const timeRange = getProjectTimeRange(project, dateKey);
-  const uniqueSpaceNames = React.useMemo(
-    () => getUniqueSpaceNames(project),
-    [project],
-  );
+  const timeRange = dateKey
+    ? getProjectTimeRangesForDateKey(project, dateKey)
+    : getProjectTimeRange(project, dateKey);
+
+  const uniqueSpaceNames = React.useMemo(() => {
+    if (contextSpaceId) {
+      return [{ id: contextSpaceId, name: getSpaceNameById(contextSpaceId) }];
+    }
+    return getUniqueSpaceNames(project);
+  }, [contextSpaceId, project]);
   return (
     <Badge
       asChild
@@ -144,12 +152,14 @@ function DayCellContent({
   todayYmd,
   showVenue,
   spaceBorderColors,
+  contextSpaceId,
 }: {
   projects: Project[];
   dateKey: string;
   todayYmd: string;
   showVenue?: boolean;
   spaceBorderColors?: Record<string, string>;
+  contextSpaceId?: string;
 }) {
   if (projects.length === 0) {
     return (
@@ -165,6 +175,7 @@ function DayCellContent({
           key={project.id}
           project={project}
           dateKey={dateKey}
+          contextSpaceId={contextSpaceId}
           todayYmd={todayYmd}
           className="text-[10px] truncate w-full"
           showVenue={showVenue}
@@ -370,6 +381,7 @@ export function SpaceProjectsCalendar({
                               <DayCellContent
                                 projects={dayProjects}
                                 dateKey={dateKey}
+                                contextSpaceId={space.id}
                                 todayYmd={todayYmd}
                                 showVenue={showVenue}
                                 spaceBorderColors={spaceBorderColors}

@@ -27,6 +27,7 @@ import {
   getTaipeiTodayYmd,
 } from "@/lib/utils/project-effective-status";
 import type { Project } from "@/lib/types/project";
+import { getProjectDateKeySummary } from "@/lib/utils/project";
 import { SpaceProjectsCalendar } from "../space-projects-calendar.client";
 import { cn } from "@/lib/utils";
 
@@ -180,10 +181,13 @@ export function SpaceProjectsContent({
                           </Link>
                         </TableCell>
                         <TableCell className="min-w-0 max-w-[160px] truncate">
-                          {project.space}
+                          {spaceName}
                         </TableCell>
                         <TableCell className="tabular-nums whitespace-nowrap">
-                          {DATE_FORMATTER.format(new Date(project.date))}
+                          {getProjectDateKeySummary(project, {
+                            maxShown: 2,
+                            formatDate: (d) => DATE_FORMATTER.format(d),
+                          }) ?? "—"}
                         </TableCell>
                         <TableCell className="min-w-0 max-w-[100px] truncate">
                           {project.contactPerson}

@@ -83,7 +83,7 @@ import {
 import type { Project, ProjectStatus } from "@/lib/types/project";
 import { cn } from "@/lib/utils";
 import { differenceInCalendarDays, startOfDay } from "date-fns";
-import { formatRentalDateRangeForTable } from "@/lib/utils/project";
+import { getProjectDateKeySummary } from "@/lib/utils/project";
 import { formatEquipmentNeedsLine } from "@/lib/utils/project-equipment-needs";
 import {
   deleteProject,
@@ -203,6 +203,36 @@ function parseDateToEpochMs(value: string | undefined): number | null {
   return Number.isFinite(ms) ? ms : null;
 }
 
+function getEarliestRentalDateKey(project: Project): string | null {
+  const rentals = project.rentals;
+  if (!rentals?.length) return null;
+  const keys = rentals
+    .map((r) => r.date?.slice(0, 10))
+    .filter(Boolean) as string[];
+  if (keys.length === 0) return null;
+  keys.sort((a, b) => a.localeCompare(b));
+  return keys[0] ?? null;
+}
+
+function getRentalTimeMinutesForDateKey(project: Project, dateKey: string): {
+  minStart: number | null;
+  maxEnd: number | null;
+} {
+  const rentals = project.rentals;
+  if (!rentals?.length) return { minStart: null, maxEnd: null };
+  const dk = dateKey.slice(0, 10);
+  let minStart: number | null = null;
+  let maxEnd: number | null = null;
+  for (const r of rentals) {
+    if (r.date?.slice(0, 10) !== dk) continue;
+    const s = parseTimeToMinutes(r.startTime);
+    const e = parseTimeToMinutes(r.endTime);
+    if (s != null) minStart = minStart == null ? s : Math.min(minStart, s);
+    if (e != null) maxEnd = maxEnd == null ? e : Math.max(maxEnd, e);
+  }
+  return { minStart, maxEnd };
+}
+
 /** 預設排序：解析 ISO / date-only 為 Date（與篩選／列表日期欄一致） */
 function parseDateToDateOnly(value: string | undefined | null): Date | null {
   if (!value) return null;
@@ -285,11 +315,19 @@ function makeProjectListSortValueGetters(): {
   eventOrVenueUse: (p) => p.eventOrVenueUse ?? "",
   space: (p) => p.space ?? "",
   date: (p) => {
-    const rentalDate = p.rentals?.[0]?.date;
-    return parseDateToEpochMs(rentalDate) ?? parseDateToEpochMs(p.date);
+    const earliest = getEarliestRentalDateKey(p);
+    return parseDateToEpochMs(earliest) ?? parseDateToEpochMs(p.date);
   },
-  eventStartTime: (p) => parseTimeToMinutes(p.rentals?.[0]?.startTime),
-  eventEndTime: (p) => parseTimeToMinutes(p.rentals?.[0]?.endTime),
+  eventStartTime: (p) => {
+    const dk = getEarliestRentalDateKey(p);
+    if (!dk) return null;
+    return getRentalTimeMinutesForDateKey(p, dk).minStart;
+  },
+  eventEndTime: (p) => {
+    const dk = getEarliestRentalDateKey(p);
+    if (!dk) return null;
+    return getRentalTimeMinutesForDateKey(p, dk).maxEnd;
+  },
   contactPerson: (p) => p.contactPerson ?? "",
   amount: (p) => p.amount ?? null,
   tables: (p) => {
@@ -539,15 +577,30 @@ function renderProjectsListCell(
     case "space":
       return project.space;
     case "date":
-      return project.rentals?.[0]
-        ? formatRentalDateRangeForTable(project.rentals[0], (d) =>
-            DATE_FORMATTER.format(d),
-          )
-        : DATE_FORMATTER.format(new Date(project.date));
-    case "eventStartTime":
-      return project.rentals?.[0]?.startTime ?? "—";
-    case "eventEndTime":
-      return project.rentals?.[0]?.endTime ?? "—";
+      return (
+        getProjectDateKeySummary(project, {
+          maxShown: 2,
+          formatDate: (d) => DATE_FORMATTER.format(d),
+        }) ?? "—"
+      );
+    case "eventStartTime": {
+      const dk = getEarliestRentalDateKey(project);
+      if (!dk) return "—";
+      const { minStart } = getRentalTimeMinutesForDateKey(project, dk);
+      if (minStart == null) return "—";
+      const hh = String(Math.floor(minStart / 60)).padStart(2, "0");
+      const mm = String(minStart % 60).padStart(2, "0");
+      return `${hh}:${mm}`;
+    }
+    case "eventEndTime": {
+      const dk = getEarliestRentalDateKey(project);
+      if (!dk) return "—";
+      const { maxEnd } = getRentalTimeMinutesForDateKey(project, dk);
+      if (maxEnd == null) return "—";
+      const hh = String(Math.floor(maxEnd / 60)).padStart(2, "0");
+      const mm = String(maxEnd % 60).padStart(2, "0");
+      return `${hh}:${mm}`;
+    }
     case "contactPerson":
       return project.contactPerson;
     case "amount":

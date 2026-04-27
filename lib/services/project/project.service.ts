@@ -263,11 +263,16 @@ function mapRowToProject(
   },
   adminNameById: Map<string, string>,
 ): Project {
-  const firstRental = row.rentals[0];
-  const space = firstRental
-    ? firstRental.spaceIds.map((id) => getSpaceNameById(id)).join("／")
-    : "";
-  const date = firstRental?.date ?? "";
+  const rentalSpaceIds = row.rentals.flatMap((r) => r.spaceIds);
+  const uniqueSpaceIds = [...new Set(rentalSpaceIds)];
+  const space = uniqueSpaceIds.map((id) => getSpaceNameById(id)).join("／");
+
+  const date =
+    row.rentals.length > 0
+      ? [...row.rentals]
+          .map((r) => r.date.slice(0, 10))
+          .sort((a, b) => a.localeCompare(b))[0] ?? ""
+      : "";
   const amount = row.rentals.reduce(
     (sum, r) => sum + r.rentalAmount + r.fnbAmount,
     0,

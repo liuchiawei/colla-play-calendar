@@ -16,7 +16,7 @@ import {
 } from "@/lib/utils/project-effective-status";
 import { CREATE_PROJECT_PAGE, FNB_AMOUNT_PENDING_LABEL } from "@/lib/message";
 import type { Project } from "@/lib/types/project";
-import { formatRentalDateRangeForTable } from "@/lib/utils/project";
+import { getProjectDateKeySummary } from "@/lib/utils/project";
 import { formatEquipmentNeedsLine } from "@/lib/utils/project-equipment-needs";
 import { expandRentalDateKeys } from "@/lib/utils/project-rental-interval";
 
@@ -108,13 +108,12 @@ function formatProjectCellPlain(
     case "space":
       return project.space ?? "";
     case "date":
-      return project.rentals?.[0]
-        ? formatRentalDateRangeForTable(project.rentals[0], (d) =>
-            DATE_FORMATTER.format(d),
-          )
-        : project.date
-          ? DATE_FORMATTER.format(new Date(project.date))
-          : "—";
+      return (
+        getProjectDateKeySummary(project, {
+          maxShown: 2,
+          formatDate: (d) => DATE_FORMATTER.format(d),
+        }) ?? "—"
+      );
     case "eventStartTime":
       return project.rentals?.[0]?.startTime ?? "—";
     case "eventEndTime":
