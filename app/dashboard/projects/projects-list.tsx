@@ -316,7 +316,9 @@ function makeProjectListSortValueGetters(): {
   space: (p) => p.space ?? "",
   date: (p) => {
     const earliest = getEarliestRentalDateKey(p);
-    return parseDateToEpochMs(earliest) ?? parseDateToEpochMs(p.date);
+    return (
+      parseDateToEpochMs(earliest ?? undefined) ?? parseDateToEpochMs(p.date)
+    );
   },
   eventStartTime: (p) => {
     const dk = getEarliestRentalDateKey(p);
