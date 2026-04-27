@@ -79,7 +79,7 @@ import {
   PROJECT_STATUS_UI_SELECTABLE,
   getStatusLabel,
   getStatusColorClass,
-  normalizeProjectStatusForUi,
+  getUiProjectStatus,
 } from "@/lib/config/project-status";
 import type {
   ProjectWithRentals,
@@ -102,6 +102,10 @@ import {
   rentalBoundsMs,
   spaceIdsIntersect,
 } from "@/lib/utils/project-rental-interval";
+import {
+  getEffectiveProjectStatus,
+  getTaipeiTodayYmd,
+} from "@/lib/utils/project-effective-status";
 import {
   buildProjectDetailCsv,
   getProjectDetailCsvFilename,
@@ -297,7 +301,7 @@ function projectToFormValues(project: ProjectWithRentals): EditFormValues {
   const { preset, customDetail } = splitActivityTypeForForm(
     project.eventType,
   );
-  const statusForUi = normalizeProjectStatusForUi(project.status);
+  const statusForUi = getUiProjectStatus(project, getTaipeiTodayYmd());
   return {
     customerName: project.customerName,
     customerPhone: project.customerPhone,
@@ -1155,7 +1159,12 @@ export function ProjectDetailContent({
   const collaPlayContactName =
     adminOptions.find((o) => o.id === project.collaPlayContactId)?.name ??
     project.collaPlayContactId;
-  const statusForUi = normalizeProjectStatusForUi(project.status);
+  const todayYmd = React.useMemo(() => getTaipeiTodayYmd(), []);
+  const statusForUi = getUiProjectStatus(project, todayYmd);
+  const effectiveStatusForDisplay = getEffectiveProjectStatus(
+    project,
+    todayYmd,
+  );
 
   const form = useForm<EditFormValues>({
     resolver: zodResolver(editProjectSchema) as Resolver<EditFormValues>,
@@ -2364,11 +2373,11 @@ export function ProjectDetailContent({
                   <span
                     className={cn(
                       "size-2.5 shrink-0 rounded-full",
-                      getStatusColorClass(statusForUi),
+                      getStatusColorClass(effectiveStatusForDisplay),
                     )}
                     aria-hidden
                   />
-                  {getStatusLabel(statusForUi)}
+                  {getStatusLabel(effectiveStatusForDisplay)}
                 </p>
               </div>
             ) : null}

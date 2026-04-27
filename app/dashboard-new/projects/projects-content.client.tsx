@@ -19,10 +19,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { PROJECTS_PAGE } from "@/lib/message";
 import { ALL_SPACES, getSpaceNameById } from "@/lib/config/config";
 import {
+  getUiProjectStatus,
   normalizeProjectStatusForUi,
   PROJECT_STATUS_UI_SELECTABLE,
   type ProjectStatusUi,
 } from "@/lib/config/project-status";
+import { getTaipeiTodayYmd } from "@/lib/utils/project-effective-status";
 import type { Project } from "@/lib/types/project";
 import {
   buildProjectsListCsv,
@@ -166,6 +168,8 @@ function projectMatchesSelectedActivityTypes(
 }
 
 export function ProjectsContent({ projects }: ProjectsContentProps) {
+  const todayYmd = React.useMemo(() => getTaipeiTodayYmd(), []);
+
   const [searchQuery, setSearchQuery] = React.useState("");
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [listCsvPopoverOpen, setListCsvPopoverOpen] = React.useState(false);
@@ -254,9 +258,9 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
         if (!matchViaRental && !matchViaProjectSpaceName) return false;
       }
 
-      // status (normalized to UI)
+      // status（含租借結束後視為已完成）
       if (selectedStatusValues.size > 0) {
-        const uiStatus = normalizeProjectStatusForUi(project.status);
+        const uiStatus = getUiProjectStatus(project, todayYmd);
         if (!uiStatus || !selectedStatusValues.has(uiStatus)) return false;
       }
 
@@ -305,6 +309,7 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
     selectedDateRange,
     selectedSpaceIds,
     selectedStatusValues,
+    todayYmd,
   ]);
 
   const searchInputId = "projects-search";

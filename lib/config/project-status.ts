@@ -5,6 +5,11 @@
 
 import { PROJECTS_PAGE } from "@/lib/message";
 import type { ProjectStatus } from "@/lib/types/project";
+import {
+  getEffectiveProjectStatus,
+  getTaipeiTodayYmd,
+  type ProjectLikeForEffectiveStatus,
+} from "@/lib/utils/project-effective-status";
 
 export type ProjectStatusUi = "negotiating" | "confirmed" | "completed";
 
@@ -33,6 +38,20 @@ export function normalizeProjectStatusForUi(
     case "completed":
       return status;
   }
+}
+
+/**
+ * 租借結束日已過則視為已完成後，再套用 UI 正規化（與 normalizeProjectStatusForUi 一致）
+ * @param todayYmd 省略時使用台北當日曆日期
+ */
+export function getUiProjectStatus(
+  project: ProjectLikeForEffectiveStatus,
+  todayYmd?: string,
+): ProjectStatusUi | null {
+  const ymd = todayYmd ?? getTaipeiTodayYmd();
+  return normalizeProjectStatusForUi(
+    getEffectiveProjectStatus(project, ymd),
+  );
 }
 
 export const PROJECT_STATUS_OPTIONS: Array<{

@@ -31,6 +31,10 @@ import {
   rentalBoundsMs,
   spaceIdsIntersect,
 } from "@/lib/utils/project-rental-interval";
+import {
+  getEffectiveProjectStatus,
+  getTaipeiTodayYmd,
+} from "@/lib/utils/project-effective-status";
 
 /** 與其他專案租借時段衝突（API 可回 409） */
 export class ProjectRentalConflictError extends Error {
@@ -381,9 +385,9 @@ export const getOverviewStats = cache(async (): Promise<OverviewStatsData> => {
   const start = `${y}-${m}-01`;
   const lastDay = new Date(y, now.getMonth() + 1, 0).getDate();
   const end = `${y}-${m}-${String(lastDay).padStart(2, "0")}`;
-  const todayStr = `${y}-${m}-${String(now.getDate()).padStart(2, "0")}`;
+  const todayYmd = getTaipeiTodayYmd(now);
 
-  const [monthlySum, negotiatingCount, confirmedCount, todayReservations] =
+  const [monthlySum, projectsForEffectiveStats, todayReservations] =
     await Promise.all([
       prisma.projectRental
         .aggregate({
@@ -394,12 +398,35 @@ export const getOverviewStats = cache(async (): Promise<OverviewStatsData> => {
           _sum: { rentalAmount: true, fnbAmount: true },
         })
         .then((r) => (r._sum.rentalAmount ?? 0) + (r._sum.fnbAmount ?? 0)),
-      prisma.project.count({ where: { status: "negotiating" } }),
-      prisma.project.count({
-        where: { status: { in: ["confirmed", "deposit_paid"] } },
+      prisma.project.findMany({
+        where: {
+          status: { notIn: ["cancelled", "completed"] },
+        },
+        select: {
+          status: true,
+          rentals: { select: { date: true, endDate: true } },
+        },
       }),
-      prisma.projectRental.count({ where: { date: todayStr } }),
+      prisma.projectRental.count({ where: { date: todayYmd } }),
     ]);
+
+  let negotiatingCount = 0;
+  let confirmedCount = 0;
+  for (const row of projectsForEffectiveStats) {
+    const eff = getEffectiveProjectStatus(
+      {
+        status: row.status as ProjectStatus,
+        rentals: row.rentals.map((r) => ({
+          date: r.date,
+          endDate: r.endDate,
+        })),
+      },
+      todayYmd,
+    );
+    if (eff === "completed") continue;
+    if (eff === "negotiating") negotiatingCount++;
+    else if (eff === "confirmed" || eff === "deposit_paid") confirmedCount++;
+  }
 
   return {
     monthlyRentalIncome: monthlySum,

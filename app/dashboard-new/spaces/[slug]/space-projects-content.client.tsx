@@ -20,8 +20,12 @@ import { PROJECTS_PAGE, SPACE_DETAIL_PAGE } from "@/lib/message";
 import {
   getStatusLabel,
   getStatusColorClass,
-  normalizeProjectStatusForUi,
+  getUiProjectStatus,
 } from "@/lib/config/project-status";
+import {
+  getEffectiveProjectStatus,
+  getTaipeiTodayYmd,
+} from "@/lib/utils/project-effective-status";
 import type { Project } from "@/lib/types/project";
 import { SpaceProjectsCalendar } from "../space-projects-calendar.client";
 import { cn } from "@/lib/utils";
@@ -56,6 +60,7 @@ export function SpaceProjectsContent({
   spaceName,
   projects,
 }: SpaceProjectsContentProps) {
+  const todayYmd = React.useMemo(() => getTaipeiTodayYmd(), []);
   const [searchQuery, setSearchQuery] = React.useState("");
 
   const filteredProjects = React.useMemo(
@@ -159,7 +164,8 @@ export function SpaceProjectsContent({
                   </TableHeader>
                   <TableBody>
                     {filteredProjects.map((project) => {
-                      const statusForUi = normalizeProjectStatusForUi(project.status);
+                      const statusForUi = getUiProjectStatus(project, todayYmd);
+                      const eff = getEffectiveProjectStatus(project, todayYmd);
                       return (
                         <TableRow key={project.id}>
                         <TableCell className="min-w-0 max-w-[120px] truncate">
@@ -191,11 +197,11 @@ export function SpaceProjectsContent({
                             <span
                               className={cn(
                                 "size-2 shrink-0 rounded-full",
-                                getStatusColorClass(statusForUi),
+                                getStatusColorClass(eff),
                               )}
                               aria-hidden
                             />
-                            {getStatusLabel(statusForUi)}
+                            {getStatusLabel(eff)}
                           </span>
                         ) : null}
                         </TableCell>

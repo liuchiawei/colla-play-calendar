@@ -54,6 +54,10 @@ import {
   normalizeProjectStatusForUi,
 } from "@/lib/config/project-status";
 import {
+  getEffectiveProjectStatus,
+  getTaipeiTodayYmd,
+} from "@/lib/utils/project-effective-status";
+import {
   PROJECTS_LIST_COLUMNS,
   type ProjectsListColumnConfig,
   type ProjectsListColumnId,
@@ -232,9 +236,9 @@ function getNearestActivityCalendarDistance(
   return minCalendarDistanceToInclusiveRange(todayStart, single, single);
 }
 
-/** 預設排序：已完成專案置於非完成之後（僅依 DB status） */
-function isCompletedBucket(project: Project): boolean {
-  return project.status === "completed";
+/** 預設排序：已完成專案置於非完成之後（含租借結束後視為已完成） */
+function isCompletedBucket(project: Project, todayYmd: string): boolean {
+  return getEffectiveProjectStatus(project, todayYmd) === "completed";
 }
 
 function parseIntIfNumeric(value: string | null | undefined): number | null {
@@ -245,15 +249,17 @@ function parseIntIfNumeric(value: string | null | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function statusLabelForSort(project: Project): string {
-  const statusForUi = normalizeProjectStatusForUi(project.status);
-  return statusForUi ? getStatusLabel(statusForUi) : "";
+function statusLabelForSort(project: Project, todayYmd: string): string {
+  const eff = getEffectiveProjectStatus(project, todayYmd);
+  const statusForUi = normalizeProjectStatusForUi(eff);
+  return statusForUi ? getStatusLabel(eff) : "";
 }
 
 /** 與 ProjectsListSortKey 對齊；增刪欄位時須同步更新 */
-const PROJECT_LIST_SORT_VALUE_GETTERS: {
+function makeProjectListSortValueGetters(todayYmd: string): {
   [K in ProjectsListSortKey]: (project: Project) => string | number | null;
-} = {
+} {
+  return {
   eventType: (p) => p.eventType ?? "",
   customer: (p) => p.customer ?? "",
   eventOrVenueUse: (p) => p.eventOrVenueUse ?? "",
@@ -266,7 +272,7 @@ const PROJECT_LIST_SORT_VALUE_GETTERS: {
   eventEndTime: (p) => parseTimeToMinutes(p.rentals?.[0]?.endTime),
   contactPerson: (p) => p.contactPerson ?? "",
   amount: (p) => p.amount ?? null,
-  status: (p) => statusLabelForSort(p),
+  status: (p) => statusLabelForSort(p, todayYmd),
   tables: (p) => {
     const n = parseIntIfNumeric(p.tables);
     return n ?? p.tables ?? "";
@@ -294,6 +300,7 @@ const PROJECT_LIST_SORT_VALUE_GETTERS: {
   },
   internalNotes: (p) => p.internalNotes ?? "",
 };
+}
 
 function getAriaSort(
   sort: SortState,
@@ -400,7 +407,7 @@ type ActionsCellContext = {
 function renderProjectsListCell(
   columnId: ProjectsListColumnId,
   project: Project,
-  statusForUi: ReturnType<typeof normalizeProjectStatusForUi>,
+  todayYmd: string,
   actionsCtx: ActionsCellContext,
 ): React.ReactNode {
   switch (columnId) {
@@ -433,7 +440,9 @@ function renderProjectsListCell(
       return project.contactPerson;
     case "amount":
       return CURRENCY_FORMATTER_INTEGER.format(project.amount);
-    case "status":
+    case "status": {
+      const eff = getEffectiveProjectStatus(project, todayYmd);
+      const statusForUi = normalizeProjectStatusForUi(eff);
       return statusForUi ? (
         <span
           className={cn(
@@ -446,13 +455,14 @@ function renderProjectsListCell(
               "size-2 shrink-0 rounded-full",
               statusForUi === "completed"
                 ? "bg-muted-foreground"
-                : getStatusColorClass(statusForUi),
+                : getStatusColorClass(eff),
             )}
             aria-hidden
           />
-          {getStatusLabel(statusForUi)}
+          {getStatusLabel(eff)}
         </span>
       ) : null;
+    }
     case "totalAttendees":
       return project.totalAttendees != null ? project.totalAttendees : "—";
     case "tables":
@@ -568,6 +578,12 @@ export function ProjectsList({ projects }: ProjectsListProps) {
   const [sort, setSort] = useState<SortState>(null);
   const [page, setPage] = useState(1);
 
+  const todayYmd = useMemo(() => getTaipeiTodayYmd(), []);
+  const sortValueGetters = useMemo(
+    () => makeProjectListSortValueGetters(todayYmd),
+    [todayYmd],
+  );
+
   const sortedProjects = useMemo(() => {
     const localeCompareZhTw = (a: string, b: string) =>
       a.localeCompare(b, "zh-TW", { sensitivity: "base" });
@@ -577,7 +593,7 @@ export function ProjectsList({ projects }: ProjectsListProps) {
       const withMeta = projects.map((project, originalIndex) => ({
         project,
         originalIndex,
-        completedRank: isCompletedBucket(project) ? 1 : 0,
+        completedRank: isCompletedBucket(project, todayYmd) ? 1 : 0,
         distance: getNearestActivityCalendarDistance(project, todayStart),
       }));
 
@@ -594,7 +610,7 @@ export function ProjectsList({ projects }: ProjectsListProps) {
       return withMeta.map((x) => x.project);
     }
 
-    const getter = PROJECT_LIST_SORT_VALUE_GETTERS[sort.key];
+    const getter = sortValueGetters[sort.key];
 
     const withIndex = projects.map((project, originalIndex) => ({
       project,
@@ -631,7 +647,7 @@ export function ProjectsList({ projects }: ProjectsListProps) {
     });
 
     return withIndex.map((x) => x.project);
-  }, [projects, sort]);
+  }, [projects, sort, sortValueGetters, todayYmd]);
 
   const totalPages = Math.max(
     1,
@@ -758,9 +774,7 @@ export function ProjectsList({ projects }: ProjectsListProps) {
                 </TableRow>
               </TableHeader>
               <TableBody className="[&_tr:last-child_td:first-child]:rounded-bl-xl">
-                {paginatedProjects.map((project) => {
-                  const statusForUi = normalizeProjectStatusForUi(project.status);
-                  return (
+                {paginatedProjects.map((project) => (
                     <TableRow key={project.id} className="group">
                       {PROJECTS_LIST_COLUMNS.map((column) => (
                         <TableCell
@@ -773,14 +787,13 @@ export function ProjectsList({ projects }: ProjectsListProps) {
                           {renderProjectsListCell(
                             column.id,
                             project,
-                            statusForUi,
+                            todayYmd,
                             actionsCellCtx,
                           )}
                         </TableCell>
                       ))}
                     </TableRow>
-                  );
-                })}
+                  ))}
               </TableBody>
             </Table>
           </div>
