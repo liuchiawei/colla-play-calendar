@@ -3,6 +3,7 @@
 import type React from "react";
 import { useCallback, useMemo, useTransition, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowDown,
   ArrowUp,
@@ -28,6 +29,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Pagination,
   PaginationContent,
@@ -72,12 +80,16 @@ import {
   type ProjectsListColumnId,
   type ProjectsListSortKey,
 } from "@/lib/config/projects-list-table";
-import type { Project } from "@/lib/types/project";
+import type { Project, ProjectStatus } from "@/lib/types/project";
 import { cn } from "@/lib/utils";
 import { differenceInCalendarDays, startOfDay } from "date-fns";
 import { formatRentalDateRangeForTable } from "@/lib/utils/project";
 import { formatEquipmentNeedsLine } from "@/lib/utils/project-equipment-needs";
-import { deleteProject, downloadProjectDetailCsv } from "./[id]/actions";
+import {
+  deleteProject,
+  downloadProjectDetailCsv,
+  updateProjectStatus,
+} from "./[id]/actions";
 
 /** 專案表格每頁筆數（列表為客戶端 slice，僅影響 DOM 與互動） */
 const PROJECTS_LIST_PAGE_SIZE = 25;
@@ -498,6 +510,10 @@ type ActionsCellContext = {
   onDownloadCsv: (projectId: string) => void;
   onDeleteConfirm: (projectId: string) => void;
   onAlertOpenChange: (open: boolean) => void;
+  statusUpdatingId: string | null;
+  statusErrorById: Readonly<Record<string, string | undefined>>;
+  statusOverrideById: Readonly<Record<string, ProjectStatus | undefined>>;
+  onUpdateProjectStatus: (project: Project, next: ProjectStatus) => void;
 };
 
 function renderProjectsListCell(
@@ -537,27 +553,90 @@ function renderProjectsListCell(
     case "amount":
       return CURRENCY_FORMATTER_INTEGER.format(project.amount);
     case "status": {
-      const eff = getEffectiveProjectStatus(project, todayYmd);
+      const effBase = getEffectiveProjectStatus(project, todayYmd);
+      if (effBase === "completed") {
+        const statusForUi = normalizeProjectStatusForUi(effBase);
+        return statusForUi ? (
+          <span className="flex items-center gap-2 text-muted-foreground">
+            <span
+              className={cn("size-2 shrink-0 rounded-full", "bg-muted-foreground")}
+              aria-hidden
+            />
+            {getStatusLabel(effBase)}
+          </span>
+        ) : null;
+      }
+
+      const overrideStatus = actionsCtx.statusOverrideById[project.id];
+      const eff = getEffectiveProjectStatus(
+        overrideStatus ? { ...project, status: overrideStatus } : project,
+        todayYmd,
+      );
       const statusForUi = normalizeProjectStatusForUi(eff);
-      return statusForUi ? (
-        <span
-          className={cn(
-            "flex items-center gap-2",
-            statusForUi === "completed" && "text-muted-foreground",
-          )}
-        >
-          <span
-            className={cn(
-              "size-2 shrink-0 rounded-full",
-              statusForUi === "completed"
-                ? "bg-muted-foreground"
-                : getStatusColorClass(eff),
-            )}
-            aria-hidden
-          />
-          {getStatusLabel(eff)}
-        </span>
-      ) : null;
+
+      const isUpdating = actionsCtx.statusUpdatingId === project.id;
+      const errorMessage = actionsCtx.statusErrorById[project.id];
+
+      const selectValue: Extract<ProjectStatusUi, "negotiating" | "confirmed" | "cancelled"> =
+        statusForUi === "confirmed" || statusForUi === "cancelled"
+          ? statusForUi
+          : "negotiating";
+
+      return (
+        <div className="flex flex-col gap-1">
+          <Select
+            value={selectValue}
+            onValueChange={(next) => {
+              const nextDbStatus = next as ProjectStatus;
+              actionsCtx.onUpdateProjectStatus(project, nextDbStatus);
+            }}
+            disabled={isUpdating}
+          >
+            <SelectTrigger
+              size="sm"
+              className={cn(
+                "h-8 w-full justify-start border-transparent bg-transparent px-2 py-1 shadow-none hover:bg-accent/40 focus-visible:ring-primary/40",
+                isUpdating && "opacity-80",
+              )}
+              aria-label={`更新狀態：${project.eventOrVenueUse}`}
+            >
+              <SelectValue>
+                <span className="flex min-w-0 items-center gap-2">
+                  <span
+                    className={cn(
+                      "size-2 shrink-0 rounded-full",
+                      selectValue === "cancelled"
+                        ? getStatusColorClass("cancelled")
+                        : getStatusColorClass(eff),
+                    )}
+                    aria-hidden
+                  />
+                  <span className="min-w-0 truncate">
+                    {selectValue === "negotiating"
+                      ? "洽談中"
+                      : selectValue === "confirmed"
+                        ? "已確定"
+                        : "已取消"}
+                  </span>
+                  {isUpdating ? (
+                    <Loader2 className="ml-auto size-3.5 animate-spin text-muted-foreground" />
+                  ) : null}
+                </span>
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent align="start">
+              <SelectItem value="negotiating">洽談中</SelectItem>
+              <SelectItem value="confirmed">已確定</SelectItem>
+              <SelectItem value="cancelled">已取消</SelectItem>
+            </SelectContent>
+          </Select>
+          {errorMessage ? (
+            <p className="text-xs text-destructive" role="alert">
+              {errorMessage}
+            </p>
+          ) : null}
+        </div>
+      );
     }
     case "totalAttendees":
       return project.totalAttendees != null ? project.totalAttendees : "—";
@@ -667,12 +746,20 @@ function renderProjectsListCell(
 }
 
 export function ProjectsList({ projects }: ProjectsListProps) {
+  const router = useRouter();
   const [, startTransition] = useTransition();
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [sort, setSort] = useState<SortState>(null);
   const [page, setPage] = useState(1);
+  const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
+  const [statusErrorById, setStatusErrorById] = useState<
+    Record<string, string | undefined>
+  >({});
+  const [statusOverrideById, setStatusOverrideById] = useState<
+    Record<string, ProjectStatus | undefined>
+  >({});
   const [selectedStatusValues, setSelectedStatusValues] = useState<
     Set<ProjectStatusUi>
   >(() => new Set());
@@ -843,6 +930,45 @@ export function ProjectsList({ projects }: ProjectsListProps) {
     });
   }, []);
 
+  const handleUpdateProjectStatus = useCallback(
+    (project: Project, nextStatus: ProjectStatus) => {
+      const projectId = project.id;
+      setStatusUpdatingId(projectId);
+      setStatusErrorById((prev) => ({ ...prev, [projectId]: undefined }));
+
+      const optimisticStatus: ProjectStatus =
+        nextStatus === "confirmed" ? "confirmed" : nextStatus;
+
+      setStatusOverrideById((prev) => ({ ...prev, [projectId]: optimisticStatus }));
+
+      startTransition(async () => {
+        const result = await updateProjectStatus(projectId, optimisticStatus);
+        if (!result.success) {
+          setStatusOverrideById((prev) => {
+            const next = { ...prev };
+            delete next[projectId];
+            return next;
+          });
+          setStatusErrorById((prev) => ({
+            ...prev,
+            [projectId]: result.error || "更新失敗",
+          }));
+          setStatusUpdatingId(null);
+          return;
+        }
+
+        setStatusUpdatingId(null);
+        setStatusOverrideById((prev) => {
+          const next = { ...prev };
+          delete next[projectId];
+          return next;
+        });
+        router.refresh();
+      });
+    },
+    [router, startTransition],
+  );
+
   const actionsCellCtx = useMemo<ActionsCellContext>(
     () => ({
       downloadingId,
@@ -853,12 +979,20 @@ export function ProjectsList({ projects }: ProjectsListProps) {
       onAlertOpenChange: (open) => {
         if (!open) setDeleteError(null);
       },
+      statusUpdatingId,
+      statusErrorById,
+      statusOverrideById,
+      onUpdateProjectStatus: handleUpdateProjectStatus,
     }),
     [
       downloadingId,
       deletingId,
       deleteError,
       handleDownloadCsv,
+      handleUpdateProjectStatus,
+      statusErrorById,
+      statusOverrideById,
+      statusUpdatingId,
     ],
   );
 
