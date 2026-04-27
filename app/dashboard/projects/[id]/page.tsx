@@ -55,7 +55,7 @@ export default async function ProjectDetailPage({ params, searchParams }: PagePr
   const h = await headers();
   const session = await auth.api.getSession({ headers: h });
   const sp = searchParams ? await searchParams : undefined;
-  const nextPath = buildPathWithSearch(`/dashboard-new/projects/${id}`, sp);
+  const nextPath = buildPathWithSearch(`/dashboard/projects/${id}`, sp);
 
   if (!session?.user) {
     redirect(buildLoginUrlWithNext(nextPath));
@@ -78,7 +78,7 @@ export default async function ProjectDetailPage({ params, searchParams }: PagePr
       />
 
       <div className="min-w-0 flex-1 p-6 flex flex-col gap-6">
-        <Link href="/dashboard-new/projects" className="self-start">
+        <Link href="/dashboard/projects" className="self-start">
           <Button variant="ghost" size="sm" className="gap-2">
             <ArrowLeft className="size-4" />
             {PROJECT_DETAIL_PAGE.buttonBackToList}

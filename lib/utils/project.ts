@@ -5,6 +5,90 @@ import {
 } from "@/lib/utils/project-rental-interval";
 
 /**
+ * 取得專案涉及的日期摘要（以 rentals 展開的曆日去重）。
+ * - 不超過 maxShown：列出所有日期（短格式）
+ * - 超過：顯示前 maxShown 個 +「等N日」
+ */
+export function getProjectDateKeySummary(
+  project: Project,
+  options: { maxShown?: number; formatDate?: (d: Date) => string } = {},
+): string | null {
+  const rentals = project.rentals;
+  const fmt =
+    options.formatDate ??
+    new Intl.DateTimeFormat("zh-TW", { dateStyle: "short" }).format;
+  const maxShown = options.maxShown ?? 2;
+
+  if (!rentals?.length) {
+    if (!project.date) return null;
+    const d = new Date(`${project.date.slice(0, 10)}T12:00:00`);
+    if (!Number.isFinite(d.getTime())) return null;
+    return fmt(d);
+  }
+
+  const dateKeys = [
+    ...new Set(
+      rentals.flatMap((r) =>
+        expandRentalDateKeys({ date: r.date, endDate: r.endDate }).map((x) =>
+          x.slice(0, 10),
+        ),
+      ),
+    ),
+  ].sort((a, b) => a.localeCompare(b));
+
+  if (dateKeys.length === 0) return null;
+
+  const shown = dateKeys.slice(0, Math.max(1, maxShown)).map((dk) => {
+    const d = new Date(`${dk}T12:00:00`);
+    return fmt(d);
+  });
+
+  if (dateKeys.length <= shown.length) return shown.join("、");
+  return `${shown.join("、")} 等${dateKeys.length}日`;
+}
+
+function rentalTimeSegmentForDateKey(
+  rental: NonNullable<Project["rentals"]>[number],
+  dateKey: string,
+): string | null {
+  if (!rental.startTime || !rental.endTime) return null;
+  const dk = dateKey.slice(0, 10);
+  const d0 = rental.date.slice(0, 10);
+  const eff = effectiveEndDate(rental.date, rental.endDate);
+
+  if (eff === d0) return `${rental.startTime} – ${rental.endTime}`;
+  if (dk === d0) return `${rental.startTime} – …`;
+  if (dk === eff) return `… – ${rental.endTime}`;
+  return "全日";
+}
+
+/**
+ * 取得專案在指定日期的所有時段字串（同日多段會完整顯示）。
+ */
+export function getProjectTimeRangesForDateKey(
+  project: Project,
+  dateKey: string,
+): string | null {
+  const rentals = project.rentals;
+  if (!rentals?.length) return null;
+  const key = dateKey.slice(0, 10);
+
+  const parts: string[] = [];
+  for (const r of rentals) {
+    const covers = expandRentalDateKeys({ date: r.date, endDate: r.endDate })
+      .map((x) => x.slice(0, 10))
+      .includes(key);
+    if (!covers) continue;
+    const seg = rentalTimeSegmentForDateKey(r, key);
+    if (seg) parts.push(seg);
+  }
+
+  if (parts.length === 0) return null;
+  const unique = [...new Set(parts)];
+  return unique.join("、");
+}
+
+/**
  * 租借列：日期欄（含跨日區間）
  */
 export function formatRentalDateRangeForTable(

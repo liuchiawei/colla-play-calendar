@@ -194,7 +194,7 @@ export async function POST(request: NextRequest) {
     }
 
     const project = await createProject(validated.data);
-    revalidatePath("/dashboard-new/projects");
+    revalidatePath("/dashboard/projects");
     revalidateTag(ADMIN_PROJECTS_LIST_CACHE_TAG, "max");
 
     return NextResponse.json<ApiResponse<ProjectWithRentals>>(

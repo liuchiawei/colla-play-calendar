@@ -355,7 +355,7 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
         <div className="flex flex-col md:flex-row gap-3 items-center justify-between">
         <div className="flex flex-wrap items-center gap-2 shrink-0">
           {/* 新增專案 */}
-          <Link href="/dashboard-new/projects/new">
+          <Link href="/dashboard/projects/new">
             <Button
               variant="default"
               className="gap-2"
@@ -473,7 +473,7 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
                 {filteredProjects.slice(0, dropdownResultsLimit).map((project) => (
                   <li key={project.id} role="listitem">
                     <Link
-                      href={`/dashboard-new/projects/${project.id}`}
+                      href={`/dashboard/projects/${project.id}`}
                       className="block cursor-pointer rounded-sm px-2 py-1.5 text-sm outline-hidden focus:bg-accent focus:text-accent-foreground hover:bg-accent hover:text-accent-foreground"
                       onClick={() => setSearchOpen(false)}
                     >

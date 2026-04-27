@@ -22,6 +22,7 @@ import { startOfDay, isSameDay } from "date-fns";
 import { PROJECTS_PAGE } from "@/lib/message";
 import {
   PROJECT_STATUS_UI_SELECTABLE,
+  PROJECT_STATUS_UI_LEGEND,
   getStatusColorClass,
   normalizeProjectStatusForUi,
 } from "@/lib/config/project-status";
@@ -75,7 +76,7 @@ function ProjectBadgeLink({
       className={cn(badgeClassForProject(project, todayYmd), className)}
     >
       <Link
-        href={`/dashboard-new/projects/${project.id}`}
+        href={`/dashboard/projects/${project.id}`}
         className="flex flex-col"
       >
         <span className="text-wrap">{project.eventOrVenueUse}</span>
@@ -413,7 +414,7 @@ export function ProjectsWeekCalendar({ projects }: ProjectsWeekCalendarProps) {
       {/* 圖例 */}
       {projects.length > 0 ? (
         <div className="mt-3 flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground border-t border-border/50 pt-3 pb-2">
-          {PROJECT_STATUS_UI_SELECTABLE.map((opt) => (
+          {PROJECT_STATUS_UI_LEGEND.map((opt) => (
             <span
               key={opt.value}
               className="flex items-center gap-1.5 md:hidden"
@@ -424,13 +425,13 @@ export function ProjectsWeekCalendar({ projects }: ProjectsWeekCalendarProps) {
             </span>
           ))}
           <span className="hidden md:flex flex-wrap items-center gap-2">
-            {PROJECT_STATUS_UI_SELECTABLE.map((opt) => (
+            {PROJECT_STATUS_UI_LEGEND.map((opt) => (
               <Badge
                 key={opt.value}
                 className={cn(
                   "text-[10px] font-medium border-0",
                   getStatusColorClass(opt.value),
-                  opt.value !== "cancelled" && "text-white",
+                  "text-white",
                 )}
               >
                 {PROJECTS_PAGE[opt.labelKey]}

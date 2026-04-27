@@ -9,30 +9,30 @@ import { DASHBOARD_NEW_LABELS } from "../message";
 // Modern Admin Dashboard Navigation Configuration
 // 現代化管理後台導航配置
 
-export interface DashboardNewNavItem {
+export interface DashboardNavItem {
   href: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
 }
 
-export const dashboardNewNavigation: DashboardNewNavItem[] = [
+export const dashboardNavigation: DashboardNavItem[] = [
   {
-    href: "/dashboard-new",
+    href: "/dashboard",
     label: DASHBOARD_NEW_LABELS.overview,
     icon: LayoutDashboard,
   },
   {
-    href: "/dashboard-new/spaces",
+    href: "/dashboard/spaces",
     label: DASHBOARD_NEW_LABELS.spaces,
     icon: Building2,
   },
   {
-    href: "/dashboard-new/projects",
+    href: "/dashboard/projects",
     label: DASHBOARD_NEW_LABELS.projects,
     icon: FolderKanban,
   },
   {
-    href: "/dashboard-new/users",
+    href: "/dashboard/users",
     label: DASHBOARD_NEW_LABELS.users,
     icon: Users,
   },
@@ -52,7 +52,7 @@ export const dashboardColors = {
   },
 } as const;
 
-// 專案列表表格欄位（順序與版型）；實際渲染見 app/dashboard-new/projects/projects-list.tsx
+// 專案列表表格欄位（順序與版型）；實際渲染見 app/dashboard/projects/projects-list.tsx
 export {
   PROJECTS_LIST_COLUMNS,
   type ProjectsListColumnConfig,

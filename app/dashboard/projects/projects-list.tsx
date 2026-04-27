@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import {
   Popover,
   PopoverContent,
@@ -56,11 +57,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   CREATE_PROJECT_PAGE,
+  COMMON_ERRORS,
+  COMMON_PLACEHOLDERS,
   PROJECTS_PAGE,
   PROJECT_DETAIL_PAGE,
   FNB_AMOUNT_PENDING_LABEL,
+  COMMON_ACTIONS,
 } from "@/lib/message";
 import {
   getStatusLabel,
@@ -83,7 +88,7 @@ import {
 import type { Project, ProjectStatus } from "@/lib/types/project";
 import { cn } from "@/lib/utils";
 import { differenceInCalendarDays, startOfDay } from "date-fns";
-import { formatRentalDateRangeForTable } from "@/lib/utils/project";
+import { getProjectDateKeySummary } from "@/lib/utils/project";
 import { formatEquipmentNeedsLine } from "@/lib/utils/project-equipment-needs";
 import {
   deleteProject,
@@ -94,9 +99,59 @@ import {
 /** 專案表格每頁筆數（列表為客戶端 slice，僅影響 DOM 與互動） */
 const PROJECTS_LIST_PAGE_SIZE = 25;
 
+/** 專案列表：hover 顯示完整內容的長度門檻 */
+const PROJECTS_LIST_HOVER_PREVIEW_THRESHOLD = 8;
+
 function summarizeSelected(count: number, emptyLabel: string): string {
   if (count <= 0) return emptyLabel;
-  return `已選 ${count}`;
+  return formatTemplate(PROJECTS_PAGE.selectedCount, { count });
+}
+
+function shouldEnableHoverPreview(value: string): boolean {
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === COMMON_PLACEHOLDERS.dash) return false;
+  return trimmed.length > PROJECTS_LIST_HOVER_PREVIEW_THRESHOLD;
+}
+
+function ProjectsListMaybeTooltipText({
+  value,
+  children,
+}: {
+  value: string;
+  children: React.ReactNode;
+}): React.ReactNode {
+  if (!shouldEnableHoverPreview(value)) return children;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent className="max-w-[min(28rem,90vw)] max-h-72 overflow-auto whitespace-pre-wrap wrap-break-word">
+        {value}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function ProjectsListMaybeHoverCardText({
+  value,
+  children,
+}: {
+  value: string;
+  children: React.ReactNode;
+}): React.ReactNode {
+  if (!shouldEnableHoverPreview(value)) return children;
+
+  return (
+    <HoverCard openDelay={80} closeDelay={50}>
+      <HoverCardTrigger asChild>{children}</HoverCardTrigger>
+      <HoverCardContent
+        align="start"
+        className="w-[min(34rem,90vw)] max-h-80 overflow-auto whitespace-pre-wrap wrap-break-word p-3 text-sm leading-relaxed"
+      >
+        {value}
+      </HoverCardContent>
+    </HoverCard>
+  );
 }
 
 function formatTemplate(
@@ -203,6 +258,36 @@ function parseDateToEpochMs(value: string | undefined): number | null {
   return Number.isFinite(ms) ? ms : null;
 }
 
+function getEarliestRentalDateKey(project: Project): string | null {
+  const rentals = project.rentals;
+  if (!rentals?.length) return null;
+  const keys = rentals
+    .map((r) => r.date?.slice(0, 10))
+    .filter(Boolean) as string[];
+  if (keys.length === 0) return null;
+  keys.sort((a, b) => a.localeCompare(b));
+  return keys[0] ?? null;
+}
+
+function getRentalTimeMinutesForDateKey(project: Project, dateKey: string): {
+  minStart: number | null;
+  maxEnd: number | null;
+} {
+  const rentals = project.rentals;
+  if (!rentals?.length) return { minStart: null, maxEnd: null };
+  const dk = dateKey.slice(0, 10);
+  let minStart: number | null = null;
+  let maxEnd: number | null = null;
+  for (const r of rentals) {
+    if (r.date?.slice(0, 10) !== dk) continue;
+    const s = parseTimeToMinutes(r.startTime);
+    const e = parseTimeToMinutes(r.endTime);
+    if (s != null) minStart = minStart == null ? s : Math.min(minStart, s);
+    if (e != null) maxEnd = maxEnd == null ? e : Math.max(maxEnd, e);
+  }
+  return { minStart, maxEnd };
+}
+
 /** 預設排序：解析 ISO / date-only 為 Date（與篩選／列表日期欄一致） */
 function parseDateToDateOnly(value: string | undefined | null): Date | null {
   if (!value) return null;
@@ -285,11 +370,21 @@ function makeProjectListSortValueGetters(): {
   eventOrVenueUse: (p) => p.eventOrVenueUse ?? "",
   space: (p) => p.space ?? "",
   date: (p) => {
-    const rentalDate = p.rentals?.[0]?.date;
-    return parseDateToEpochMs(rentalDate) ?? parseDateToEpochMs(p.date);
+    const earliest = getEarliestRentalDateKey(p);
+    return (
+      parseDateToEpochMs(earliest ?? undefined) ?? parseDateToEpochMs(p.date)
+    );
   },
-  eventStartTime: (p) => parseTimeToMinutes(p.rentals?.[0]?.startTime),
-  eventEndTime: (p) => parseTimeToMinutes(p.rentals?.[0]?.endTime),
+  eventStartTime: (p) => {
+    const dk = getEarliestRentalDateKey(p);
+    if (!dk) return null;
+    return getRentalTimeMinutesForDateKey(p, dk).minStart;
+  },
+  eventEndTime: (p) => {
+    const dk = getEarliestRentalDateKey(p);
+    if (!dk) return null;
+    return getRentalTimeMinutesForDateKey(p, dk).maxEnd;
+  },
   contactPerson: (p) => p.contactPerson ?? "",
   amount: (p) => p.amount ?? null,
   tables: (p) => {
@@ -438,11 +533,17 @@ function ProjectsListStatusHeadCell({
             variant="ghost"
             size="sm"
             className="gap-1.5"
-            aria-label={`${PROJECTS_PAGE.columnStatus}篩選（${summarizeSelected(selectedStatusValues.size, "全部")}）`}
+            aria-label={formatTemplate(PROJECTS_PAGE.statusFilterAria, {
+              label: PROJECTS_PAGE.columnStatus,
+              selectedSummary: summarizeSelected(
+                selectedStatusValues.size,
+                PROJECTS_PAGE.filterAll,
+              ),
+            })}
           >
             {PROJECTS_PAGE.columnStatus}：
             <span className="text-muted-foreground">
-              {summarizeSelected(selectedStatusValues.size, "全部")}
+              {summarizeSelected(selectedStatusValues.size, PROJECTS_PAGE.filterAll)}
             </span>
           </Button>
         </PopoverTrigger>
@@ -457,7 +558,7 @@ function ProjectsListStatusHeadCell({
               onClick={() => onUpdateSelectedStatusValues(new Set())}
               disabled={selectedStatusValues.size === 0}
             >
-              清除
+              {COMMON_ACTIONS.clear}
             </Button>
           </div>
           <div className="mt-2 flex flex-col gap-2">
@@ -483,7 +584,9 @@ function ProjectsListStatusHeadCell({
                         return set;
                       });
                     }}
-                    aria-label={`選取狀態：${PROJECTS_PAGE[opt.labelKey]}`}
+                    aria-label={formatTemplate(PROJECTS_PAGE.statusSelectAria, {
+                      label: PROJECTS_PAGE[opt.labelKey],
+                    })}
                   />
                   <span
                     className={cn(
@@ -524,30 +627,57 @@ function renderProjectsListCell(
 ): React.ReactNode {
   switch (columnId) {
     case "eventType":
-      return project.eventType?.trim() ? project.eventType : "—";
+      return project.eventType?.trim() ? project.eventType : COMMON_PLACEHOLDERS.dash;
     case "eventOrVenueUse":
       return (
-        <Link
-          href={`/dashboard-new/projects/${project.id}`}
-          className="font-medium text-primary hover:underline focus:outline-none focus:underline"
-        >
-          {project.eventOrVenueUse}
-        </Link>
+        <ProjectsListMaybeTooltipText value={project.eventOrVenueUse}>
+          <Link
+            href={`/dashboard/projects/${project.id}`}
+            className="font-medium text-primary hover:underline focus:outline-none focus:underline"
+          >
+            {project.eventOrVenueUse}
+          </Link>
+        </ProjectsListMaybeTooltipText>
       );
     case "customer":
-      return project.customer;
+      return (
+        <ProjectsListMaybeTooltipText value={project.customer}>
+          <span className="block min-w-0 truncate">{project.customer}</span>
+        </ProjectsListMaybeTooltipText>
+      );
     case "space":
       return project.space;
     case "date":
-      return project.rentals?.[0]
-        ? formatRentalDateRangeForTable(project.rentals[0], (d) =>
-            DATE_FORMATTER.format(d),
-          )
-        : DATE_FORMATTER.format(new Date(project.date));
-    case "eventStartTime":
-      return project.rentals?.[0]?.startTime ?? "—";
-    case "eventEndTime":
-      return project.rentals?.[0]?.endTime ?? "—";
+      {
+        const summary =
+          getProjectDateKeySummary(project, {
+            maxShown: 2,
+            formatDate: (d) => DATE_FORMATTER.format(d),
+          }) ?? COMMON_PLACEHOLDERS.dash;
+        return (
+          <ProjectsListMaybeTooltipText value={summary}>
+            <span className="block min-w-0 truncate">{summary}</span>
+          </ProjectsListMaybeTooltipText>
+        );
+      }
+    case "eventStartTime": {
+      const dk = getEarliestRentalDateKey(project);
+      if (!dk) return COMMON_PLACEHOLDERS.dash;
+      const { minStart } = getRentalTimeMinutesForDateKey(project, dk);
+      if (minStart == null) return COMMON_PLACEHOLDERS.dash;
+      const hh = String(Math.floor(minStart / 60)).padStart(2, "0");
+      const mm = String(minStart % 60).padStart(2, "0");
+      return `${hh}:${mm}`;
+    }
+    case "eventEndTime": {
+      const dk = getEarliestRentalDateKey(project);
+      if (!dk) return COMMON_PLACEHOLDERS.dash;
+      const { maxEnd } = getRentalTimeMinutesForDateKey(project, dk);
+      if (maxEnd == null) return COMMON_PLACEHOLDERS.dash;
+      const hh = String(Math.floor(maxEnd / 60)).padStart(2, "0");
+      const mm = String(maxEnd % 60).padStart(2, "0");
+      return `${hh}:${mm}`;
+    }
     case "contactPerson":
       return project.contactPerson;
     case "amount":
@@ -598,7 +728,9 @@ function renderProjectsListCell(
                 "h-8 w-full justify-start border-transparent bg-transparent px-2 py-1 shadow-none hover:bg-accent/40 focus-visible:ring-primary/40",
                 isUpdating && "opacity-80",
               )}
-              aria-label={`更新狀態：${project.eventOrVenueUse}`}
+              aria-label={formatTemplate(PROJECTS_PAGE.statusUpdateAria, {
+                name: project.eventOrVenueUse,
+              })}
             >
               <SelectValue>
                 <span className="flex min-w-0 items-center gap-2">
@@ -613,10 +745,10 @@ function renderProjectsListCell(
                   />
                   <span className="min-w-0 truncate">
                     {selectValue === "negotiating"
-                      ? "洽談中"
+                      ? PROJECTS_PAGE.statusNegotiating
                       : selectValue === "confirmed"
-                        ? "已確定"
-                        : "已取消"}
+                        ? PROJECTS_PAGE.statusConfirmed
+                        : PROJECTS_PAGE.statusCancelledOption}
                   </span>
                   {isUpdating ? (
                     <Loader2 className="ml-auto size-3.5 animate-spin text-muted-foreground" />
@@ -625,9 +757,13 @@ function renderProjectsListCell(
               </SelectValue>
             </SelectTrigger>
             <SelectContent align="start">
-              <SelectItem value="negotiating">洽談中</SelectItem>
-              <SelectItem value="confirmed">已確定</SelectItem>
-              <SelectItem value="cancelled">已取消</SelectItem>
+              <SelectItem value="negotiating">
+                {PROJECTS_PAGE.statusNegotiating}
+              </SelectItem>
+              <SelectItem value="confirmed">{PROJECTS_PAGE.statusConfirmed}</SelectItem>
+              <SelectItem value="cancelled">
+                {PROJECTS_PAGE.statusCancelledOption}
+              </SelectItem>
             </SelectContent>
           </Select>
           {errorMessage ? (
@@ -639,18 +775,26 @@ function renderProjectsListCell(
       );
     }
     case "totalAttendees":
-      return project.totalAttendees != null ? project.totalAttendees : "—";
+      return project.totalAttendees != null
+        ? project.totalAttendees
+        : COMMON_PLACEHOLDERS.dash;
     case "tables":
-      return project.tables ?? "—";
+      return project.tables ?? COMMON_PLACEHOLDERS.dash;
     case "chairs":
-      return project.chairs != null ? project.chairs : "—";
+      return project.chairs != null ? project.chairs : COMMON_PLACEHOLDERS.dash;
     case "otherEquipment":
-      return (
-        formatEquipmentNeedsLine(
-          project.equipmentNeeds,
-          EQUIPMENT_NEEDS_LINE_LABELS,
-        ) ?? "—"
-      );
+      {
+        const line =
+          formatEquipmentNeedsLine(
+            project.equipmentNeeds,
+            EQUIPMENT_NEEDS_LINE_LABELS,
+          ) ?? COMMON_PLACEHOLDERS.dash;
+        return (
+          <ProjectsListMaybeHoverCardText value={line}>
+            <span className="block min-w-0 truncate">{line}</span>
+          </ProjectsListMaybeHoverCardText>
+        );
+      }
     case "rentalAmountTotal":
       return CURRENCY_FORMATTER_INTEGER.format(project.rentalAmountTotal);
     case "fnbAmountTotal":
@@ -662,9 +806,23 @@ function renderProjectsListCell(
     case "pendingAmountTotal":
       return CURRENCY_FORMATTER_INTEGER.format(project.pendingAmountTotal);
     case "fnbItems":
-      return project.fnbItems ?? "—";
+      {
+        const items = project.fnbItems ?? COMMON_PLACEHOLDERS.dash;
+        return (
+          <ProjectsListMaybeHoverCardText value={items}>
+            <span className="block min-w-0 truncate">{items}</span>
+          </ProjectsListMaybeHoverCardText>
+        );
+      }
     case "internalNotes":
-      return project.internalNotes ?? "—";
+      {
+        const notes = project.internalNotes ?? COMMON_PLACEHOLDERS.dash;
+        return (
+          <ProjectsListMaybeHoverCardText value={notes}>
+            <span className="block min-w-0 truncate">{notes}</span>
+          </ProjectsListMaybeHoverCardText>
+        );
+      }
     case "actions":
       return (
         <div className="flex items-center gap-1">
@@ -688,7 +846,7 @@ function renderProjectsListCell(
             asChild
             aria-label={PROJECTS_PAGE.actionEditAria}
           >
-            <Link href={`/dashboard-new/projects/${project.id}`}>
+            <Link href={`/dashboard/projects/${project.id}`}>
               <Pencil className="size-4" />
             </Link>
           </Button>
@@ -730,7 +888,7 @@ function renderProjectsListCell(
                   disabled={actionsCtx.deletingId === project.id}
                 >
                   {actionsCtx.deletingId === project.id
-                    ? "刪除中…"
+                    ? PROJECT_DETAIL_PAGE.deleteConfirmDeleting
                     : PROJECT_DETAIL_PAGE.deleteConfirmConfirm}
                 </AlertDialogAction>
               </AlertDialogFooter>
@@ -951,7 +1109,7 @@ export function ProjectsList({ projects }: ProjectsListProps) {
           });
           setStatusErrorById((prev) => ({
             ...prev,
-            [projectId]: result.error || "更新失敗",
+            [projectId]: result.error || COMMON_ERRORS.updateFailed,
           }));
           setStatusUpdatingId(null);
           return;
@@ -1091,7 +1249,9 @@ export function ProjectsList({ projects }: ProjectsListProps) {
                           type="button"
                           isActive={item === activePage}
                           onClick={() => setPage(item)}
-                          aria-label={`第 ${item} 頁`}
+                          aria-label={formatTemplate(PROJECTS_PAGE.paginationPageAria, {
+                            page: item,
+                          })}
                         >
                           {item}
                         </PaginationLink>

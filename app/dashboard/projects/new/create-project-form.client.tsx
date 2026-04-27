@@ -33,6 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { TimePicker } from "@/components/ui/time-picker";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
@@ -294,7 +295,7 @@ export function CreateProjectForm({
           });
           return;
         }
-        router.push("/dashboard-new/projects");
+        router.push("/dashboard/projects");
       } catch {
         form.setError("root", { message: "網路錯誤，請稍後再試" });
       }
@@ -1064,22 +1065,16 @@ export function CreateProjectForm({
                           {CREATE_PROJECT_PAGE.labelStartTimeRequired}
                         </FormLabel>
                         <FormControl>
-                          <Input
-                            {...field}
-                            type="time"
-                            step={900}
-                            name={field.name}
-                            aria-label={
+                          <TimePicker
+                            value={String(field.value ?? "")}
+                            onValueChange={field.onChange}
+                            minuteStep={5}
+                            hourAriaLabel={
                               CREATE_PROJECT_PAGE.labelStartTimeRequired
                             }
-                            onChange={(e) => {
-                              const el = e.target as HTMLInputElement;
-                              // type=time 在選取過程中可能先觸發 value="" 且 validity.badInput，勿寫入 RHF
-                              if (el.value === "" && el.validity.badInput) {
-                                return;
-                              }
-                              field.onChange(e);
-                            }}
+                            minuteAriaLabel={
+                              CREATE_PROJECT_PAGE.labelStartTimeRequired
+                            }
                           />
                         </FormControl>
                         <FormMessage />
@@ -1095,21 +1090,12 @@ export function CreateProjectForm({
                           {CREATE_PROJECT_PAGE.labelEndTimeRequired}
                         </FormLabel>
                         <FormControl>
-                          <Input
-                            {...field}
-                            type="time"
-                            step={900}
-                            name={field.name}
-                            aria-label={
-                              CREATE_PROJECT_PAGE.labelEndTimeRequired
-                            }
-                            onChange={(e) => {
-                              const el = e.target as HTMLInputElement;
-                              if (el.value === "" && el.validity.badInput) {
-                                return;
-                              }
-                              field.onChange(e);
-                            }}
+                          <TimePicker
+                            value={String(field.value ?? "")}
+                            onValueChange={field.onChange}
+                            minuteStep={5}
+                            hourAriaLabel={CREATE_PROJECT_PAGE.labelEndTimeRequired}
+                            minuteAriaLabel={CREATE_PROJECT_PAGE.labelEndTimeRequired}
                           />
                         </FormControl>
                         <FormMessage />

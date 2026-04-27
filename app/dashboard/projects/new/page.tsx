@@ -1,15 +1,14 @@
-// Modern Admin Dashboard - Spaces Page
-// 現代化管理後台 - 場域列表頁面
+// 建立新專案頁面
 
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
-import { DashboardShell } from "../components/dashboard-shell.client";
-import { PageHeader } from "../components/page-header.client";
-import { SpacesTabs } from "./spaces-tabs.client";
+import { DashboardShell } from "../../components/dashboard-shell.client";
+import { PageHeader } from "../../components/page-header.client";
+import { CreateProjectForm } from "./create-project-form.client";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { SPACES_PAGE } from "@/lib/message";
-import { getProjectsForList } from "@/lib/services/project/project.service";
+import { CREATE_PROJECT_PAGE } from "@/lib/message";
+import { getAdminContactOptions } from "@/lib/services/admin-contact.service";
 import {
   buildLoginUrlWithNext,
   buildPathWithSearch,
@@ -20,11 +19,11 @@ interface PageProps {
   searchParams?: Promise<NextSearchParams>;
 }
 
-export default async function SpacesPage({ searchParams }: PageProps) {
+export default async function NewProjectPage({ searchParams }: PageProps) {
   const h = await headers();
   const session = await auth.api.getSession({ headers: h });
   const sp = searchParams ? await searchParams : undefined;
-  const nextPath = buildPathWithSearch("/dashboard-new/spaces", sp);
+  const nextPath = buildPathWithSearch("/dashboard/projects/new", sp);
 
   if (!session?.user) {
     redirect(buildLoginUrlWithNext(nextPath));
@@ -38,15 +37,16 @@ export default async function SpacesPage({ searchParams }: PageProps) {
     redirect("/");
   }
 
-  const projects = await getProjectsForList();
+  const adminOptions = await getAdminContactOptions();
   return (
     <DashboardShell>
       <PageHeader
-        title={SPACES_PAGE.title}
-        description={SPACES_PAGE.description}
-        iconName="Building2"
+        title={CREATE_PROJECT_PAGE.pageTitle}
+        description={CREATE_PROJECT_PAGE.pageDescription}
+        iconName="FolderKanban"
       />
-      <SpacesTabs projects={projects} />
+
+      <CreateProjectForm adminOptions={adminOptions} />
     </DashboardShell>
   );
 }

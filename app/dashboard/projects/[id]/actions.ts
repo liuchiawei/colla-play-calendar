@@ -64,8 +64,8 @@ export async function updateProject(id: string, input: UpdateProjectInput): Prom
   }
   try {
     const data = await updateProjectService(id, input);
-    revalidatePath("/dashboard-new/projects");
-    revalidatePath(`/dashboard-new/projects/${id}`);
+    revalidatePath("/dashboard/projects");
+    revalidatePath(`/dashboard/projects/${id}`);
     revalidateTag(ADMIN_PROJECTS_LIST_CACHE_TAG, "max");
     return { success: true, data };
   } catch (e) {
@@ -81,9 +81,9 @@ export async function deleteProject(id: string): Promise<DeleteProjectResult> {
   }
   try {
     await deleteProjectService(id);
-    revalidatePath("/dashboard-new/projects");
+    revalidatePath("/dashboard/projects");
     revalidateTag(ADMIN_PROJECTS_LIST_CACHE_TAG, "max");
-    redirect("/dashboard-new/projects");
+    redirect("/dashboard/projects");
   } catch (e) {
     const message = e instanceof Error ? e.message : "刪除失敗";
     return { success: false, error: message };
@@ -95,8 +95,8 @@ export async function deleteRental(rentalId: string): Promise<DeleteRentalResult
   if (authError) return authError;
   try {
     const { projectId } = await deleteProjectRental(rentalId);
-    revalidatePath("/dashboard-new/projects");
-    revalidatePath(`/dashboard-new/projects/${projectId}`);
+    revalidatePath("/dashboard/projects");
+    revalidatePath(`/dashboard/projects/${projectId}`);
     revalidateTag(ADMIN_PROJECTS_LIST_CACHE_TAG, "max");
     return { success: true };
   } catch (e) {
@@ -113,8 +113,8 @@ export async function updateRental(
   if (authError) return authError;
   try {
     const data = await updateProjectRental(rentalId, input);
-    revalidatePath("/dashboard-new/projects");
-    revalidatePath(`/dashboard-new/projects/${data.projectId}`);
+    revalidatePath("/dashboard/projects");
+    revalidatePath(`/dashboard/projects/${data.projectId}`);
     revalidateTag(ADMIN_PROJECTS_LIST_CACHE_TAG, "max");
     return { success: true, data };
   } catch (e) {
@@ -130,8 +130,8 @@ export async function updateProjectStatus(id: string, status: ProjectStatus): Pr
   }
   try {
     const data = await updateProjectStatusService(id, status);
-    revalidatePath("/dashboard-new/projects");
-    revalidatePath(`/dashboard-new/projects/${id}`);
+    revalidatePath("/dashboard/projects");
+    revalidatePath(`/dashboard/projects/${id}`);
     revalidateTag(ADMIN_PROJECTS_LIST_CACHE_TAG, "max");
     return { success: true, data };
   } catch (e) {

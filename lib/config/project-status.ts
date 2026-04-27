@@ -101,6 +101,13 @@ export const PROJECT_STATUS_UI_SELECTABLE = PROJECT_STATUS_OPTIONS.filter((o) =>
   (PROJECT_STATUS_UI_SELECTABLE_VALUES as readonly string[]).includes(o.value),
 );
 
+/** 週曆等視圖的圖例用（含已完成，但不提供篩選選取） */
+export const PROJECT_STATUS_UI_LEGEND = PROJECT_STATUS_OPTIONS.filter((o) =>
+  (["negotiating", "confirmed", "completed"] as readonly ProjectStatus[]).includes(
+    o.value,
+  ),
+);
+
 /** 目前狀態是否在三選項內（否則 Select 需額外 item 以綁定 value） */
 export function isProjectStatusUiSelectable(status: ProjectStatus): boolean {
   return (PROJECT_STATUS_UI_SELECTABLE_VALUES as readonly string[]).includes(

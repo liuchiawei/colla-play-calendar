@@ -27,6 +27,44 @@ export const SOCIAL_LABELS = {
   facebook: "Facebook",
 } as const;
 
+// Common Actions / Buttons (通用操作)
+export const COMMON_ACTIONS = {
+  login: "登入",
+  logout: "登出",
+  save: "儲存",
+  cancel: "取消",
+  delete: "刪除",
+  clear: "清除",
+} as const;
+
+// Common UI placeholders / labels (通用 UI 文案)
+export const COMMON_PLACEHOLDERS = {
+  dash: "—",
+} as const;
+
+// Common Auth Messages (通用權限/登入訊息)
+export const COMMON_AUTH = {
+  loginRequired: "需要登入",
+  forbidden: "無權限",
+} as const;
+
+// Common Error Messages (通用失敗訊息)
+export const COMMON_ERRORS = {
+  updateFailed: "更新失敗",
+  deleteFailed: "刪除失敗",
+  removeFailed: "移除失敗",
+  downloadFailed: "下載失敗",
+} as const;
+
+// Nav Sheet (側邊導覽選單) 文案
+export const NAV_SHEET = {
+  adminBadge: "管理員",
+  defaultUserName: "用戶",
+  welcomeTitle: "歡迎",
+  welcomeDescription: "請登入以使用完整功能",
+  dashboardLinkLabel: "管理後台",
+} as const;
+
 // Dashboard Navigation Labels
 export const DASHBOARD_LABELS = {
   events: "活動管理",
@@ -41,6 +79,22 @@ export const DASHBOARD_NEW_LABELS = {
   projects: "專案管理",
   users: "成員管理",
   reports: "報表下載",
+} as const;
+
+// Projects API Messages (/api/projects)
+export const API_PROJECTS = {
+  validationMissingBody: "請提供專案資料",
+  validationCustomerNameRequired: "聯絡人姓名為必填",
+  validationCustomerPhoneInvalid: "聯絡電話格式錯誤",
+  validationEventOrVenueUseRequired: "活動或場地用途為必填",
+  validationCollaPlayContactRequired: "CollaPlay 窗口為必填",
+  validationRentalsAtLeastOne: "至少需一筆租借項目",
+  validationRentalItemInvalid: "第 {index} 筆租借項目格式錯誤",
+  validationRentalItemSpaceRequired:
+    "第 {index} 筆租借項目至少需選擇一個場域",
+  validationEquipmentNeedsInvalid: "設備需求格式錯誤",
+  fetchListFailed: "專案列表取得失敗",
+  createFailed: "專案建立失敗",
 } as const;
 
 // Space names and descriptions (keyed by slug = function, second part of Chinese name)
@@ -173,6 +227,7 @@ export const PROJECTS_PAGE = {
   statusDepositPaid: "已付訂",
   statusCompleted: "已完成",
   statusCancelled: "取消",
+  statusCancelledOption: "已取消",
   emptyProjects: "尚無專案或搜尋無結果",
   emptySpaceBookingsThisWeek: "本週無場地預訂",
   tabListView: "列表",
@@ -187,6 +242,12 @@ export const PROJECTS_PAGE = {
   downloadListCsvResetMonthAria: "將日期區間重設為目前月份",
   listPaginationSummary: "顯示第 {start}–{end} 筆，共 {total} 筆",
   listPaginationSrOnly: "，第 {page} 頁，共 {pages} 頁",
+  paginationPageAria: "第 {page} 頁",
+  filterAll: "全部",
+  selectedCount: "已選 {count}",
+  statusFilterAria: "{label}篩選（{selectedSummary}）",
+  statusSelectAria: "選取狀態：{label}",
+  statusUpdateAria: "更新狀態：{name}",
 } as const;
 
 /** 餐飲金額尚未確定：列表／詳情／CSV 顯示與表單勾選（單一來源） */
@@ -350,6 +411,7 @@ export const PROJECT_DETAIL_PAGE = {
   deleteConfirmDescription: "刪除後無法復原，確定要刪除此專案嗎？",
   deleteConfirmConfirm: "刪除",
   deleteConfirmCancel: "取消",
+  deleteConfirmDeleting: "刪除中…",
 
   deleteRentalConfirmTitle: "確認移除此筆租借",
   deleteRentalConfirmDescription: "移除此筆租借後無法復原，確定要移除嗎？",
@@ -367,7 +429,7 @@ export const PROJECT_DETAIL_PAGE = {
   notFound: "找不到此專案",
 } as const;
 
-// Users Page (成員管理頁 /dashboard-new/users)
+// Users Page (成員管理頁 /dashboard/users)
 export const USERS_PAGE = {
   title: "成員管理",
   description: "檢視與管理所有成員",
@@ -416,8 +478,13 @@ export const USERS_PAGE = {
 export type StoreMessages = typeof STORE_MESSAGES;
 export type NavLabels = typeof NAV_LABELS;
 export type SocialLabels = typeof SOCIAL_LABELS;
+export type CommonActions = typeof COMMON_ACTIONS;
+export type CommonAuthMessages = typeof COMMON_AUTH;
+export type CommonErrorMessages = typeof COMMON_ERRORS;
+export type NavSheetMessages = typeof NAV_SHEET;
 export type DashboardLabels = typeof DASHBOARD_LABELS;
 export type DashboardNewLabels = typeof DASHBOARD_NEW_LABELS;
+export type ApiProjectsMessages = typeof API_PROJECTS;
 export type SpacesPageMessages = typeof SPACES_PAGE;
 export type SpaceMessages = typeof SPACE_MESSAGES;
 export type DashboardOverviewMessages = typeof DASHBOARD_OVERVIEW;

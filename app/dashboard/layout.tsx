@@ -1,9 +1,21 @@
-import { SidebarProvider } from "@/components/ui/sidebar";
+// Modern Admin Dashboard Layout (Server Component)
+// 現代化管理後台佈局 - 管理員權限檢查與側邊欄包裝
 
-export default function DashboardLayout({
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { AdminSidebar } from "./components/admin-sidebar.client";
+
+export default async function DashboardNewLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <SidebarProvider>{children}</SidebarProvider>;
+  // Render layout with sidebar
+  return (
+    <SidebarProvider defaultOpen={true}>
+      <div className="flex min-h-screen w-full bg-linear-to-br from-background via-background to-accent/5 dark:from-background dark:via-background dark:to-accent/10">
+        <AdminSidebar />
+        <main className="flex-1 overflow-auto">{children}</main>
+      </div>
+    </SidebarProvider>
+  );
 }

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { SPACE_DETAIL_PAGE, PROJECTS_PAGE } from "@/lib/message";
 import {
   PROJECT_STATUS_UI_SELECTABLE,
+  PROJECT_STATUS_UI_LEGEND,
   getStatusColorClass,
   getUiProjectStatus,
   normalizeProjectStatusForUi,
@@ -17,7 +18,7 @@ import {
   getTaipeiTodayYmd,
 } from "@/lib/utils/project-effective-status";
 import type { Project, ProjectStatus } from "@/lib/types/project";
-import { getProjectTimeRange } from "@/lib/utils/project";
+import { getProjectTimeRangesForDateKey, getProjectTimeRange } from "@/lib/utils/project";
 import { expandRentalDateKeys } from "@/lib/utils/project-rental-interval";
 import { ALL_SPACES, getSpaceNameById } from "@/lib/config/config";
 import { formatMonthYear } from "@/lib/date-utils";
@@ -30,6 +31,17 @@ import {
   isSameDay,
 } from "date-fns";
 import { cn } from "@/lib/utils";
+
+const WEEKDAY_MIN = ["日", "一", "二", "三", "四", "五", "六"] as const;
+const WEEKDAY_FULL = [
+  "星期日",
+  "星期一",
+  "星期二",
+  "星期三",
+  "星期四",
+  "星期五",
+  "星期六",
+] as const;
 
 function toDateKey(d: Date): string {
   const y = d.getFullYear();
@@ -68,6 +80,7 @@ function badgeClassForProject(project: Project, todayYmd: string): string {
 function ProjectBadgeLink({
   project,
   dateKey,
+  contextSpaceId,
   todayYmd,
   className,
   showVenue = true,
@@ -76,17 +89,24 @@ function ProjectBadgeLink({
   project: Project;
   /** 格子日期 key（YYYY-MM-DD），有傳則顯示該日 rental 的時段 */
   dateKey?: string;
+  /** 目前 row 的空間 id；有傳則 badge 內僅顯示該空間名稱 */
+  contextSpaceId?: string;
   todayYmd: string;
   className?: string;
   showVenue?: boolean;
   /** spaceId → 框線顏色 class，用於場域名稱小標的邊框色 */
   spaceBorderColors?: Record<string, string>;
 }) {
-  const timeRange = getProjectTimeRange(project, dateKey);
-  const uniqueSpaceNames = React.useMemo(
-    () => getUniqueSpaceNames(project),
-    [project],
-  );
+  const timeRange = dateKey
+    ? getProjectTimeRangesForDateKey(project, dateKey)
+    : getProjectTimeRange(project, dateKey);
+
+  const uniqueSpaceNames = React.useMemo(() => {
+    if (contextSpaceId) {
+      return [{ id: contextSpaceId, name: getSpaceNameById(contextSpaceId) }];
+    }
+    return getUniqueSpaceNames(project);
+  }, [contextSpaceId, project]);
   return (
     <Badge
       asChild
@@ -97,7 +117,7 @@ function ProjectBadgeLink({
       )}
     >
       <Link
-        href={`/dashboard-new/projects/${project.id}`}
+        href={`/dashboard/projects/${project.id}`}
         className="flex flex-col py-2"
       >
         <span className="text-wrap line-clamp-2">
@@ -144,12 +164,14 @@ function DayCellContent({
   todayYmd,
   showVenue,
   spaceBorderColors,
+  contextSpaceId,
 }: {
   projects: Project[];
   dateKey: string;
   todayYmd: string;
   showVenue?: boolean;
   spaceBorderColors?: Record<string, string>;
+  contextSpaceId?: string;
 }) {
   if (projects.length === 0) {
     return (
@@ -165,6 +187,7 @@ function DayCellContent({
           key={project.id}
           project={project}
           dateKey={dateKey}
+          contextSpaceId={contextSpaceId}
           todayYmd={todayYmd}
           className="text-[10px] truncate w-full"
           showVenue={showVenue}
@@ -203,7 +226,11 @@ export function SpaceProjectsCalendar({
   const visibleProjects = React.useMemo(() => {
     return projects.filter((p) => {
       const statusForUi = getUiProjectStatus(p, todayYmd);
-      return statusForUi === "negotiating" || statusForUi === "confirmed";
+      return (
+        statusForUi === "negotiating" ||
+        statusForUi === "confirmed" ||
+        statusForUi === "completed"
+      );
     });
   }, [projects, todayYmd]);
 
@@ -329,6 +356,7 @@ export function SpaceProjectsCalendar({
                       </th>
                       {monthDateKeys.map((dateKey) => {
                         const dayDate = new Date(dateKey + "T12:00:00");
+                        const weekdayIndex = dayDate.getDay() as 0 | 1 | 2 | 3 | 4 | 5 | 6;
                         return (
                           <th
                             key={dateKey}
@@ -337,8 +365,19 @@ export function SpaceProjectsCalendar({
                               "p-2 text-center font-medium text-xs md:text-sm text-muted-foreground w-12 min-w-10 border-r border-border/30 last:border-r-0",
                               isToday(dayDate) && "bg-primary/10 text-primary",
                             )}
+                            aria-label={`${dayDate.getDate()} 日（${WEEKDAY_FULL[weekdayIndex]}）`}
                           >
-                            {dayDate.getDate()}
+                            <div className="flex flex-col items-center gap-0.5">
+                              <span className="leading-none">{dayDate.getDate()}</span>
+                              <span
+                                className={cn(
+                                  "text-[10px] leading-none opacity-80",
+                                  isToday(dayDate) && "text-primary",
+                                )}
+                              >
+                                {WEEKDAY_MIN[weekdayIndex]}
+                              </span>
+                            </div>
                           </th>
                         );
                       })}
@@ -370,6 +409,7 @@ export function SpaceProjectsCalendar({
                               <DayCellContent
                                 projects={dayProjects}
                                 dateKey={dateKey}
+                                contextSpaceId={space.id}
                                 todayYmd={todayYmd}
                                 showVenue={showVenue}
                                 spaceBorderColors={spaceBorderColors}
@@ -401,7 +441,7 @@ export function SpaceProjectsCalendar({
       {hasAnyProjects ? (
         <div className="mt-3 flex flex-col items-center gap-3 text-xs text-muted-foreground">
           <div className="flex flex-wrap items-center justify-center gap-4">
-            {PROJECT_STATUS_UI_SELECTABLE.map((opt) => (
+            {PROJECT_STATUS_UI_LEGEND.map((opt) => (
               <span
                 key={opt.value}
                 className="flex items-center gap-1.5 md:hidden"
@@ -412,13 +452,13 @@ export function SpaceProjectsCalendar({
               </span>
             ))}
             <span className="hidden md:flex flex-wrap items-center gap-2">
-              {PROJECT_STATUS_UI_SELECTABLE.map((opt) => (
+              {PROJECT_STATUS_UI_LEGEND.map((opt) => (
                 <Badge
                   key={opt.value}
                   className={cn(
                     "text-xs font-medium border-0",
                     getStatusColorClass(opt.value),
-                    opt.value !== "cancelled" && "text-white",
+                    "text-white",
                   )}
                 >
                   {PROJECTS_PAGE[opt.labelKey]}

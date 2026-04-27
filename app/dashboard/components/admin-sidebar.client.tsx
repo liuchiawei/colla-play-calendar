@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Home } from "lucide-react";
 import { ThemeToggle } from "@/components/widget/theme-toggle";
-import { dashboardNewNavigation } from "@/lib/config/config-dashboard-new";
+import { dashboardNavigation } from "@/lib/config/config-dashboard";
 import { STORE_MESSAGES } from "@/lib/message";
 
 export function AdminSidebar() {
@@ -30,7 +30,7 @@ export function AdminSidebar() {
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
       <SidebarHeader className="bg-primary py-6 px-4">
         <Link
-          href="/dashboard-new"
+          href="/dashboard"
           className={`space-y-2 min-w-0 flex flex-col justify-center ${state === "expanded" ? "items-start" : "items-center"}`}
         >
           <h2
@@ -53,11 +53,11 @@ export function AdminSidebar() {
 
       <SidebarContent className="px-2 py-4">
         <SidebarMenu className="gap-2">
-          {dashboardNewNavigation.map((item) => {
-            // Root path /dashboard-new must match exactly so sub-routes don't highlight 總覽
+          {dashboardNavigation.map((item) => {
+            // Root path /dashboard must match exactly so sub-routes don't highlight 總覽
             const isActive =
               pathname === item.href ||
-              (item.href !== "/dashboard-new" &&
+              (item.href !== "/dashboard" &&
                 pathname.startsWith(item.href + "/"));
 
             return (
