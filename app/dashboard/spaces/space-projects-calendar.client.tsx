@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SPACE_DETAIL_PAGE, PROJECTS_PAGE } from "@/lib/message";
 import {
-  PROJECT_STATUS_UI_SELECTABLE,
   PROJECT_STATUS_UI_LEGEND,
   getStatusColorClass,
   getUiProjectStatus,
@@ -210,6 +209,7 @@ interface SpaceProjectsCalendarProps {
   showVenue?: boolean;
   /** spaceId → border 色 class（如 border-l-blue-500），用於區分不同空間 */
   spaceBorderColors?: Record<string, string>;
+  onNavigate?: (date: Date) => void;
   /** 圖例項目（空間 id + 名稱），與 spaceBorderColors 一併使用時顯示圖例 */
   // spaceLegend?: SpaceLegendEntry[];
 }
@@ -220,6 +220,7 @@ export function SpaceProjectsCalendar({
   projects,
   showVenue = true,
   spaceBorderColors,
+  onNavigate,
 }: SpaceProjectsCalendarProps) {
   const todayYmd = React.useMemo(() => getTaipeiTodayYmd(), []);
 
@@ -300,11 +301,19 @@ export function SpaceProjectsCalendar({
     hasAnyProjects && (spacesToDisplay.length > 0 || !hasRentals);
 
   const goToPreviousMonth = () => {
-    setCurrentDate((d) => subMonths(d, 1));
+    setCurrentDate((d) => {
+      const next = subMonths(d, 1);
+      onNavigate?.(next);
+      return next;
+    });
   };
 
   const goToNextMonth = () => {
-    setCurrentDate((d) => addMonths(d, 1));
+    setCurrentDate((d) => {
+      const next = addMonths(d, 1);
+      onNavigate?.(next);
+      return next;
+    });
   };
 
   const isToday = (date: Date) => isSameDay(date, new Date());

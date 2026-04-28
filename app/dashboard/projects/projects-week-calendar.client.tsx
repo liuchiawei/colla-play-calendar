@@ -21,7 +21,6 @@ import {
 import { startOfDay, isSameDay } from "date-fns";
 import { PROJECTS_PAGE } from "@/lib/message";
 import {
-  PROJECT_STATUS_UI_SELECTABLE,
   PROJECT_STATUS_UI_LEGEND,
   getStatusColorClass,
   normalizeProjectStatusForUi,
@@ -146,9 +145,13 @@ function DayColumnContent({
 
 interface ProjectsWeekCalendarProps {
   projects: Project[];
+  onNavigate?: (date: Date) => void;
 }
 
-export function ProjectsWeekCalendar({ projects }: ProjectsWeekCalendarProps) {
+export function ProjectsWeekCalendar({
+  projects,
+  onNavigate,
+}: ProjectsWeekCalendarProps) {
   const [currentDate, setCurrentDate] = React.useState(() => new Date());
   const [calendarOpen, setCalendarOpen] = React.useState(false);
   const todayYmd = React.useMemo(() => getTaipeiTodayYmd(), []);
@@ -246,11 +249,19 @@ export function ProjectsWeekCalendar({ projects }: ProjectsWeekCalendarProps) {
   const weekHasProjects = projects.length > 0;
 
   const goToPreviousWeek = () => {
-    setCurrentDate((d) => getPreviousWeek(d));
+    setCurrentDate((d) => {
+      const next = getPreviousWeek(d);
+      onNavigate?.(next);
+      return next;
+    });
   };
 
   const goToNextWeek = () => {
-    setCurrentDate((d) => getNextWeek(d));
+    setCurrentDate((d) => {
+      const next = getNextWeek(d);
+      onNavigate?.(next);
+      return next;
+    });
   };
 
   // const goToToday = () => {
@@ -296,6 +307,7 @@ export function ProjectsWeekCalendar({ projects }: ProjectsWeekCalendarProps) {
               onSelect={(date) => {
                 if (date) {
                   setCurrentDate(date);
+                  onNavigate?.(date);
                   setCalendarOpen(false);
                 }
               }}

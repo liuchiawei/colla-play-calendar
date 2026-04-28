@@ -6,6 +6,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import {
+  ADMIN_PROJECTS_ANY_WINDOW_CACHE_TAG,
   ADMIN_PROJECTS_LIST_CACHE_TAG,
   updateProject as updateProjectService,
   deleteProject as deleteProjectService,
@@ -68,6 +69,7 @@ export async function updateProject(id: string, input: UpdateProjectInput): Prom
     revalidatePath("/dashboard/projects");
     revalidatePath(`/dashboard/projects/${id}`);
     revalidateTag(ADMIN_PROJECTS_LIST_CACHE_TAG, "max");
+    revalidateTag(ADMIN_PROJECTS_ANY_WINDOW_CACHE_TAG, "max");
     revalidateTag(projectDetailTag(id), "max");
     return { success: true, data };
   } catch (e) {
@@ -85,6 +87,7 @@ export async function deleteProject(id: string): Promise<DeleteProjectResult> {
     await deleteProjectService(id);
     revalidatePath("/dashboard/projects");
     revalidateTag(ADMIN_PROJECTS_LIST_CACHE_TAG, "max");
+    revalidateTag(ADMIN_PROJECTS_ANY_WINDOW_CACHE_TAG, "max");
     revalidateTag(projectDetailTag(id), "max");
     redirect("/dashboard/projects");
   } catch (e) {
@@ -101,6 +104,7 @@ export async function deleteRental(rentalId: string): Promise<DeleteRentalResult
     revalidatePath("/dashboard/projects");
     revalidatePath(`/dashboard/projects/${projectId}`);
     revalidateTag(ADMIN_PROJECTS_LIST_CACHE_TAG, "max");
+    revalidateTag(ADMIN_PROJECTS_ANY_WINDOW_CACHE_TAG, "max");
     revalidateTag(projectDetailTag(projectId), "max");
     return { success: true };
   } catch (e) {
@@ -120,6 +124,7 @@ export async function updateRental(
     revalidatePath("/dashboard/projects");
     revalidatePath(`/dashboard/projects/${data.projectId}`);
     revalidateTag(ADMIN_PROJECTS_LIST_CACHE_TAG, "max");
+    revalidateTag(ADMIN_PROJECTS_ANY_WINDOW_CACHE_TAG, "max");
     revalidateTag(projectDetailTag(data.projectId), "max");
     return { success: true, data };
   } catch (e) {
@@ -138,6 +143,7 @@ export async function updateProjectStatus(id: string, status: ProjectStatus): Pr
     revalidatePath("/dashboard/projects");
     revalidatePath(`/dashboard/projects/${id}`);
     revalidateTag(ADMIN_PROJECTS_LIST_CACHE_TAG, "max");
+    revalidateTag(ADMIN_PROJECTS_ANY_WINDOW_CACHE_TAG, "max");
     revalidateTag(projectDetailTag(id), "max");
     return { success: true, data };
   } catch (e) {
