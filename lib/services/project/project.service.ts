@@ -334,6 +334,82 @@ function mapRowToProject(
 
 /** 管理後台專案列表 unstable_cache 標籤；變更專案資料後須 revalidateTag */
 export const ADMIN_PROJECTS_LIST_CACHE_TAG = "admin-projects-list";
+/** 所有「依日期窗」列表的快取 tag（寫入後統一失效） */
+export const ADMIN_PROJECTS_ANY_WINDOW_CACHE_TAG = "admin-projects-any-window";
+
+type ProjectsWindowQuery = {
+  fromYmd: string;
+  toYmd: string;
+  spaceId?: string;
+};
+
+function assertYmd(value: string, label: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    throw new Error(`${label} 格式錯誤`);
+  }
+}
+
+function buildProjectsWindowWhere(params: ProjectsWindowQuery): Prisma.ProjectWhereInput {
+  const { fromYmd, toYmd, spaceId } = params;
+  assertYmd(fromYmd, "from");
+  assertYmd(toYmd, "to");
+
+  return {
+    rentals: {
+      some: {
+        ...(spaceId ? { spaceIds: { has: spaceId } } : {}),
+        date: { lte: toYmd },
+        OR: [
+          { endDate: { gte: fromYmd } },
+          { endDate: null, date: { gte: fromYmd } },
+        ],
+      },
+    },
+  };
+}
+
+async function fetchProjectsForWindowUncached(
+  params: ProjectsWindowQuery,
+): Promise<Project[]> {
+  const where = buildProjectsWindowWhere(params);
+  const [rows, adminOptions] = await Promise.all([
+    prisma.project.findMany({
+      where,
+      include: { rentals: true },
+      orderBy: { createdAt: "desc" },
+    }),
+    getAdminContactOptions(),
+  ]);
+  const adminNameById = new Map(adminOptions.map((o) => [o.id, o.name]));
+  return rows.map((row) => mapRowToProject(row, adminNameById));
+}
+
+/**
+ * 依日期窗取得專案列表（僅撈出在 window 內有檔期的專案，供 dashboard 增量載入）
+ *
+ * - window 相交：rental.date <= to && (rental.endDate ?? rental.date) >= from
+ * - 可選 spaceId：只回傳該 spaceId 有檔期的專案
+ *
+ * 以 unstable_cache 跨 request 快取；寫入後請 revalidateTag(ADMIN_PROJECTS_ANY_WINDOW_CACHE_TAG, 'max')。
+ */
+export async function getProjectsForWindow(
+  params: ProjectsWindowQuery,
+): Promise<Project[]> {
+  const key = [
+    "get-projects-window",
+    params.fromYmd,
+    params.toYmd,
+    params.spaceId ?? "all",
+  ];
+  return unstable_cache(
+    async () => fetchProjectsForWindowUncached(params),
+    key,
+    {
+      tags: [ADMIN_PROJECTS_ANY_WINDOW_CACHE_TAG],
+      revalidate: 300,
+    },
+  )();
+}
 
 async function fetchProjectsForListUncached(): Promise<Project[]> {
   const [rows, adminOptions] = await Promise.all([

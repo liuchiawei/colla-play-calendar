@@ -9,12 +9,21 @@ import { ProjectsContent } from "./projects-content.client";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { PROJECTS_PAGE } from "@/lib/message";
-import { getProjectsForList } from "@/lib/services/project/project.service";
+import { getProjectsForWindow } from "@/lib/services/project/project.service";
+import { getTaipeiTodayYmd } from "@/lib/utils/project-effective-status";
 import {
   buildLoginUrlWithNext,
   buildPathWithSearch,
   type NextSearchParams,
 } from "@/lib/utils/login-next";
+import { addMonths, endOfMonth, startOfMonth } from "date-fns";
+
+function formatYmd(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
 
 interface PageProps {
   searchParams?: Promise<NextSearchParams>;
@@ -38,7 +47,12 @@ export default async function ProjectsPage({ searchParams }: PageProps) {
     redirect("/");
   }
 
-  const projects = await getProjectsForList();
+  const now = new Date();
+  const fromYmd = getTaipeiTodayYmd(now);
+  // 預設只載入未來 6 個月（含當月）；往未來移動週曆再逐月追加
+  const horizonMonthStart = startOfMonth(addMonths(now, 5));
+  const toYmd = formatYmd(endOfMonth(horizonMonthStart));
+  const projects = await getProjectsForWindow({ fromYmd, toYmd });
 
   return (
     <DashboardShell>

@@ -39,6 +39,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { DateRange } from "react-day-picker";
 import {
+  addMonths,
   endOfDay,
   endOfMonth,
   endOfWeek,
@@ -46,6 +47,23 @@ import {
   startOfMonth,
   startOfWeek,
 } from "date-fns";
+
+const DEFAULT_FUTURE_MONTHS = 6;
+
+function toYmd(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function monthStart(d: Date): Date {
+  return startOfMonth(d);
+}
+
+function monthEnd(d: Date): Date {
+  return endOfMonth(d);
+}
 
 const ProjectsWeekCalendar = dynamic(
   () =>
@@ -170,6 +188,113 @@ function projectMatchesSelectedActivityTypes(
 export function ProjectsContent({ projects }: ProjectsContentProps) {
   const todayYmd = React.useMemo(() => getTaipeiTodayYmd(), []);
 
+  const [loadedProjectsById, setLoadedProjectsById] = React.useState<
+    Map<string, Project>
+  >(() => new Map(projects.map((p) => [p.id, p])));
+  const loadedProjects = React.useMemo(
+    () => Array.from(loadedProjectsById.values()),
+    [loadedProjectsById],
+  );
+
+  const [loadedPastCursor, setLoadedPastCursor] = React.useState<Date>(() =>
+    monthStart(new Date()),
+  );
+  const [loadedFutureCursor, setLoadedFutureCursor] = React.useState<Date>(() =>
+    monthStart(addMonths(new Date(), DEFAULT_FUTURE_MONTHS - 1)),
+  );
+  const [windowLoading, setWindowLoading] = React.useState(false);
+  const [windowLoadError, setWindowLoadError] = React.useState<string | null>(
+    null,
+  );
+
+  const fetchProjectsWindow = React.useCallback(
+    async (range: { from: Date; to: Date }) => {
+      const from = toYmd(startOfDay(range.from));
+      const to = toYmd(startOfDay(range.to));
+      const res = await fetch(`/api/projects?from=${from}&to=${to}`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) {
+        throw new Error(`專案載入失敗（${res.status}）`);
+      }
+      const json = (await res.json()) as {
+        success: boolean;
+        data?: Project[];
+        error?: string;
+      };
+      if (!json.success || !Array.isArray(json.data)) {
+        throw new Error(json.error || "專案載入失敗");
+      }
+      return json.data;
+    },
+    [],
+  );
+
+  const mergeProjects = React.useCallback((next: Project[]) => {
+    setLoadedProjectsById((prev) => {
+      const map = new Map(prev);
+      for (const p of next) map.set(p.id, p);
+      return map;
+    });
+  }, []);
+
+  const ensurePastLoaded = React.useCallback(
+    async (target: Date) => {
+      const targetMonth = monthStart(target);
+      if (targetMonth >= loadedPastCursor) return;
+      setWindowLoadError(null);
+      setWindowLoading(true);
+      try {
+        let cursor = monthStart(loadedPastCursor);
+        while (cursor > targetMonth) {
+          const nextMonth = addMonths(cursor, -1);
+          const data = await fetchProjectsWindow({
+            from: monthStart(nextMonth),
+            to: monthEnd(nextMonth),
+          });
+          mergeProjects(data);
+          cursor = nextMonth;
+          setLoadedPastCursor(cursor);
+        }
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "載入失敗";
+        setWindowLoadError(message);
+      } finally {
+        setWindowLoading(false);
+      }
+    },
+    [fetchProjectsWindow, loadedPastCursor, mergeProjects],
+  );
+
+  const ensureFutureLoaded = React.useCallback(
+    async (target: Date) => {
+      const targetMonth = monthStart(target);
+      if (targetMonth <= loadedFutureCursor) return;
+      setWindowLoadError(null);
+      setWindowLoading(true);
+      try {
+        let cursor = monthStart(loadedFutureCursor);
+        while (cursor < targetMonth) {
+          const nextMonth = addMonths(cursor, 1);
+          const data = await fetchProjectsWindow({
+            from: monthStart(nextMonth),
+            to: monthEnd(nextMonth),
+          });
+          mergeProjects(data);
+          cursor = nextMonth;
+          setLoadedFutureCursor(cursor);
+        }
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "載入失敗";
+        setWindowLoadError(message);
+      } finally {
+        setWindowLoading(false);
+      }
+    },
+    [fetchProjectsWindow, loadedFutureCursor, mergeProjects],
+  );
+
   const [searchQuery, setSearchQuery] = React.useState("");
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [listCsvPopoverOpen, setListCsvPopoverOpen] = React.useState(false);
@@ -195,15 +320,24 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
   const [selectedActivityTypeValues, setSelectedActivityTypeValues] =
     React.useState<Set<string>>(() => new Set());
 
+  React.useEffect(() => {
+    if (selectedDateRange?.from) {
+      void ensurePastLoaded(selectedDateRange.from);
+    }
+    if (selectedDateRange?.to) {
+      void ensureFutureLoaded(selectedDateRange.to);
+    }
+  }, [ensureFutureLoaded, ensurePastLoaded, selectedDateRange?.from, selectedDateRange?.to]);
+
   const contactPersonOptions = React.useMemo(() => {
     const set = new Set<string>();
-    for (const p of projects) {
+    for (const p of loadedProjects) {
       if (p.contactPerson) set.add(p.contactPerson);
     }
     return Array.from(set).sort((a, b) =>
       a.localeCompare(b, "zh-TW", { sensitivity: "base" }),
     );
-  }, [projects]);
+  }, [loadedProjects]);
 
   /** 列表篩選／搜尋變更時重掛載 ProjectsList，重設分頁與欄位排序狀態 */
   const projectsListResetKey = React.useMemo(
@@ -228,7 +362,7 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
   );
 
   const filteredProjects = React.useMemo(() => {
-    const searched = filterProjectsFuzzy(projects, searchQuery);
+    const searched = filterProjectsFuzzy(loadedProjects, searchQuery);
 
     const hasAnyFilter =
       selectedSpaceIds.size > 0 ||
@@ -302,7 +436,7 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
       return true;
     });
   }, [
-    projects,
+    loadedProjects,
     searchQuery,
     selectedActivityTypeValues,
     selectedContactPeople,
@@ -336,7 +470,7 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
   const handleDownloadListCsv = React.useCallback(() => {
     if (!listCsvRange?.from || !listCsvRange?.to || !canDownloadListCsv) return;
     const { from, to } = listCsvRange;
-    const filtered = filterProjectsForDateRange(projects, { from, to });
+    const filtered = filterProjectsForDateRange(loadedProjects, { from, to });
     const csv = buildProjectsListCsv(filtered);
     const filename = getProjectsListCsvFilename({ from, to });
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
@@ -347,11 +481,29 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
     a.click();
     URL.revokeObjectURL(url);
     setListCsvPopoverOpen(false);
-  }, [projects, listCsvRange, canDownloadListCsv]);
+  }, [loadedProjects, listCsvRange, canDownloadListCsv]);
+
+  const handleWeekNavigate = React.useCallback(
+    (date: Date) => {
+      void ensurePastLoaded(monthStart(date));
+      void ensureFutureLoaded(monthEnd(date));
+    },
+    [ensureFutureLoaded, ensurePastLoaded],
+  );
 
   return (
     <div className="flex-1 min-w-0 p-6 flex flex-col gap-6">
       <div className="flex flex-col gap-3">
+        {windowLoadError ? (
+          <p className="text-sm text-destructive" role="alert">
+            {windowLoadError}
+          </p>
+        ) : null}
+        {windowLoading ? (
+          <p className="text-xs text-muted-foreground" aria-live="polite">
+            正在載入更多專案…
+          </p>
+        ) : null}
         <div className="flex flex-col md:flex-row gap-3 items-center justify-between">
         <div className="flex flex-wrap items-center gap-2 shrink-0">
           {/* 新增專案 */}
@@ -901,7 +1053,10 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
         </TabsContent>
 
         <TabsContent value="week" className="flex-1 min-w-0 w-full">
-          <ProjectsWeekCalendar projects={filteredProjects} />
+          <ProjectsWeekCalendar
+            projects={filteredProjects}
+            onNavigate={handleWeekNavigate}
+          />
         </TabsContent>
       </Tabs>
     </div>

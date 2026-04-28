@@ -36,6 +36,38 @@ export function getTaipeiTodayYmd(now: Date = new Date()): string {
 }
 
 /**
+ * 台北曆當月 1 日 YYYY-MM-DD（與租借 date 字串可比較）
+ */
+export function getTaipeiMonthStartYmd(now: Date = new Date()): string {
+  const ymd = getTaipeiTodayYmd(now);
+  return `${ymd.slice(0, 7)}-01`;
+}
+
+/**
+ * 台北曆「當月起算共 months 個曆月」的最後一日 YYYY-MM-DD（months >= 1）
+ * 例：months=6 且今天在 4/28 → 自 4/1 起算第六個曆月為 9 月 → 回傳 9 月最後一日。
+ */
+export function getTaipeiEndOfMonthSpanYmd(
+  now: Date,
+  months: number,
+): string {
+  if (!Number.isFinite(months) || months < 1) {
+    throw new Error("getTaipeiEndOfMonthSpanYmd: months 須為 >= 1 的整數");
+  }
+  const start = getTaipeiMonthStartYmd(now);
+  const y = Number(start.slice(0, 4));
+  const m = Number(start.slice(5, 7));
+  if (!Number.isFinite(y) || !Number.isFinite(m) || m < 1 || m > 12) {
+    throw new Error("getTaipeiEndOfMonthSpanYmd: 無法解析月份起點");
+  }
+  const last = new Date(y, m - 1 + months, 0);
+  const yy = last.getFullYear();
+  const mm = String(last.getMonth() + 1).padStart(2, "0");
+  const dd = String(last.getDate()).padStart(2, "0");
+  return `${yy}-${mm}-${dd}`;
+}
+
+/**
  * 專案所有租借區間中，最後一日（YYYY-MM-DD）
  */
 export function getProjectLastRentalDayYmd(

@@ -4,9 +4,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { requireAuth } from "@/lib/services/auth/auth-server.service";
 import {
+  ADMIN_PROJECTS_ANY_WINDOW_CACHE_TAG,
   ADMIN_PROJECTS_LIST_CACHE_TAG,
   createProject,
   getProjectsForList,
+  getProjectsForWindow,
   ProjectRentalConflictError,
 } from "@/lib/services/project/project.service";
 import { CREATE_PROJECT_PAGE } from "@/lib/message";
@@ -160,10 +162,23 @@ export async function GET(request: NextRequest) {
       return authResult;
     }
 
-    const projects = await getProjectsForList();
+    const url = new URL(request.url);
+    const from = url.searchParams.get("from") ?? "";
+    const to = url.searchParams.get("to") ?? "";
+    const spaceId = url.searchParams.get("spaceId") ?? undefined;
+
+    // Backward compatible：沒帶 from/to 就回傳舊版全量列表
+    const projects =
+      from && to
+        ? await getProjectsForWindow({ fromYmd: from, toYmd: to, spaceId })
+        : await getProjectsForList();
 
     return NextResponse.json<ApiResponse<Project[]>>(
-      { success: true, data: projects },
+      {
+        success: true,
+        data: projects,
+        ...(from && to ? { meta: { from, to, spaceId } } : {}),
+      } as ApiResponse<Project[]>,
       { status: 200 }
     );
   } catch (error) {
@@ -196,6 +211,7 @@ export async function POST(request: NextRequest) {
     const project = await createProject(validated.data);
     revalidatePath("/dashboard/projects");
     revalidateTag(ADMIN_PROJECTS_LIST_CACHE_TAG, "max");
+    revalidateTag(ADMIN_PROJECTS_ANY_WINDOW_CACHE_TAG, "max");
 
     return NextResponse.json<ApiResponse<ProjectWithRentals>>(
       { success: true, data: project },

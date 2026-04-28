@@ -9,12 +9,19 @@ import { SpacesTabs } from "./spaces-tabs.client";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { SPACES_PAGE } from "@/lib/message";
-import { getProjectsForList } from "@/lib/services/project/project.service";
+import { getProjectsForWindow } from "@/lib/services/project/project.service";
+import {
+  getTaipeiEndOfMonthSpanYmd,
+  getTaipeiMonthStartYmd,
+} from "@/lib/utils/project-effective-status";
 import {
   buildLoginUrlWithNext,
   buildPathWithSearch,
   type NextSearchParams,
 } from "@/lib/utils/login-next";
+
+/** 場域月曆：初次載入當月起共幾個曆月（含本月已發生活動 + 往後預覽） */
+const SPACES_INITIAL_MONTH_SPAN = 6;
 
 interface PageProps {
   searchParams?: Promise<NextSearchParams>;
@@ -38,7 +45,11 @@ export default async function SpacesPage({ searchParams }: PageProps) {
     redirect("/");
   }
 
-  const projects = await getProjectsForList();
+  const now = new Date();
+  // 自台北曆「當月 1 日」起，含本月已過去檔期；往後共 6 個曆月
+  const fromYmd = getTaipeiMonthStartYmd(now);
+  const toYmd = getTaipeiEndOfMonthSpanYmd(now, SPACES_INITIAL_MONTH_SPAN);
+  const projects = await getProjectsForWindow({ fromYmd, toYmd });
   return (
     <DashboardShell>
       <PageHeader
