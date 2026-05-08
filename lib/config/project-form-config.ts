@@ -10,7 +10,6 @@ import { z } from "zod";
 import { CREATE_PROJECT_PAGE } from "@/lib/message";
 import type {
   CreateProjectInput,
-  ProjectStatus,
   ProjectWithRentals,
   UpdateProjectInput,
 } from "@/lib/types/project";
@@ -189,6 +188,25 @@ export function defaultProjectFormValues(): ProjectFormValues {
   };
 }
 
+/** 將 DB 上的單筆 rental 轉成表單值（create / edit 共用） */
+export function rentalToFormValues(
+  r: ProjectWithRentals["rentals"][0],
+): ProjectRentalFormValues {
+  return {
+    spaceIds: r.spaceIds,
+    date: r.date,
+    endDate: r.endDate ?? "",
+    startTime: r.startTime,
+    endTime: r.endTime,
+    setupMinutesBefore: r.setupMinutesBefore ?? 30,
+    teardownMinutesAfter: r.teardownMinutesAfter ?? 30,
+    rentalAmount: r.rentalAmount,
+    fnbAmount: r.fnbAmount,
+    fnbAmountPending: r.fnbAmountPending ?? false,
+    paidAmount: r.paidAmount,
+  };
+}
+
 export function projectToFormValues(project: ProjectWithRentals): ProjectFormValues {
   const { preset, customDetail } = splitActivityTypeForForm(project.eventType);
   return {
@@ -210,19 +228,7 @@ export function projectToFormValues(project: ProjectWithRentals): ProjectFormVal
     internalNotes: project.internalNotes ?? "",
     rentals:
       project.rentals.length > 0
-        ? project.rentals.map((r) => ({
-            spaceIds: r.spaceIds,
-            date: r.date,
-            endDate: r.endDate ?? "",
-            startTime: r.startTime,
-            endTime: r.endTime,
-            setupMinutesBefore: r.setupMinutesBefore ?? 30,
-            teardownMinutesAfter: r.teardownMinutesAfter ?? 30,
-            rentalAmount: r.rentalAmount,
-            fnbAmount: r.fnbAmount,
-            fnbAmountPending: r.fnbAmountPending ?? false,
-            paidAmount: r.paidAmount,
-          }))
+        ? project.rentals.map((r) => rentalToFormValues(r))
         : [{ ...DEFAULT_RENTAL_FORM_VALUES }],
   };
 }
@@ -266,18 +272,6 @@ export function formValuesToCreateInput(values: ProjectFormValues): CreateProjec
   };
 }
 
-export function formValuesToUpdateInput(
-  values: ProjectFormValues,
-  preservedProjectNotes: string | null,
-  options?: { status?: ProjectStatus | undefined },
-): UpdateProjectInput {
-  return {
-    ...formValuesToCreateInput(values),
-    projectNotes: preservedProjectNotes ?? undefined,
-    status: options?.status,
-  };
-}
-
 export const editProjectFormSchema = projectFormSchema.safeExtend({
   status: z
     .enum(["negotiating", "confirmed", "cancelled", "completed"])
@@ -292,4 +286,16 @@ export function projectToEditFormValues(
   const base = projectToFormValues(project);
   const statusForUi = getUiProjectStatus(project, getTaipeiTodayYmd());
   return { ...base, status: statusForUi ?? undefined };
+}
+
+export function formValuesToUpdateInput(
+  values: EditProjectFormValues,
+  preservedProjectNotes: string | null,
+): UpdateProjectInput {
+  const { status, ...projectValues } = values;
+  return {
+    ...formValuesToCreateInput(projectValues as ProjectFormValues),
+    projectNotes: preservedProjectNotes ?? undefined,
+    status,
+  };
 }
