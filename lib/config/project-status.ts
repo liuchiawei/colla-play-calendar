@@ -19,7 +19,7 @@ export type ProjectStatusUi =
   | "cancelled"
   | "completed";
 
-/** 表單／篩選／圖例僅露出此三種；completed 仍可顯示但不提供選取 */
+/** 表單狀態下拉僅露出此三種（不含已完成）；列表篩選另見 PROJECT_STATUS_UI_FILTER_OPTIONS */
 export const PROJECT_STATUS_UI_SELECTABLE_VALUES = [
   "negotiating",
   "confirmed",
@@ -98,12 +98,21 @@ export const PROJECT_STATUS_OPTIONS: Array<{
   },
 ];
 
-/** 狀態下拉與曆圖例用（洽談中／已確定） */
+/** 狀態下拉與曆圖例用（洽談中／已確定／已取消） */
 export const PROJECT_STATUS_UI_SELECTABLE = PROJECT_STATUS_OPTIONS.filter((o) =>
   (PROJECT_STATUS_UI_SELECTABLE_VALUES as readonly string[]).includes(o.value),
 );
 
-/** 週曆等視圖的圖例用（含已完成，但不提供篩選選取） */
+/**
+ * 專案列表「活動狀態」篩選與表格狀態欄釘選用（含已完成）。
+ * 表單編輯仍請用 PROJECT_STATUS_UI_SELECTABLE。
+ */
+export const PROJECT_STATUS_UI_FILTER_OPTIONS = [
+  ...PROJECT_STATUS_UI_SELECTABLE,
+  ...PROJECT_STATUS_OPTIONS.filter((o) => o.value === "completed"),
+];
+
+/** 週曆等視圖的圖例用（含已完成） */
 export const PROJECT_STATUS_UI_LEGEND = PROJECT_STATUS_OPTIONS.filter((o) =>
   (["negotiating", "confirmed", "completed"] as readonly ProjectStatus[]).includes(
     o.value,

@@ -36,6 +36,30 @@ export function getTaipeiTodayYmd(now: Date = new Date()): string {
 }
 
 /**
+ * 台北時區「昨日」曆日 YYYY-MM-DD（與租借 date 字串可比較）
+ * 以今日台北曆日正午 +08:00 為錨點回推一日，避免依賴本機時區；台灣無 DST。
+ */
+export function getTaipeiYesterdayYmd(now: Date = new Date()): string {
+  const todayYmd = getTaipeiTodayYmd(now);
+  const anchor = new Date(`${todayYmd}T12:00:00+08:00`);
+  anchor.setTime(anchor.getTime() - 86400000);
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone: TAIPEI_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const parts = fmt.formatToParts(anchor);
+  const y = parts.find((p) => p.type === "year")?.value;
+  const m = parts.find((p) => p.type === "month")?.value;
+  const d = parts.find((p) => p.type === "day")?.value;
+  if (!y || !m || !d) {
+    throw new Error("getTaipeiYesterdayYmd: 無法解析日期");
+  }
+  return `${y}-${m}-${d}`;
+}
+
+/**
  * 台北曆當月 1 日 YYYY-MM-DD（與租借 date 字串可比較）
  */
 export function getTaipeiMonthStartYmd(now: Date = new Date()): string {
