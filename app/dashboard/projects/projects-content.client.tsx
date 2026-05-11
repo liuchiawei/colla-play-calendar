@@ -21,10 +21,13 @@ import { ALL_SPACES, getSpaceNameById } from "@/lib/config/config";
 import {
   getUiProjectStatus,
   normalizeProjectStatusForUi,
-  PROJECT_STATUS_UI_SELECTABLE,
+  PROJECT_STATUS_UI_FILTER_OPTIONS,
   type ProjectStatusUi,
 } from "@/lib/config/project-status";
-import { getTaipeiTodayYmd } from "@/lib/utils/project-effective-status";
+import {
+  getTaipeiTodayYmd,
+  getTaipeiYesterdayYmd,
+} from "@/lib/utils/project-effective-status";
 import type { Project } from "@/lib/types/project";
 import {
   buildProjectsListCsv,
@@ -47,7 +50,12 @@ import {
   startOfWeek,
 } from "date-fns";
 
+import { ProjectsListSkeleton } from "./projects-list-skeleton";
+
 const DEFAULT_FUTURE_MONTHS = 6;
+
+/** 「已完成」篩選觸發時，歷史專案 bulk 載入之下界（YYYY-MM-DD） */
+const PAST_ARCHIVE_FROM_YMD = "2026-01-01";
 
 function toYmd(d: Date): string {
   const y = d.getFullYear();
@@ -205,6 +213,11 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
   const [windowLoadError, setWindowLoadError] = React.useState<string | null>(
     null,
   );
+  const [pastArchiveLoading, setPastArchiveLoading] = React.useState(false);
+  const [pastArchiveError, setPastArchiveError] = React.useState<string | null>(
+    null,
+  );
+  const pastArchiveLoadedRef = React.useRef(false);
 
   const fetchProjectsWindow = React.useCallback(
     async (range: { from: Date; to: Date }) => {
@@ -237,6 +250,38 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
       return map;
     });
   }, []);
+
+  const loadPastArchiveIfNeeded = React.useCallback(async () => {
+    if (pastArchiveLoadedRef.current) return;
+    const toYmdStr = getTaipeiYesterdayYmd();
+    if (PAST_ARCHIVE_FROM_YMD > toYmdStr) {
+      pastArchiveLoadedRef.current = true;
+      const archiveStart = parseDateToDateOnly(PAST_ARCHIVE_FROM_YMD);
+      if (archiveStart) setLoadedPastCursor(monthStart(archiveStart));
+      return;
+    }
+    const fromDate = parseDateToDateOnly(PAST_ARCHIVE_FROM_YMD);
+    const toDate = parseDateToDateOnly(toYmdStr);
+    if (!fromDate || !toDate) {
+      setPastArchiveError("歷史專案載入失敗：日期解析錯誤");
+      return;
+    }
+    setPastArchiveError(null);
+    setPastArchiveLoading(true);
+    try {
+      const data = await fetchProjectsWindow({ from: fromDate, to: toDate });
+      React.startTransition(() => {
+        mergeProjects(data);
+      });
+      setLoadedPastCursor(monthStart(fromDate));
+      pastArchiveLoadedRef.current = true;
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "歷史專案載入失敗";
+      setPastArchiveError(message);
+    } finally {
+      setPastArchiveLoading(false);
+    }
+  }, [fetchProjectsWindow, mergeProjects]);
 
   const ensurePastLoaded = React.useCallback(
     async (target: Date) => {
@@ -516,9 +561,19 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
             {windowLoadError}
           </p>
         ) : null}
+        {pastArchiveError ? (
+          <p className="text-sm text-destructive" role="alert">
+            {pastArchiveError}
+          </p>
+        ) : null}
         {windowLoading ? (
           <p className="text-xs text-muted-foreground" aria-live="polite">
             正在載入更多專案…
+          </p>
+        ) : null}
+        {pastArchiveLoading ? (
+          <p className="text-xs text-muted-foreground" aria-live="polite">
+            正在載入歷史專案…
           </p>
         ) : null}
         <div className="flex flex-col md:flex-row gap-3 items-center justify-between">
@@ -931,8 +986,11 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
                   清除
                 </Button>
               </div>
-              <div className="mt-2 flex flex-col gap-2">
-                {PROJECT_STATUS_UI_SELECTABLE.map((opt) => {
+              <div
+                className="mt-2 flex flex-col gap-2"
+                aria-busy={pastArchiveLoading}
+              >
+                {PROJECT_STATUS_UI_FILTER_OPTIONS.map((opt) => {
                   const uiValue = normalizeProjectStatusForUi(opt.value);
                   if (!uiValue) return null;
                   const checked = selectedStatusValues.has(uiValue);
@@ -946,6 +1004,9 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
                     >
                       <Checkbox
                         checked={checked}
+                        disabled={
+                          pastArchiveLoading && uiValue === "completed"
+                        }
                         onCheckedChange={(next) => {
                           setSelectedStatusValues((prev) => {
                             const set = new Set(prev);
@@ -953,6 +1014,9 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
                             else set.delete(uiValue);
                             return set;
                           });
+                          if (next === true && uiValue === "completed") {
+                            void loadPastArchiveIfNeeded();
+                          }
                         }}
                         aria-label={`選取狀態：${PROJECTS_PAGE[opt.labelKey]}`}
                       />
@@ -1073,10 +1137,14 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
         </TabsList>
 
         <TabsContent value="list" className="flex-1 min-w-0 w-full">
-          <ProjectsList
-            key={projectsListResetKey}
-            projects={filteredProjects}
-          />
+          {pastArchiveLoading ? (
+            <ProjectsListSkeleton />
+          ) : (
+            <ProjectsList
+              key={projectsListResetKey}
+              projects={filteredProjects}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="week" className="flex-1 min-w-0 w-full">

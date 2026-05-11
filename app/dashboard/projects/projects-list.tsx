@@ -73,7 +73,7 @@ import {
   getStatusColorClass,
   getUiProjectStatus,
   normalizeProjectStatusForUi,
-  PROJECT_STATUS_UI_SELECTABLE,
+  PROJECT_STATUS_UI_FILTER_OPTIONS,
   type ProjectStatusUi,
 } from "@/lib/config/project-status";
 import {
@@ -563,7 +563,7 @@ function ProjectsListStatusHeadCell({
             </Button>
           </div>
           <div className="mt-2 flex flex-col gap-2">
-            {PROJECT_STATUS_UI_SELECTABLE.map((opt) => {
+            {PROJECT_STATUS_UI_FILTER_OPTIONS.map((opt) => {
               const uiValue = normalizeProjectStatusForUi(opt.value);
               if (!uiValue) return null;
               const checked = selectedStatusValues.has(uiValue);
