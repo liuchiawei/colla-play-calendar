@@ -64,10 +64,12 @@ function rentalTimeSegmentForDateKey(
 
 /**
  * 取得專案在指定日期的所有時段字串（同日多段會完整顯示）。
+ * @param spaceId 有傳時僅合併該空間（rental.spaceIds 含此 id）的時段；未傳則含當日所有 rental。
  */
 export function getProjectTimeRangesForDateKey(
   project: Project,
   dateKey: string,
+  spaceId?: string,
 ): string | null {
   const rentals = project.rentals;
   if (!rentals?.length) return null;
@@ -79,6 +81,9 @@ export function getProjectTimeRangesForDateKey(
       .map((x) => x.slice(0, 10))
       .includes(key);
     if (!covers) continue;
+    if (spaceId != null && spaceId !== "") {
+      if (!r.spaceIds?.includes(spaceId)) continue;
+    }
     const seg = rentalTimeSegmentForDateKey(r, key);
     if (seg) parts.push(seg);
   }

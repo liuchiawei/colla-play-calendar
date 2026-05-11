@@ -97,7 +97,7 @@ function ProjectBadgeLink({
   spaceBorderColors?: Record<string, string>;
 }) {
   const timeRange = dateKey
-    ? getProjectTimeRangesForDateKey(project, dateKey)
+    ? getProjectTimeRangesForDateKey(project, dateKey, contextSpaceId)
     : getProjectTimeRange(project, dateKey);
 
   const uniqueSpaceNames = React.useMemo(() => {
