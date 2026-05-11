@@ -28,7 +28,6 @@ import { getTaipeiTodayYmd } from "@/lib/utils/project-effective-status";
 import type { Project } from "@/lib/types/project";
 import {
   buildProjectsListCsv,
-  filterProjectsForDateRange,
   getProjectsListCsvFilename,
 } from "@/lib/services/project/project-list-csv.service";
 import {
@@ -304,6 +303,10 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
     const now = new Date();
     return { from: startOfMonth(now), to: endOfMonth(now) };
   });
+  const [csvDownloading, setCsvDownloading] = React.useState(false);
+  const [csvDownloadError, setCsvDownloadError] = React.useState<string | null>(
+    null,
+  );
 
   const [selectedSpaceIds, setSelectedSpaceIds] = React.useState<Set<string>>(
     () => new Set(),
@@ -465,23 +468,37 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
   const handleResetListCsvMonth = React.useCallback(() => {
     const now = new Date();
     setListCsvRange({ from: startOfMonth(now), to: endOfMonth(now) });
+    setCsvDownloadError(null);
   }, []);
 
-  const handleDownloadListCsv = React.useCallback(() => {
+  const handleDownloadListCsv = React.useCallback(async () => {
     if (!listCsvRange?.from || !listCsvRange?.to || !canDownloadListCsv) return;
     const { from, to } = listCsvRange;
-    const filtered = filterProjectsForDateRange(loadedProjects, { from, to });
-    const csv = buildProjectsListCsv(filtered);
-    const filename = getProjectsListCsvFilename({ from, to });
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
-    setListCsvPopoverOpen(false);
-  }, [loadedProjects, listCsvRange, canDownloadListCsv]);
+    setCsvDownloadError(null);
+    setCsvDownloading(true);
+    try {
+      // 一律以伺服器查詢結果為準，避免依賴前端 loadedProjects（且需含已完成）
+      const projects = await fetchProjectsWindow({
+        from: startOfDay(from),
+        to: startOfDay(to),
+      });
+      const csv = buildProjectsListCsv(projects);
+      const filename = getProjectsListCsvFilename({ from, to });
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      setListCsvPopoverOpen(false);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "CSV 下載失敗";
+      setCsvDownloadError(message);
+    } finally {
+      setCsvDownloading(false);
+    }
+  }, [canDownloadListCsv, fetchProjectsWindow, listCsvRange]);
 
   const handleWeekNavigate = React.useCallback(
     (date: Date) => {
@@ -554,6 +571,12 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
                   defaultMonth={listCsvRange?.from}
                   className="w-full"
                 />
+                {/* 下載錯誤訊息 */}
+                {csvDownloadError ? (
+                  <p className="text-xs text-destructive" role="alert">
+                    {csvDownloadError}
+                  </p>
+                ) : null}
                 {/* Footer Buttons */}
                 <div className="flex flex-wrap items-center justify-end gap-2">
                   {/* 重置月份 */}
@@ -562,6 +585,7 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
                     variant="outline"
                     size="sm"
                     onClick={handleResetListCsvMonth}
+                    disabled={csvDownloading}
                     aria-label={PROJECTS_PAGE.downloadListCsvResetMonthAria}
                   >
                     {PROJECTS_PAGE.downloadListCsvResetMonth}
@@ -570,10 +594,13 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
                   <Button
                     type="button"
                     size="sm"
-                    disabled={!canDownloadListCsv}
-                    onClick={handleDownloadListCsv}
+                    disabled={!canDownloadListCsv || csvDownloading}
+                    onClick={() => void handleDownloadListCsv()}
+                    aria-busy={csvDownloading || undefined}
                   >
-                    {PROJECTS_PAGE.downloadListCsvConfirm}
+                    {csvDownloading
+                      ? "下載中…"
+                      : PROJECTS_PAGE.downloadListCsvConfirm}
                   </Button>
                 </div>
               </div>

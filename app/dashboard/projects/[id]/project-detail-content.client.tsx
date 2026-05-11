@@ -5,7 +5,6 @@ import { useTransition, useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, useFieldArray, useWatch, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { format } from "date-fns";
 import { zhTW } from "date-fns/locale";
 import {
@@ -83,7 +82,6 @@ import {
 } from "@/lib/config/project-status";
 import type {
   ProjectWithRentals,
-  UpdateProjectInput,
   ProjectStatus,
 } from "@/lib/types/project";
 import {
@@ -97,12 +95,6 @@ import { cn } from "@/lib/utils";
 import { formatRentalDateRangeForTable } from "@/lib/utils/project";
 import { computeProjectRentalPendingAmount } from "@/lib/utils/project-rental-pending";
 import {
-  intervalsOverlap,
-  isValidRentalTimeWindow,
-  rentalBoundsMs,
-  spaceIdsIntersect,
-} from "@/lib/utils/project-rental-interval";
-import {
   getEffectiveProjectStatus,
   getTaipeiTodayYmd,
 } from "@/lib/utils/project-effective-status";
@@ -114,15 +106,18 @@ import {
   PROJECT_ACTIVITY_CUSTOM_SENTINEL,
   PROJECT_ACTIVITY_TYPE_OPTIONS,
   PROJECT_ACTIVITY_TYPE_OTHER,
-  isActivityTypePresetFieldValue,
-  resolveEventTypeFromForm,
-  splitActivityTypeForForm,
 } from "@/lib/constants/project-form";
+import { formatEquipmentNeedsLine } from "@/lib/utils/project-equipment-needs";
 import {
-  defaultEquipmentNeedsForm,
-  formatEquipmentNeedsLine,
-  parseEquipmentNeedsFromDb,
-} from "@/lib/utils/project-equipment-needs";
+  DEFAULT_RENTAL_FORM_VALUES,
+  editProjectFormSchema,
+  formValuesToUpdateInput,
+  projectToEditFormValues,
+  rentalItemSchema,
+  rentalToFormValues,
+  type EditProjectFormValues,
+  type ProjectRentalFormValues,
+} from "@/lib/config/project-form-config";
 import { Checkbox } from "@/components/ui/checkbox";
 
 const CURRENCY_FORMATTER = new Intl.NumberFormat("zh-TW", {
@@ -146,233 +141,7 @@ const EQUIPMENT_NEEDS_LINE_LABELS = {
   noOtherEquipmentNeeds: CREATE_PROJECT_PAGE.labelEquipmentNoOtherNeeds,
 } as const;
 
-// Form schema (aligned with create form)
-const rentalItemSchema = z
-  .object({
-    spaceIds: z.array(z.string()).min(1, CREATE_PROJECT_PAGE.errorRequired),
-    date: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
-    endDate: z.string().optional().default(""),
-    startTime: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
-    endTime: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
-    setupMinutesBefore: z.number().min(0).optional(),
-    teardownMinutesAfter: z.number().min(0).optional(),
-    rentalAmount: z.coerce.number().min(0),
-    fnbAmount: z.coerce.number().min(0),
-    fnbAmountPending: z.boolean().default(false),
-    paidAmount: z.coerce.number().min(0),
-  })
-  .refine(
-    (data) =>
-      isValidRentalTimeWindow({
-        date: data.date,
-        endDate: data.endDate?.trim() || null,
-        startTime: data.startTime,
-        endTime: data.endTime,
-      }),
-    {
-      message: CREATE_PROJECT_PAGE.errorInvalidRentalWindow,
-      path: ["endTime"],
-    },
-  );
-
-const editEquipmentNeedsFormSchema = z.object({
-  microphone: z.boolean(),
-  extensionCord: z.boolean(),
-  projector: z.boolean(),
-  whiteboard: z.boolean(),
-  noOtherEquipmentNeeds: z.boolean(),
-});
-
-const editProjectSchema = z
-  .object({
-    customerName: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
-    customerPhone: z
-      .string()
-      .min(1, CREATE_PROJECT_PAGE.errorRequired)
-      .regex(/^[\d\s\-]+$/, CREATE_PROJECT_PAGE.errorPhoneInvalid),
-    company: z.string().optional(),
-    taxId: z.string().optional(),
-    activityTypePreset: z
-      .string()
-      .min(1, CREATE_PROJECT_PAGE.errorActivityTypeRequired)
-      .refine((s) => isActivityTypePresetFieldValue(s), {
-        message: CREATE_PROJECT_PAGE.errorActivityTypeRequired,
-      }),
-    activityCustomDetail: z.string().optional().default(""),
-    eventOrVenueUse: z.string().trim().min(1, CREATE_PROJECT_PAGE.errorRequired),
-    totalAttendees: z.string().optional(),
-    tables: z.string().optional(),
-    chairs: z.string().optional(),
-    equipmentNeeds: editEquipmentNeedsFormSchema.default(() =>
-      defaultEquipmentNeedsForm(),
-    ),
-    fnbItems: z.string().optional(),
-    collaPlayContactId: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
-    internalNotes: z.string().optional(),
-    status: z
-      .enum([
-        "negotiating",
-        "confirmed",
-        "cancelled",
-        "completed",
-      ])
-      .optional(),
-    rentals: z.array(rentalItemSchema).min(1, CREATE_PROJECT_PAGE.errorRequired),
-  })
-  .superRefine((data, ctx) => {
-    const needsCustom =
-      data.activityTypePreset === PROJECT_ACTIVITY_CUSTOM_SENTINEL ||
-      data.activityTypePreset === PROJECT_ACTIVITY_TYPE_OTHER;
-    if (needsCustom && !data.activityCustomDetail.trim()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: CREATE_PROJECT_PAGE.errorActivityTypeOtherRequired,
-        path: ["activityCustomDetail"],
-      });
-    }
-    const rentals = data.rentals;
-    for (let i = 0; i < rentals.length; i++) {
-      const a = rentals[i];
-      const boundsA = rentalBoundsMs({
-        date: a.date,
-        endDate: a.endDate?.trim() || null,
-        startTime: a.startTime,
-        endTime: a.endTime,
-      });
-      if (!boundsA) continue;
-      for (let j = i + 1; j < rentals.length; j++) {
-        const b = rentals[j];
-        if (!spaceIdsIntersect(a.spaceIds, b.spaceIds)) continue;
-        const boundsB = rentalBoundsMs({
-          date: b.date,
-          endDate: b.endDate?.trim() || null,
-          startTime: b.startTime,
-          endTime: b.endTime,
-        });
-        if (!boundsB) continue;
-        if (intervalsOverlap(boundsA, boundsB)) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: CREATE_PROJECT_PAGE.errorRentalOverlapInternal,
-            path: ["rentals", i, "spaceIds"],
-          });
-          return;
-        }
-      }
-    }
-  });
-
-type EditFormValues = z.infer<typeof editProjectSchema>;
-
-type EditRentalFormValues = z.infer<typeof rentalItemSchema>;
-
-function rentalToEditFormValues(
-  r: ProjectWithRentals["rentals"][0],
-): EditRentalFormValues {
-  return {
-    spaceIds: r.spaceIds,
-    date: r.date,
-    endDate: r.endDate ?? "",
-    startTime: r.startTime,
-    endTime: r.endTime,
-    setupMinutesBefore: r.setupMinutesBefore ?? 30,
-    teardownMinutesAfter: r.teardownMinutesAfter ?? 30,
-    rentalAmount: r.rentalAmount,
-    fnbAmount: r.fnbAmount,
-    fnbAmountPending: r.fnbAmountPending ?? false,
-    paidAmount: r.paidAmount,
-  };
-}
-
-const defaultRental: EditFormValues["rentals"][0] = {
-  spaceIds: [],
-  date: "",
-  endDate: "",
-  startTime: "",
-  endTime: "",
-  setupMinutesBefore: 30,
-  teardownMinutesAfter: 30,
-  rentalAmount: 0,
-  fnbAmount: 0,
-  fnbAmountPending: false,
-  paidAmount: 0,
-};
-
-function projectToFormValues(project: ProjectWithRentals): EditFormValues {
-  const { preset, customDetail } = splitActivityTypeForForm(
-    project.eventType,
-  );
-  const statusForUi = getUiProjectStatus(project, getTaipeiTodayYmd());
-  return {
-    customerName: project.customerName,
-    customerPhone: project.customerPhone,
-    company: project.company ?? "",
-    taxId: project.taxId ?? "",
-    activityTypePreset: preset,
-    activityCustomDetail: customDetail,
-    eventOrVenueUse: project.eventOrVenueUse,
-    totalAttendees: project.totalAttendees ?? "",
-    tables: project.tables ?? "",
-    chairs: project.chairs ?? "",
-    equipmentNeeds: parseEquipmentNeedsFromDb(project.equipmentNeeds),
-    fnbItems: project.fnbItems ?? "",
-    collaPlayContactId: project.collaPlayContactId,
-    internalNotes: project.internalNotes ?? "",
-    status: statusForUi ?? undefined,
-    rentals:
-      project.rentals.length > 0
-        ? project.rentals.map((r) => ({
-            spaceIds: r.spaceIds,
-            date: r.date,
-            endDate: r.endDate ?? "",
-            startTime: r.startTime,
-            endTime: r.endTime,
-            setupMinutesBefore: r.setupMinutesBefore ?? 30,
-            teardownMinutesAfter: r.teardownMinutesAfter ?? 30,
-            rentalAmount: r.rentalAmount,
-            fnbAmount: r.fnbAmount,
-            fnbAmountPending: r.fnbAmountPending ?? false,
-            paidAmount: r.paidAmount,
-          }))
-        : [{ ...defaultRental }],
-  };
-}
-
-function formValuesToUpdateInput(
-  values: EditFormValues,
-  preservedProjectNotes: string | null,
-): UpdateProjectInput {
-  return {
-    customerName: values.customerName,
-    customerPhone: values.customerPhone,
-    company: values.company || undefined,
-    taxId: values.taxId || undefined,
-    eventOrVenueUse: values.eventOrVenueUse,
-    eventType: resolveEventTypeFromForm(
-      values.activityTypePreset,
-      values.activityCustomDetail ?? "",
-    ),
-    totalAttendees: values.totalAttendees?.trim() || undefined,
-    tables: values.tables?.trim() || undefined,
-    chairs: values.chairs?.trim() || undefined,
-    equipmentNeeds: values.equipmentNeeds,
-    fnbItems: values.fnbItems || undefined,
-    projectNotes: preservedProjectNotes ?? undefined,
-    collaPlayContactId: values.collaPlayContactId,
-    internalNotes: values.internalNotes || undefined,
-    status: values.status,
-    rentals: values.rentals.map((r) => {
-      const endDateTrim = r.endDate?.trim() ?? "";
-      return {
-        ...r,
-        endDate: endDateTrim ? endDateTrim : undefined,
-        setupMinutesBefore: r.setupMinutesBefore ?? 30,
-        teardownMinutesAfter: r.teardownMinutesAfter ?? 30,
-        pendingAmount: computeProjectRentalPendingAmount(r),
-      };
-    }),
-  };
-}
+// 表單 schema 與 mapping helpers 由 lib/config/project-form-config.ts 統一提供（與 create 共用）
 
 interface EditRentalFormDialogProps {
   rental: ProjectWithRentals["rentals"][0];
@@ -386,9 +155,9 @@ function EditRentalFormDialog({
   onSuccess,
 }: EditRentalFormDialogProps) {
   const [isPending, startTransition] = useTransition();
-  const form = useForm<EditRentalFormValues>({
-    resolver: zodResolver(rentalItemSchema) as Resolver<EditRentalFormValues>,
-    defaultValues: rentalToEditFormValues(rental),
+  const form = useForm<ProjectRentalFormValues>({
+    resolver: zodResolver(rentalItemSchema) as Resolver<ProjectRentalFormValues>,
+    defaultValues: rentalToFormValues(rental),
   });
 
   const watchedAmounts = useWatch({
@@ -400,7 +169,7 @@ function EditRentalFormDialog({
     name: "fnbAmountPending",
   });
 
-  const handleSubmit = form.handleSubmit((data: EditRentalFormValues) => {
+  const handleSubmit = form.handleSubmit((data: ProjectRentalFormValues) => {
     startTransition(async () => {
       const endTrim = data.endDate?.trim() ?? "";
       const result = await updateRental(rental.id, {
@@ -755,10 +524,10 @@ function AddRentalFormDialog({
   onSuccess,
 }: AddRentalFormDialogProps) {
   const [isPending, startTransition] = useTransition();
-  const form = useForm<EditRentalFormValues>({
-    resolver: zodResolver(rentalItemSchema) as Resolver<EditRentalFormValues>,
+  const form = useForm<ProjectRentalFormValues>({
+    resolver: zodResolver(rentalItemSchema) as Resolver<ProjectRentalFormValues>,
     defaultValues: {
-      ...defaultRental,
+      ...DEFAULT_RENTAL_FORM_VALUES,
       spaceIds: [],
       date: "",
       endDate: "",
@@ -776,11 +545,11 @@ function AddRentalFormDialog({
     name: "fnbAmountPending",
   });
 
-  const handleSubmit = form.handleSubmit((data: EditRentalFormValues) => {
+  const handleSubmit = form.handleSubmit((data: ProjectRentalFormValues) => {
     startTransition(async () => {
-      const baseValues = projectToFormValues(project);
+      const baseValues = projectToEditFormValues(project);
       const newRentals = [
-        ...project.rentals.map((r) => rentalToEditFormValues(r)),
+        ...project.rentals.map((r) => rentalToFormValues(r)),
         {
           ...data,
           setupMinutesBefore: data.setupMinutesBefore ?? 30,
@@ -1167,9 +936,9 @@ export function ProjectDetailContent({
     todayYmd,
   );
 
-  const form = useForm<EditFormValues>({
-    resolver: zodResolver(editProjectSchema) as Resolver<EditFormValues>,
-    defaultValues: projectToFormValues(project),
+  const form = useForm<EditProjectFormValues>({
+    resolver: zodResolver(editProjectFormSchema) as Resolver<EditProjectFormValues>,
+    defaultValues: projectToEditFormValues(project),
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -1187,11 +956,11 @@ export function ProjectDetailContent({
     watchedEditActivityPreset === PROJECT_ACTIVITY_TYPE_OTHER;
 
   const handleEdit = useCallback(() => {
-    form.reset(projectToFormValues(project));
+    form.reset(projectToEditFormValues(project));
     setIsEditing(true);
   }, [project, form]);
 
-  const handleSubmit = form.handleSubmit((data: EditFormValues) => {
+  const handleSubmit = form.handleSubmit((data: EditProjectFormValues) => {
     const payload = formValuesToUpdateInput(data, project.projectNotes);
     startUpdateTransition(async () => {
       const result = await updateProject(project.id, payload);
@@ -1289,7 +1058,10 @@ export function ProjectDetailContent({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      {CREATE_PROJECT_PAGE.labelPhoneRequired}
+                      {CREATE_PROJECT_PAGE.labelPhone}{" "}
+                      <span className="text-muted-foreground font-normal">
+                        ({CREATE_PROJECT_PAGE.optional})
+                      </span>
                     </FormLabel>
                     <FormControl>
                       <Input
@@ -1514,8 +1286,8 @@ export function ProjectDetailContent({
                 name="totalAttendees"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>
-                      {CREATE_PROJECT_PAGE.labelTotalAttendees}
+                    <FormLabel aria-required>
+                      {CREATE_PROJECT_PAGE.labelTotalAttendeesRequired}
                     </FormLabel>
                     <FormControl>
                       <Input
@@ -1534,7 +1306,9 @@ export function ProjectDetailContent({
                 name="tables"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{CREATE_PROJECT_PAGE.labelTables}</FormLabel>
+                    <FormLabel aria-required>
+                      {CREATE_PROJECT_PAGE.labelTablesRequired}
+                    </FormLabel>
                     <FormControl>
                       <Input
                         {...field}
@@ -1550,7 +1324,9 @@ export function ProjectDetailContent({
                 name="chairs"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{CREATE_PROJECT_PAGE.labelChairs}</FormLabel>
+                    <FormLabel aria-required>
+                      {CREATE_PROJECT_PAGE.labelChairsRequired}
+                    </FormLabel>
                     <FormControl>
                       <Input
                         type="text"
@@ -2106,7 +1882,7 @@ export function ProjectDetailContent({
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => append({ ...defaultRental })}
+                onClick={() => append({ ...DEFAULT_RENTAL_FORM_VALUES })}
                 className="w-fit gap-2"
               >
                 <Plus className="size-4" />
