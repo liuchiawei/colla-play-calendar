@@ -151,6 +151,8 @@ function formatProjectCellPlain(
       return project.fnbItems ?? "—";
     case "internalNotes":
       return project.internalNotes ?? "—";
+    case "needsPrintedNotice":
+      return project.needsPrintedNotice ? "是" : "否";
     case "actions":
       return "";
     default: {
