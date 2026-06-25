@@ -266,8 +266,10 @@ export const CREATE_PROJECT_PAGE = {
   sectionCustomer: "客戶資訊",
   sectionProject: "專案資訊",
   sectionEquipment: "設備需求",
+  sectionNotice: "告示",
   sectionNotes: "專案備註",
   sectionRentals: "租借項目",
+  labelNeedsPrintedNotice: "是否需要列印告示",
 
   labelActivityType: "活動類型",
   placeholderSelectActivityType: "選擇活動類型",
@@ -364,8 +366,10 @@ export const PROJECT_DETAIL_PAGE = {
   sectionCustomer: "客戶資訊",
   sectionProject: "專案資訊",
   sectionEquipment: "設備需求",
+  sectionNotice: "告示",
   sectionNotes: "備註",
   sectionRentals: "租借項目",
+  labelNeedsPrintedNotice: "是否需要列印告示",
 
   labelActivityType: "活動類型",
   placeholderSelectActivityType: "選擇活動類型",

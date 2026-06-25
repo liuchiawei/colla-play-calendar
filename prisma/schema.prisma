@@ -296,6 +296,7 @@ model Project {
   collaPlayContactId  String // CollaPlay 窗口 ID（目前字串，未來可改 FK）
   internalNotes       String? // 內部備註
   equipmentNeeds      Json?    @db.JsonB // 設備勾選（麥克風、延長線、投影、白板等），舊資料為 null
+  needsPrintedNotice  Boolean  @default(false) // 是否需要列印告示
   status              ProjectStatus  @default(negotiating)
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt

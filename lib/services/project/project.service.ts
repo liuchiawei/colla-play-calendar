@@ -666,6 +666,9 @@ export async function updateProject(
         projectNotes: input.projectNotes ?? null,
         collaPlayContactId: input.collaPlayContactId,
         internalNotes: input.internalNotes ?? null,
+        ...(input.needsPrintedNotice !== undefined && {
+          needsPrintedNotice: input.needsPrintedNotice,
+        }),
         ...(input.status != null && { status: input.status }),
         ...(input.equipmentNeeds !== undefined && {
           equipmentNeeds: equipmentNeedsToPrismaInput(
@@ -838,6 +841,7 @@ export async function createProject(
         projectNotes: input.projectNotes ?? null,
         collaPlayContactId: input.collaPlayContactId,
         internalNotes: input.internalNotes ?? null,
+        needsPrintedNotice: input.needsPrintedNotice ?? false,
         equipmentNeeds: equipmentNeedsToPrismaInput(
           normalizeEquipmentNeedsForDb(input.equipmentNeeds),
         ),

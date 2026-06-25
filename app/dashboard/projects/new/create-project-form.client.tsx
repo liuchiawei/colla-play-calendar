@@ -653,6 +653,52 @@ export function CreateProjectForm({
           </CardContent>
         </Card>
 
+        {/* 告示 */}
+        <Card>
+          <CardHeader>
+            <h2 className="text-lg font-semibold leading-none tracking-tight">
+              {CREATE_PROJECT_PAGE.sectionNotice}
+            </h2>
+          </CardHeader>
+          <CardContent>
+            <FormField
+              control={form.control}
+              name="needsPrintedNotice"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel aria-required>
+                    {CREATE_PROJECT_PAGE.labelNeedsPrintedNotice}{" "}
+                    <span className="text-destructive">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <div className="flex gap-6">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          checked={field.value === true}
+                          onChange={() => field.onChange(true)}
+                          className="accent-primary"
+                        />
+                        是
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          checked={field.value === false}
+                          onChange={() => field.onChange(false)}
+                          className="accent-primary"
+                        />
+                        否
+                      </label>
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </CardContent>
+        </Card>
+
         {/* 專案備註 */}
         <Card>
           <CardHeader>
