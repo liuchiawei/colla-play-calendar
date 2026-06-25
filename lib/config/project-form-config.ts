@@ -106,7 +106,7 @@ export const projectFormSchema = z
     fnbItems: z.string().optional(),
     collaPlayContactId: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
     internalNotes: z.string().optional(),
-    needsPrintedNotice: z.boolean({ required_error: CREATE_PROJECT_PAGE.errorRequired }),
+    needsPrintedNotice: z.boolean(CREATE_PROJECT_PAGE.errorRequired),
     rentals: z.array(rentalItemSchema).min(1, CREATE_PROJECT_PAGE.errorRequired),
   })
   .superRefine((data, ctx) => {
