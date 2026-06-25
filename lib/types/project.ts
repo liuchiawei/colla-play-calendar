@@ -56,6 +56,8 @@ export interface Project {
   internalNotes?: string | null;
   /** 選填：設備勾選（舊資料可能為 null） */
   equipmentNeeds?: ProjectEquipmentNeeds | null;
+  /** 是否需要列印告示 */
+  needsPrintedNotice?: boolean | null;
   /** 選填：每筆租借的日期與場域（週曆依空間分組用） */
   rentals?: {
     date: string;
@@ -108,6 +110,8 @@ export interface CreateProjectInput {
   internalNotes?: string;
   /** 選填；全未勾選時服務層存 null */
   equipmentNeeds?: ProjectEquipmentNeeds | null;
+  /** 是否需要列印告示（必填） */
+  needsPrintedNotice: boolean;
   rentals: RentalItem[];
 }
 
@@ -130,6 +134,8 @@ export interface UpdateProjectInput {
   internalNotes?: string;
   /** 未傳則不更新此欄（向後相容舊客戶端） */
   equipmentNeeds?: ProjectEquipmentNeeds | null;
+  /** 是否需要列印告示（未傳則不更新，向後相容） */
+  needsPrintedNotice?: boolean;
   status?: ProjectStatus;
   rentals: (RentalItem & { id?: string })[];
 }

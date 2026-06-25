@@ -1506,6 +1506,52 @@ export function ProjectDetailContent({
             </CardContent>
           </Card>
 
+          {/* 告示 */}
+          <Card>
+            <CardHeader>
+              <h2 className="text-lg font-semibold">
+                {PROJECT_DETAIL_PAGE.sectionNotice}
+              </h2>
+            </CardHeader>
+            <CardContent>
+              <FormField
+                control={form.control}
+                name="needsPrintedNotice"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel aria-required>
+                      {CREATE_PROJECT_PAGE.labelNeedsPrintedNotice}{" "}
+                      <span className="text-destructive">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <div className="flex gap-6">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            checked={field.value === true}
+                            onChange={() => field.onChange(true)}
+                            className="accent-primary"
+                          />
+                          是
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            checked={field.value === false}
+                            onChange={() => field.onChange(false)}
+                            className="accent-primary"
+                          />
+                          否
+                        </label>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <h2 className="text-lg font-semibold">
@@ -2236,6 +2282,23 @@ export function ProjectDetailContent({
                 ) ?? "—"}
               </p>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* 告示（唯讀） */}
+        <Card className="min-w-0">
+          <CardHeader>
+            <h2 className="text-lg font-semibold">
+              {PROJECT_DETAIL_PAGE.sectionNotice}
+            </h2>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              {PROJECT_DETAIL_PAGE.labelNeedsPrintedNotice}
+            </p>
+            <p className="font-medium">
+              {project.needsPrintedNotice ? "是" : "否"}
+            </p>
           </CardContent>
         </Card>
 
