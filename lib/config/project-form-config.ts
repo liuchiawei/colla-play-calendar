@@ -228,7 +228,7 @@ export function projectToFormValues(project: ProjectWithRentals): ProjectFormVal
     fnbItems: project.fnbItems ?? "",
     collaPlayContactId: project.collaPlayContactId,
     internalNotes: project.internalNotes ?? "",
-    needsPrintedNotice: project.needsPrintedNotice ?? false,
+    needsPrintedNotice: project.needsPrintedNotice ?? true,
     rentals:
       project.rentals.length > 0
         ? project.rentals.map((r) => rentalToFormValues(r))
