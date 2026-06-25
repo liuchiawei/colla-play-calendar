@@ -251,6 +251,7 @@ function mapRowToProject(
     totalAttendees: string | null;
     projectNotes: string | null;
     internalNotes: string | null;
+    needsPrintedNotice: boolean;
     equipmentNeeds: unknown;
     rentals: Array<{
       spaceIds: string[];
@@ -316,6 +317,7 @@ function mapRowToProject(
     totalAttendees: row.totalAttendees ?? null,
     projectNotes: row.projectNotes ?? null,
     internalNotes: row.internalNotes ?? null,
+    needsPrintedNotice: row.needsPrintedNotice,
     equipmentNeeds:
       row.equipmentNeeds == null
         ? null
@@ -565,6 +567,7 @@ export async function getCachedProjectById(
           projectNotes: true,
           collaPlayContactId: true,
           internalNotes: true,
+          needsPrintedNotice: true,
           equipmentNeeds: true,
           status: true,
           createdAt: true,

@@ -399,6 +399,7 @@ function makeProjectListSortValueGetters(): {
     return n ?? s;
   },
   fnbItems: (p) => p.fnbItems ?? "",
+  needsPrintedNotice: (p) => (p.needsPrintedNotice ? 1 : 0),
   otherEquipment: (p) =>
     formatEquipmentNeedsLine(p.equipmentNeeds, EQUIPMENT_NEEDS_LINE_LABELS) ??
     "",
@@ -815,6 +816,8 @@ function renderProjectsListCell(
           </ProjectsListMaybeHoverCardText>
         );
       }
+    case "needsPrintedNotice":
+      return <span>{project.needsPrintedNotice ? "是" : "否"}</span>;
     case "internalNotes":
       {
         const notes = project.internalNotes ?? COMMON_PLACEHOLDERS.dash;

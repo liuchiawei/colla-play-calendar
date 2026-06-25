@@ -212,6 +212,7 @@ export const PROJECTS_PAGE = {
   columnTables: "桌子",
   columnChairs: "椅子",
   columnFnbItems: "餐飲項目",
+  columnNeedsPrintedNotice: "告示",
   columnTotalAttendees: "人數",
   columnInternalNotes: "內部備註",
   columnOtherEquipment: "其他設備",
