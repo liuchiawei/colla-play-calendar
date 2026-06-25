@@ -106,6 +106,7 @@ export const projectFormSchema = z
     fnbItems: z.string().optional(),
     collaPlayContactId: z.string().min(1, CREATE_PROJECT_PAGE.errorRequired),
     internalNotes: z.string().optional(),
+    needsPrintedNotice: z.boolean(CREATE_PROJECT_PAGE.errorRequired),
     rentals: z.array(rentalItemSchema).min(1, CREATE_PROJECT_PAGE.errorRequired),
   })
   .superRefine((data, ctx) => {
@@ -184,6 +185,7 @@ export function defaultProjectFormValues(): ProjectFormValues {
     fnbItems: "",
     collaPlayContactId: "",
     internalNotes: "",
+    needsPrintedNotice: undefined as unknown as boolean,
     rentals: [{ ...DEFAULT_RENTAL_FORM_VALUES }],
   };
 }
@@ -226,6 +228,7 @@ export function projectToFormValues(project: ProjectWithRentals): ProjectFormVal
     fnbItems: project.fnbItems ?? "",
     collaPlayContactId: project.collaPlayContactId,
     internalNotes: project.internalNotes ?? "",
+    needsPrintedNotice: project.needsPrintedNotice ?? true,
     rentals:
       project.rentals.length > 0
         ? project.rentals.map((r) => rentalToFormValues(r))

@@ -159,6 +159,12 @@ export const PROJECTS_LIST_COLUMNS = [
     cellClassName: "min-w-0 max-w-[140px] truncate",
   },
   {
+    id: "needsPrintedNotice",
+    sortable: true,
+    label: PROJECTS_PAGE.columnNeedsPrintedNotice,
+    cellClassName: "whitespace-nowrap",
+  },
+  {
     id: "internalNotes",
     sortable: true,
     label: PROJECTS_PAGE.columnInternalNotes,
