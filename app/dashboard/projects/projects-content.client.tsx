@@ -113,6 +113,17 @@ interface ProjectsContentProps {
   projects: Project[];
 }
 
+// 模組層級快取：讓篩選條件在站內跳轉（點進專案再返回）後保留，
+// 整頁重新整理時才會重設。
+const filterCache = {
+  searchQuery: "",
+  spaceIds: new Set<string>(),
+  statusValues: new Set<ProjectStatusUi>(),
+  contactPeople: new Set<string>(),
+  dateRange: undefined as DateRange | undefined,
+  activityTypeValues: new Set<string>(),
+};
+
 function parseDateToDateOnly(value: string | undefined | null): Date | null {
   if (!value) return null;
   const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value);
@@ -339,7 +350,11 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
     [fetchProjectsWindow, loadedFutureCursor, mergeProjects],
   );
 
-  const [searchQuery, setSearchQuery] = React.useState("");
+  const [searchQuery, setSearchQuery] = React.useState(
+    () => filterCache.searchQuery,
+  );
+  // 過濾列表用延後的值，輸入框本身同步更新，避免中斷注音等輸入法的組字
+  const deferredSearchQuery = React.useDeferredValue(searchQuery);
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [listCsvPopoverOpen, setListCsvPopoverOpen] = React.useState(false);
   const [listCsvRange, setListCsvRange] = React.useState<
@@ -354,19 +369,35 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
   );
 
   const [selectedSpaceIds, setSelectedSpaceIds] = React.useState<Set<string>>(
-    () => new Set(),
+    () => new Set(filterCache.spaceIds),
   );
   const [selectedStatusValues, setSelectedStatusValues] = React.useState<
     Set<ProjectStatusUi>
-  >(() => new Set());
+  >(() => new Set(filterCache.statusValues));
   const [selectedContactPeople, setSelectedContactPeople] = React.useState<
     Set<string>
-  >(() => new Set());
+  >(() => new Set(filterCache.contactPeople));
   const [selectedDateRange, setSelectedDateRange] = React.useState<
     DateRange | undefined
-  >(undefined);
+  >(() => filterCache.dateRange);
   const [selectedActivityTypeValues, setSelectedActivityTypeValues] =
-    React.useState<Set<string>>(() => new Set());
+    React.useState<Set<string>>(() => new Set(filterCache.activityTypeValues));
+
+  React.useEffect(() => {
+    filterCache.searchQuery = searchQuery;
+    filterCache.spaceIds = selectedSpaceIds;
+    filterCache.statusValues = selectedStatusValues;
+    filterCache.contactPeople = selectedContactPeople;
+    filterCache.dateRange = selectedDateRange;
+    filterCache.activityTypeValues = selectedActivityTypeValues;
+  }, [
+    searchQuery,
+    selectedSpaceIds,
+    selectedStatusValues,
+    selectedContactPeople,
+    selectedDateRange,
+    selectedActivityTypeValues,
+  ]);
 
   React.useEffect(() => {
     if (selectedDateRange?.from) {
@@ -391,7 +422,7 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
   const projectsListResetKey = React.useMemo(
     () =>
       [
-        searchQuery,
+        deferredSearchQuery,
         [...selectedSpaceIds].sort().join(","),
         [...selectedStatusValues].sort().join(","),
         [...selectedContactPeople].sort().join(","),
@@ -400,7 +431,7 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
         selectedDateRange?.to?.getTime() ?? "",
       ].join("|"),
     [
-      searchQuery,
+      deferredSearchQuery,
       selectedActivityTypeValues,
       selectedContactPeople,
       selectedDateRange,
@@ -410,7 +441,7 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
   );
 
   const filteredProjects = React.useMemo(() => {
-    const searched = filterProjectsFuzzy(loadedProjects, searchQuery);
+    const searched = filterProjectsFuzzy(loadedProjects, deferredSearchQuery);
 
     const hasAnyFilter =
       selectedSpaceIds.size > 0 ||
@@ -485,7 +516,7 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
     });
   }, [
     loadedProjects,
-    searchQuery,
+    deferredSearchQuery,
     selectedActivityTypeValues,
     selectedContactPeople,
     selectedDateRange,
@@ -679,11 +710,7 @@ export function ProjectsContent({ projects }: ProjectsContentProps) {
                 autoComplete="off"
                 placeholder={PROJECTS_PAGE.searchPlaceholder}
                 value={searchQuery}
-                onChange={(e) =>
-                  React.startTransition(() =>
-                    setSearchQuery(e.target.value),
-                  )
-                }
+                onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => setSearchOpen(true)}
                 className="pl-9"
                 aria-label={PROJECTS_PAGE.searchAriaLabel}
