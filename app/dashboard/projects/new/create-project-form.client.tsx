@@ -12,7 +12,7 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
 import { zhTW } from "date-fns/locale";
-import { CalendarIcon, Plus, Trash2 } from "lucide-react";
+import { CalendarIcon, Copy, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -88,7 +88,7 @@ export function CreateProjectForm({
     defaultValues,
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, insert } = useFieldArray({
     control: form.control,
     name: "rentals",
   });
@@ -748,17 +748,34 @@ export function CreateProjectForm({
                   <span className="text-sm font-medium tabular-nums">
                     第 {index + 1} 筆
                   </span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => remove(index)}
-                    disabled={fields.length <= 1}
-                    aria-label={CREATE_PROJECT_PAGE.removeRentalAria}
-                  >
-                    <Trash2 className="size-4" aria-hidden />
-                    {CREATE_PROJECT_PAGE.removeRental}
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        insert(
+                          index + 1,
+                          structuredClone(form.getValues(`rentals.${index}`)),
+                        )
+                      }
+                      aria-label={CREATE_PROJECT_PAGE.copyRentalAria}
+                    >
+                      <Copy className="size-4" aria-hidden />
+                      {CREATE_PROJECT_PAGE.copyRental}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => remove(index)}
+                      disabled={fields.length <= 1}
+                      aria-label={CREATE_PROJECT_PAGE.removeRentalAria}
+                    >
+                      <Trash2 className="size-4" aria-hidden />
+                      {CREATE_PROJECT_PAGE.removeRental}
+                    </Button>
+                  </div>
                 </div>
 
                 {/* 場域多選 */}

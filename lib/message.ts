@@ -347,6 +347,8 @@ export const CREATE_PROJECT_PAGE = {
   submitting: "儲存中…",
   removeRental: "移除",
   removeRentalAria: "移除此筆租借",
+  copyRental: "複製",
+  copyRentalAria: "複製此筆租借",
 
   errorRequired: "此欄位為必填",
   errorActivityTypeRequired: "請選擇活動類型",
