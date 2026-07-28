@@ -174,9 +174,13 @@ function DayCellContent({
 }) {
   if (projects.length === 0) {
     return (
-      <div className="p-2 text-muted-foreground text-xs text-center min-h-12 flex items-center justify-center">
+      <Link
+        href={`/dashboard/projects/new?date=${dateKey}&spaceId=${contextSpaceId ?? ""}`}
+        className="p-2 text-muted-foreground text-xs text-center min-h-12 flex items-center justify-center hover:bg-muted/50 hover:text-foreground transition-colors"
+        aria-label={`新增專案：${dateKey}`}
+      >
         —
-      </div>
+      </Link>
     );
   }
   return (

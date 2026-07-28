@@ -11,7 +11,9 @@ import { CREATE_PROJECT_PAGE } from "@/lib/message";
 import { getAdminContactOptions } from "@/lib/services/admin-contact.service";
 import { getCachedProjectById } from "@/lib/services/project/project.service";
 import type { ProjectFormValues } from "@/lib/config/project-form-config";
+import { DEFAULT_RENTAL_FORM_VALUES } from "@/lib/config/project-form-config";
 import { buildDuplicateProjectPrefill } from "@/lib/utils/project-duplicate";
+import { getSpaceById } from "@/lib/config/config";
 import {
   buildLoginUrlWithNext,
   buildPathWithSearch,
@@ -28,6 +30,20 @@ function parseDuplicateFrom(sp: NextSearchParams | undefined): string | null {
   if (typeof raw !== "string") return null;
   const trimmed = raw.trim();
   return trimmed ? trimmed : null;
+}
+
+/** 從月曆空白格點擊帶入的 date + spaceId，組成 rentals 預填值 */
+function parseSlotPrefill(
+  sp: NextSearchParams | undefined,
+): Partial<ProjectFormValues> | undefined {
+  if (!sp) return undefined;
+  const date = typeof sp.date === "string" ? sp.date.trim() : "";
+  const spaceId = typeof sp.spaceId === "string" ? sp.spaceId.trim() : "";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return undefined;
+  if (!getSpaceById(spaceId)) return undefined;
+  return {
+    rentals: [{ ...DEFAULT_RENTAL_FORM_VALUES, date, spaceIds: [spaceId] }],
+  };
 }
 
 export default async function NewProjectPage({ searchParams }: PageProps) {
@@ -57,6 +73,8 @@ export default async function NewProjectPage({ searchParams }: PageProps) {
     if (src) {
       prefill = buildDuplicateProjectPrefill(src);
     }
+  } else {
+    prefill = parseSlotPrefill(sp);
   }
   return (
     <DashboardShell>
