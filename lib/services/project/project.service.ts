@@ -32,6 +32,7 @@ import {
   spaceIdsIntersect,
 } from "@/lib/utils/project-rental-interval";
 import {
+  addDaysToTaipeiYmd,
   getEffectiveProjectStatus,
   getTaipeiTodayYmd,
 } from "@/lib/utils/project-effective-status";
@@ -253,6 +254,7 @@ function mapRowToProject(
     internalNotes: string | null;
     needsPrintedNotice: boolean;
     equipmentNeeds: unknown;
+    createdAt: Date;
     rentals: Array<{
       spaceIds: string[];
       date: string;
@@ -302,6 +304,7 @@ function mapRowToProject(
     eventType: row.eventType,
     space,
     date,
+    createdAt: row.createdAt.toISOString(),
     contactPerson:
       adminNameById.get(row.collaPlayContactId) ?? row.collaPlayContactId,
     amount,
@@ -447,13 +450,48 @@ export async function getProjectsForList(): Promise<Project[]> {
 }
 
 /**
- * 取得最近 N 筆專案（供總覽頁使用，以 React.cache 去重）
+ * 取得最近 createdWithinDays 天內新增的專案（供總覽頁使用，以 React.cache 去重）
  */
 export const getRecentProjects = cache(
-  async (limit: number): Promise<Project[]> => {
+  async (createdWithinDays: number): Promise<Project[]> => {
+    const createdSinceYmd = addDaysToTaipeiYmd(
+      getTaipeiTodayYmd(),
+      -createdWithinDays,
+    );
     const [rows, adminOptions] = await Promise.all([
       prisma.project.findMany({
-        take: limit,
+        where: {
+          rentals: { none: { spaceIds: { has: "4f-podcast-studio" } } },
+          createdAt: { gte: new Date(`${createdSinceYmd}T00:00:00+08:00`) },
+        },
+        orderBy: { createdAt: "desc" },
+        include: { rentals: true },
+      }),
+      getAdminContactOptions(),
+    ]);
+    const adminNameById = new Map(adminOptions.map((o) => [o.id, o.name]));
+    return rows.map((row) => mapRowToProject(row, adminNameById));
+  },
+);
+
+/**
+ * 取得最近 createdWithinDays 天內新增、且活動日期落在未來 windowDays 天內的專案
+ * （供總覽頁使用，以 React.cache 去重）
+ */
+export const getRecentUpcomingProjects = cache(
+  async (windowDays: number, createdWithinDays: number): Promise<Project[]> => {
+    const fromYmd = getTaipeiTodayYmd();
+    const toYmd = addDaysToTaipeiYmd(fromYmd, windowDays);
+    const createdSinceYmd = addDaysToTaipeiYmd(fromYmd, -createdWithinDays);
+    const [rows, adminOptions] = await Promise.all([
+      prisma.project.findMany({
+        where: {
+          AND: [
+            buildProjectsWindowWhere({ fromYmd, toYmd }),
+            { rentals: { none: { spaceIds: { has: "4f-podcast-studio" } } } },
+            { createdAt: { gte: new Date(`${createdSinceYmd}T00:00:00+08:00`) } },
+          ],
+        },
         orderBy: { createdAt: "desc" },
         include: { rentals: true },
       }),

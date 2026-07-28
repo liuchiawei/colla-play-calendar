@@ -9,7 +9,6 @@ import { OverviewContent } from "./overview-content.client";
 import { OverviewStats } from "@/components/features/admin-dashboard/overview-stats";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { ALL_SPACES } from "@/lib/config/config";
 import {
   buildLoginUrlWithNext,
   buildPathWithSearch,
@@ -18,9 +17,11 @@ import {
 import {
   getOverviewStats,
   getRecentProjects,
+  getRecentUpcomingProjects,
 } from "@/lib/services/project/project.service";
 
-const PREVIEW_SPACES_COUNT = 6;
+const CREATED_WITHIN_DAYS = 14;
+const UPCOMING_WINDOW_DAYS = 28;
 
 interface PageProps {
   searchParams?: Promise<NextSearchParams>;
@@ -44,11 +45,11 @@ export default async function DashboardNewPage({ searchParams }: PageProps) {
     redirect("/");
   }
 
-  const [recentProjects, stats] = await Promise.all([
-    getRecentProjects(PREVIEW_SPACES_COUNT),
+  const [recentProjects, upcomingProjects, stats] = await Promise.all([
+    getRecentProjects(CREATED_WITHIN_DAYS),
+    getRecentUpcomingProjects(UPCOMING_WINDOW_DAYS, CREATED_WITHIN_DAYS),
     getOverviewStats(),
   ]);
-  const previewSpaces = ALL_SPACES.slice(0, PREVIEW_SPACES_COUNT);
 
   return (
     <DashboardShell>
@@ -61,8 +62,8 @@ export default async function DashboardNewPage({ searchParams }: PageProps) {
       <div className="flex-1 p-6 space-y-6">
         <OverviewStats data={stats} />
         <OverviewContent
-          previewSpaces={previewSpaces}
           recentProjects={recentProjects}
+          upcomingProjects={upcomingProjects}
         />
       </div>
     </DashboardShell>
