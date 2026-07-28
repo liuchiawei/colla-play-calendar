@@ -28,6 +28,8 @@ export interface Project {
   eventType: string;
   space: string;
   date: string; // ISO date string
+  /** 專案建立時間 */
+  createdAt: string; // ISO datetime string
   /** 對應 DB collaPlayContactId（CollaPlay 窗口） */
   contactPerson: string;
   amount: number;

@@ -170,10 +170,11 @@ export const SPACE_DETAIL_PAGE = {
 
 // Dashboard Overview (總覽頁區塊)
 export const DASHBOARD_OVERVIEW = {
-  spacesSectionTitle: "場域列表",
-  recentProjectsTitle: "最近專案",
+  recentProjectsTitle: "最近新增專案",
+  recentProjectsFilterNote: "僅顯示最近 14 天內新增、且活動尚未發生的專案",
+  upcomingProjectsTitle: "未來 28 天新增活動專案",
+  upcomingProjectsFilterNote: "最近 14 天內新增．活動日期在未來 28 天內",
   seeAll: "查看全部",
-  seeAllSpacesAria: "查看全部場域",
   seeAllProjectsAria: "查看全部專案",
   noProjectsYet: "尚無專案",
   // 總覽統計四項
