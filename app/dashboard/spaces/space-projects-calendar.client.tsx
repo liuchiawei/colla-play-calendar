@@ -176,10 +176,15 @@ function DayCellContent({
     return (
       <Link
         href={`/dashboard/projects/new?date=${dateKey}&spaceId=${contextSpaceId ?? ""}`}
-        className="p-2 text-muted-foreground text-xs text-center min-h-12 flex items-center justify-center hover:bg-muted/50 hover:text-foreground transition-colors"
+        className="group relative p-2 text-muted-foreground text-xs text-center min-h-12 flex items-center justify-center"
         aria-label={`新增專案：${dateKey}`}
       >
-        —
+        <span className="group-hover:opacity-0">—</span>
+        <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100">
+          <span className="inline-flex items-center rounded-full bg-primary text-primary-foreground px-2 py-1 text-[10px] font-medium whitespace-nowrap shadow-sm">
+            + 新增專案
+          </span>
+        </span>
       </Link>
     );
   }

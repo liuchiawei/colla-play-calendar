@@ -42,7 +42,9 @@ function parseSlotPrefill(
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return undefined;
   if (!getSpaceById(spaceId)) return undefined;
   return {
-    rentals: [{ ...DEFAULT_RENTAL_FORM_VALUES, date, spaceIds: [spaceId] }],
+    rentals: [
+      { ...DEFAULT_RENTAL_FORM_VALUES, date, endDate: date, spaceIds: [spaceId] },
+    ],
   };
 }
 
