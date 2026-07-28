@@ -454,14 +454,24 @@ export async function getProjectsForList(): Promise<Project[]> {
  */
 export const getRecentProjects = cache(
   async (createdWithinDays: number): Promise<Project[]> => {
-    const createdSinceYmd = addDaysToTaipeiYmd(
-      getTaipeiTodayYmd(),
-      -createdWithinDays,
-    );
+    const todayYmd = getTaipeiTodayYmd();
+    const createdSinceYmd = addDaysToTaipeiYmd(todayYmd, -createdWithinDays);
     const [rows, adminOptions] = await Promise.all([
       prisma.project.findMany({
         where: {
-          rentals: { none: { spaceIds: { has: "4f-podcast-studio" } } },
+          AND: [
+            { rentals: { none: { spaceIds: { has: "4f-podcast-studio" } } } },
+            {
+              rentals: {
+                some: {
+                  OR: [
+                    { endDate: { gte: todayYmd } },
+                    { endDate: null, date: { gte: todayYmd } },
+                  ],
+                },
+              },
+            },
+          ],
           createdAt: { gte: new Date(`${createdSinceYmd}T00:00:00+08:00`) },
         },
         orderBy: { createdAt: "desc" },
