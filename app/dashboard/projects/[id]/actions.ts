@@ -89,11 +89,11 @@ export async function deleteProject(id: string): Promise<DeleteProjectResult> {
     revalidateTag(ADMIN_PROJECTS_LIST_CACHE_TAG, "max");
     revalidateTag(ADMIN_PROJECTS_ANY_WINDOW_CACHE_TAG, "max");
     revalidateTag(projectDetailTag(id), "max");
-    redirect("/dashboard/projects");
   } catch (e) {
     const message = e instanceof Error ? e.message : "刪除失敗";
     return { success: false, error: message };
   }
+  redirect("/dashboard/projects");
 }
 
 export async function deleteRental(rentalId: string): Promise<DeleteRentalResult> {
