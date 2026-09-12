@@ -1,12 +1,13 @@
 # CollaPlay Calendar - Cursor Rules
 
-Next.js 16.1.1 (App Router), React 19.2.3, TypeScript 5 (strict), Prisma 7.2.0 + PostgreSQL, Better Auth 1.4.9
+Next.js 16.1.1 (App Router), React 19.2.3, TypeScript 5.9.3 (strict), Prisma 7.10.0 + PostgreSQL, Better Auth 1.7.4
 
 ## Tech Stack
-- **UI**: shadcn/ui (priority), Radix UI, Lucide React, Tailwind CSS 4
-- **Forms**: React Hook Form 7.69.0 + Zod 4.2.1
-- **State**: Zustand 5.0.9, SWR 2.3.8
-- **Utils**: date-fns 4.1.0, clsx, tailwind-merge, motion 12.23.26
+- **UI**: shadcn/ui (priority), Radix UI (existing `@radix-ui/*`; new components may import from `radix-ui`), Lucide React, Tailwind CSS 4.3.3
+- **Forms**: React Hook Form 7.87.0 + Zod 4.6.2
+- **State**: Zustand 5.0.15, SWR 2.5.1
+- **Utils**: date-fns 4.4.0, clsx, tailwind-merge 3.6.0, motion 12.43.0
+- **Infra**: `@prisma/adapter-pg` 7.10.0, `pg`, Vercel Blob 2.8.0 (uploads)
 
 ## Code Standards
 
@@ -18,15 +19,20 @@ Next.js 16.1.1 (App Router), React 19.2.3, TypeScript 5 (strict), Prisma 7.2.0 +
 
 ### Structure
 ```
-app/api/          # API routes (delegate to services)
+app/                  # App Router ((index), (otherpages), dashboard, api)
+app/api/              # Route handlers (delegate to services)
 components/
-  features/        # Feature components
-  ui/             # shadcn/ui components
+  features/           # Feature components
+  ui/                 # shadcn/ui
+  layout/ widget/ providers/
 lib/
-  services/       # Business logic layer
-  hooks/          # Custom hooks
-  stores/         # Zustand stores
-  utils/          # Utilities
+  services/           # Business logic
+  hooks/ stores/ utils/ config/
+  generated/prisma/   # Prisma 7 client output (do not edit)
+  prisma.ts           # PrismaClient + adapter-pg
+  auth.ts / auth-client.ts
+prisma/schema.prisma
+prisma.config.ts      # Prisma 7 datasource URL
 ```
 
 ### TypeScript
@@ -37,7 +43,7 @@ lib/
 
 ### React Components
 - **Priority**: Use shadcn/ui components, avoid custom implementations
-- **Default**: Server Components (data fetching, DB queries)
+- **Default**: Server Components (data fetching via services)
 - **Client**: Only when interactivity needed (`"use client"`)
 - Add purpose comments at file top
 
@@ -61,9 +67,18 @@ export async function GET() {
 }
 ```
 
+### Server Actions
+- Allowed (e.g. dashboard project `actions.ts`)
+- Authenticate inside the action with `auth.api.getSession`; do not rely on page-level checks
+- Delegate business logic to `lib/services/`
+
 ### Prisma & Performance
+- **Prisma 7**: generator `provider = "prisma-client"`, `output = "../lib/generated/prisma"`
+- Import types/client from `@/lib/generated/prisma/client` — never `from "@prisma/client"`
+- All DB ops via the singleton in `lib/prisma.ts` (`pg.Pool` + `PrismaPg` adapter)
+- Datasource URL lives in `prisma.config.ts`, not in `schema.prisma`
+- After schema changes: `pnpm exec prisma generate` (`pnpm build` already runs it)
 - **Performance first**: Minimize DB queries, use batch/relation queries (`include`/`select`) to avoid N+1
-- All DB ops via Prisma Client
 - Business logic in `lib/services/` (separation from API routes)
 - Use `unstable_cache` for query caching
 - **Next.js 16**: `revalidateTag(tagName, 'max')` - second param required
@@ -72,9 +87,10 @@ export async function GET() {
 ```tsx
 import { unstable_cache } from "next/cache";
 import { revalidateTag } from "next/cache";
+import prisma from "@/lib/prisma";
 
 const cachedQuery = unstable_cache(
-  async (id: string) => prisma.model.findUnique({ 
+  async (id: string) => prisma.model.findUnique({
     where: { id },
     include: { related: true }
   }),
@@ -97,15 +113,20 @@ revalidateTag("tag-name", "max");
 - Motion for animations
 
 ### Data Fetching
-- Server Components: Direct Prisma queries
+- Server Components: `lib/services/` + `unstable_cache` (do not query Prisma from pages by default)
 - Client Components: SWR
 - API routes: JSON responses
 
 ### Auth
-- Better Auth
-- Server Components: `auth()` for session
-- API routes: Verify user identity
-- Anonymous users: session ID
+- Better Auth (`lib/auth.ts`, `prismaAdapter`)
+- Handler: `toNextJsHandler(auth)` at `app/api/auth/[...all]/route.ts`
+- Server / Route / Server Action: `auth.api.getSession({ headers })` — headers from `await headers()` or `request.headers`
+- Shared session helpers: `getSession` in `lib/services/auth/auth-server.service.ts`
+- Client: only in the browser via `getAuthClient()` from `lib/auth-client.ts` (`better-auth/react`)
+- Anonymous users: cookie session ID (`lib/utils/registration.ts`)
+
+### Uploads
+- Event images and avatars: Vercel Blob via `app/api/uploads/*`
 
 ### Comments
 - Traditional Chinese comments
@@ -130,7 +151,7 @@ revalidateTag("tag-name", "max");
 
 ## Best Practices
 1. Prefer Server Components, Client only for interactivity
-2. **Separation**: API routes delegate to services (`lib/services/`)
+2. **Separation**: API routes and Server Actions delegate to services (`lib/services/`)
 3. **UI Priority**: Use shadcn/ui components, follow industry standards
 4. **Performance**: Minimize DB queries, optimize caching
 5. **DRY**: Extract repeated logic to shared functions/hooks/utils
@@ -144,6 +165,8 @@ revalidateTag("tag-name", "max");
 - ❌ Browser APIs in Server Components
 - ❌ Direct DB ops in frontend components
 - ❌ Business logic in API routes (delegate to services)
+- ❌ Import Prisma from `@prisma/client` (use `@/lib/generated/prisma/client`)
+- ❌ Call `auth()` for session (use `auth.api.getSession`)
 - ❌ Ignore TypeScript errors
 - ❌ Use `any` (unless absolutely necessary)
 - ❌ Complex business logic in components
@@ -155,8 +178,9 @@ revalidateTag("tag-name", "max");
 
 ## Commands
 - `pnpm dev` - Dev server
-- `pnpm build` - Production build
+- `pnpm build` - Production build (`prisma generate` + `next build`)
 - `pnpm lint` - ESLint
+- `pnpm exec prisma generate` - Regenerate client after schema changes
 - `pnpm db:migrate` - DB migration
 - `pnpm db:seed` - Seed data
 - `pnpm db:studio` - Prisma Studio
