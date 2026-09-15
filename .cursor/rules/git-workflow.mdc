@@ -1,0 +1,60 @@
+---
+description: Git branching, commits, and PRs (master / dev / feat)
+alwaysApply: true
+---
+
+# Git Workflow
+
+This repo’s production branch is **`master`**, not `main`. Do not create or checkout `main`.
+
+## Branches
+
+| Branch | Role | Commit on it? |
+|--------|------|----------------|
+| `master` | Production / default | Never |
+| `dev` | Integration / pre-release | Never (merge via PR) |
+| `feat/<kebab-name>` | New feature | Yes |
+| `fix/<kebab-name>` | Bug fix | Yes |
+| `chore/<kebab-name>` | Tooling, deps, docs | Yes |
+| `refactor/<kebab-name>` | Refactor | Yes |
+
+Examples: `feat/printed-notice-field`, `fix/delete-project-404`.
+
+```
+feat|fix|chore|refactor/*  ──PR──►  dev  ──PR──►  master
+hotfix (from master):      fix/*   ──PR──►  master  ──merge──►  dev
+```
+
+## Starting work
+
+1. If the user did not name a branch, create one from latest `origin/dev`:
+   `git fetch origin && git checkout -b feat/<name> origin/dev`
+2. Hotfix: branch from `origin/master` as `fix/<name>`.
+3. Do not commit, stash-drop, or rewrite history on `master` or `dev`.
+4. If already on `master`/`dev` with local changes, create a topic branch first, then continue.
+
+## Commits
+
+- **Only commit when the user asks.** Unclear → ask first.
+- Conventional Commits; subject may be Traditional Chinese (match existing history).
+- Focus the message on **why**, not a file list.
+- HEREDOC for the message. Do not skip hooks (`--no-verify`).
+- Do not commit `.env`, credentials, or secrets.
+- Do not `git add .` / `git add -A`; stage named files.
+- Do not amend unless the user asked, HEAD is yours, and it has not been pushed.
+- Do not force-push `master` or `dev`. Never force-push `main`/`master` even if asked without an explicit warning.
+
+```
+feat: 新增「是否需要列印告示」欄位
+fix: 修正刪除專案時 redirect 被 try/catch 攔截導致 404
+chore: 更新依賴版本與修訂文件內容
+```
+
+## Pull requests
+
+- **Only open a PR when the user asks.**
+- Feature/fix/chore/refactor: `--base dev`.
+- Release: `--base master --head dev`.
+- Hotfix: `--base master`, then merge `master` into `dev` so they do not diverge.
+- Use `gh pr create`. Do not push unless the user asked (or the PR request implies push).
+- After merge, do not delete remote branches unless asked.

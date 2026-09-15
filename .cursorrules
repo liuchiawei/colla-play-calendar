@@ -175,6 +175,24 @@ revalidateTag("tag-name", "max");
 - ❌ Reimplement existing shadcn/ui components
 - ❌ Code duplication (extract to shared modules)
 - ❌ `revalidateTag` without second param (Next.js 16)
+- ❌ Commit or push directly to `master` or `dev`
+- ❌ Create a `main` branch (this repo uses `master`)
+
+## Git Workflow
+Production branch is **`master`** (not `main`). Integration is **`dev`**. All work lands on topic branches.
+
+| Branch | Role |
+|--------|------|
+| `master` | Production / default. Never commit directly. |
+| `dev` | Integration. Feature PRs merge here. |
+| `feat/<kebab-name>` | New features |
+| `fix/<kebab-name>` | Bug fixes |
+| `chore/<kebab-name>` | Tooling, deps, docs |
+| `refactor/<kebab-name>` | Refactors |
+
+Flow: `feat|fix|chore|refactor/*` → PR into `dev` → release PR `dev` → `master`. Hotfix: branch from `master`, PR into `master`, then merge `master` back into `dev`.
+
+Commits (only when the user asks): Conventional Commits (`feat:`, `fix:`, `chore:`, `refactor:`, `docs:`); subject may be Traditional Chinese; explain why, not what. Do not skip hooks. Do not force-push `master` or `dev`.
 
 ## Commands
 - `pnpm dev` - Dev server
