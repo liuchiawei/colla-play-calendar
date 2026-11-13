@@ -16,6 +16,10 @@ import {
   getProjectById,
   projectDetailTag,
 } from "@/lib/services/project/project.service";
+import {
+  findRecordingRentals,
+  notifyRecordingCancelled,
+} from "@/lib/services/project/recording-cancel-sync.service";
 import { getAdminContactOptions } from "@/lib/services/admin-contact.service";
 import {
   buildProjectDetailCsv,
@@ -84,7 +88,12 @@ export async function deleteProject(id: string): Promise<DeleteProjectResult> {
     return { success: false, error: "需要登入" };
   }
   try {
+    const recordingRentals = await findRecordingRentals({
+      projectId: id,
+      project: { status: { not: "cancelled" } },
+    });
     await deleteProjectService(id);
+    notifyRecordingCancelled(recordingRentals);
     revalidatePath("/dashboard/projects");
     revalidateTag(ADMIN_PROJECTS_LIST_CACHE_TAG, "max");
     revalidateTag(ADMIN_PROJECTS_ANY_WINDOW_CACHE_TAG, "max");
@@ -100,7 +109,12 @@ export async function deleteRental(rentalId: string): Promise<DeleteRentalResult
   const authError = await requireAdmin();
   if (authError) return authError;
   try {
+    const recordingRentals = await findRecordingRentals({
+      id: rentalId,
+      project: { status: { not: "cancelled" } },
+    });
     const { projectId } = await deleteProjectRental(rentalId);
+    notifyRecordingCancelled(recordingRentals);
     revalidatePath("/dashboard/projects");
     revalidatePath(`/dashboard/projects/${projectId}`);
     revalidateTag(ADMIN_PROJECTS_LIST_CACHE_TAG, "max");
@@ -139,7 +153,15 @@ export async function updateProjectStatus(id: string, status: ProjectStatus): Pr
     return { success: false, error: "需要登入" };
   }
   try {
+    const recordingRentals =
+      status === "cancelled"
+        ? await findRecordingRentals({
+            projectId: id,
+            project: { status: { not: "cancelled" } },
+          })
+        : [];
     const data = await updateProjectStatusService(id, status);
+    notifyRecordingCancelled(recordingRentals);
     revalidatePath("/dashboard/projects");
     revalidatePath(`/dashboard/projects/${id}`);
     revalidateTag(ADMIN_PROJECTS_LIST_CACHE_TAG, "max");
